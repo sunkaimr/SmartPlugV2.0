@@ -1,0 +1,5 @@
+Vers: 3.6.4
+Time: 20180130
+Desc:
+	1. Add new GPIO config page in the tool
+	2. Able to change bootloader of ESP8266 to change GPIO level when power on

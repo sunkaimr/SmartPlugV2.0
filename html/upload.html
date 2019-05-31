@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html;charset=gb2312">
+	<title>升级</title>
+</head>
+<body>
+	<table border="0" width="70%" align="center" cellpadding="6" id="tab" cellspacing="0" >
+		<tr><th colspan="4">固件升级</th></tr>
+		<tr><td colspan="4"><hr/></td></tr>
+		<tr align="left">
+			<th width="40%">文件</th>
+			<th width="15%">大小</th>
+			<th width="20%">状态</th>
+			<th width="25%"></th>
+		</tr>
+		<tr  align="left">
+			<td><input type="file" id="binFile" accept=".bin" onchange="return fileChg(this);"></td>
+			<td>----</td>
+			<td>----</td>
+			<td><input type="button" onclick="upgread()" value="升级"/></td>
+		</tr>
+		<tr><td colspan="4"><hr/></td></tr>
+		<tr><td colspan="4">&nbsp;</td></tr>
+		<tr><th colspan="4">网页升级</th></tr>
+		<tr><td colspan="4"><hr/></td></tr>
+		<tr><td colspan="4"><hr/></td></tr>
+		<tr>
+			<td colspan="3"></td>
+			<td>
+				<input type="button" onclick="addFile()" value="添加"/>
+				<input type="button" onclick="uploadFile()" value="上传"/>
+				<input type="button" onclick="reboot()" value="重启"/>
+			</td>
+		</tr>
+	</table>
+	<script type="text/javascript">
+		window.onload = function() {
+			addFile();
+		}
+		function addFile() {
+			var t = document.getElementById('tab');
+			var r = t.insertRow(t.rows.length-2);
+			r.insertCell(0).innerHTML="<input type=\"file\" onchange=\"return fileChg(this);\">";
+			r.insertCell(1).innerHTML="----";
+			r.insertCell(2).innerHTML="----";
+			r.insertCell(3).innerHTML="<a href=\"javascript:void(0);\" onclick=\"this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode)\">删除</a>";
+		}
+		function fileChg(obj) {
+			var fz=obj.files[0].size;
+			if( fz > 1024*1024 ){
+				fz=(fz/1024/1024).toFixed(1) + "MB";
+			}else if(fz > 1024){
+				fz=(fz/1024).toFixed(1) + "KB";
+			}else{
+				fz=fz+"B";
+			}
+			var sta = obj.parentNode.parentNode.cells;
+			sta[1].innerHTML = fz;
+			sta[2].innerHTML = "等待上传";
+		}
+
+		function uploadFile() {
+			var files = new Array();
+			var tableObj = document.getElementById("tab");
+			for (var i = 8; i < tableObj.rows.length-2; i++) {
+				file = tableObj.rows[i].cells[0].getElementsByTagName("input")[0];
+				if ( file.files[0] == null ){
+					continue;
+				}
+				files.push(file.files[0]);
+				tableObj.rows[i].cells[2].innerHTML = "等待上传";
+			}
+			if (files.length == 0){
+				alert("请选择文件！");
+				return;
+			}
+			if( sendHead(files)){
+				sendFile(files, 0);
+			}
+
+		}
+		function sendHead(fileObj) {
+			var dataArr=[];
+			for ( var i in fileObj ){
+				var data = {};
+				data.Name = fileObj[i].name;
+				data.Length = parseInt(fileObj[i].size);
+				dataArr.push(data);
+			}
+			xhr = new XMLHttpRequest();
+			xhr.open("post", "/html/header", false);
+			xhr.send(JSON.stringify(dataArr));
+			return true;
+		}
+		function sendFile(fileObj, index) {
+			if ( index >= fileObj.length){
+				alert("上传完成");
+				return;
+			}
+			var t = document.getElementById('tab');
+			xhr = new XMLHttpRequest();
+			url = "/html/"+fileObj[index].name
+			xhr.open("put", url, true);
+			xhr.upload.onprogress = function progressFunction(evt) {
+				if (evt.lengthComputable) {
+					t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = Math.round(evt.loaded / evt.total * 100) + "%";
+				}
+			};
+			t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = "%0";
+			xhr.onreadystatechange = function () {
+				if ( xhr.readyState == 2 ){
+					t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = "正在校验";
+				}else if (xhr.readyState == 4) {
+					if( xhr.status == 201){
+						t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = "上传成功";
+						index=index+1;
+						sendFile(fileObj, index);
+					}else{
+						t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = "上传失败";
+					}
+				}
+			}
+			xhr.send(fileObj[index]);
+		}
+		function reboot(){
+			xhr = new XMLHttpRequest();
+			xhr.open("post", "/control", true);
+			xhr.onreadystatechange = function () {
+				if (xhr.readyState == 4) {
+					if( xhr.status == 200){
+						alert("设备正在重启");
+					}else{
+						alert("设备重启失败");
+					}
+				}
+			}
+			xhr.send("{\"Action\":0}");
+		}
+		function upgread(){
+			var file = document.getElementById("binFile").files[0];
+			if(file == null){
+				alert("请选择固件");
+				return;
+			}
+			var t = document.getElementById('tab');
+			xhr = new XMLHttpRequest();
+			xhr.upload.onprogress = function progressFunction(evt) {
+				if (evt.lengthComputable) {
+					t.rows[3].cells[2].innerHTML= Math.round(evt.loaded / evt.total * 100) + "%";
+				}
+			};
+			xhr.open("put", "/upgrade", true);
+			t.rows[3].cells[2].innerHTML = "0%";
+			xhr.onreadystatechange = function () {
+				if ( xhr.readyState == 2 ){
+					t.rows[3].cells[2].innerHTML = "正在校验";
+				}else if (xhr.readyState == 4) {
+					if( xhr.status == 201){
+						t.rows[3].cells[2].innerHTML = "上传成功";
+						alert("升级成功，设备正在重启");
+					}else{
+						t.rows[3].cells[2].innerHTML = "上传失败";
+						alert("升级是失败");
+					}
+				}
+			}
+			xhr.send(file);
+		}
+	</script>
+</body>
+</html>

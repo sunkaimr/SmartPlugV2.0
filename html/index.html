@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title id="title">index</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="bootstrap.min.css" rel="stylesheet">
+	<!--<link href="dashboard.css" rel="stylesheet">-->
+	<style>
+		.table th, .table td {
+			text-align: center;
+		}
+		.table-hover > tbody > tr:hover > td > a{
+			cursor: pointer;
+		}
+		.navbar-nav li:hover,
+		.nav-sidebar li:hover,
+		.breadcrumb li:hover{
+			cursor: pointer;
+		}
+		body {
+			padding-top: 50px;
+		}
+		.sub-header {
+			padding-bottom: 10px;
+			border-bottom: 1px solid #eee;
+		}
+		.navbar-fixed-top {
+			border: 0;
+		}
+		.sidebar {
+			display: none;
+		}
+		@media (min-width: 768px) {
+			.sidebar {
+				position: fixed;
+				top: 51px;
+				bottom: 0;
+				left: 0;
+				z-index: 1000;
+				display: block;
+				padding: 20px;
+				overflow-x: hidden;
+				overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
+				background-color: #f5f5f5;
+				border-right: 1px solid #eee;
+			}
+		}
+		.nav-sidebar {
+			margin-right: -21px; /* 20px padding + 1px border */
+			margin-bottom: 20px;
+			margin-left: -20px;
+		}
+		.nav-sidebar > li > a {
+			padding-right: 20px;
+			padding-left: 20px;
+		}
+		.nav-sidebar > .active > a,
+		.nav-sidebar > .active > a:hover,
+		.nav-sidebar > .active > a:focus {
+			color: #fff;
+			background-color: #428bca;
+		}
+		.main {
+			padding: 20px;
+		}
+		@media (min-width: 768px) {
+			.main {
+				padding-right: 40px;
+				padding-left: 40px;
+			}
+		}
+		.main .page-header {
+			margin-top: 0;
+		}
+		.placeholders {
+			margin-bottom: 30px;
+			text-align: center;
+		}
+		.placeholders h4 {
+			margin-bottom: 0;
+		}
+		.placeholder {
+			margin-bottom: 20px;
+		}
+		.placeholder img {
+			display: inline-block;
+			border-radius: 50%;
+		}
+
+	</style>
+</head>
+<body>
+	<div class="navbar navbar-fixed-top navbar-inverse">
+		<div class="container">
+			<p id="devName" class="navbar-brand"><strong>智能插座</strong></p>
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle " data-toggle="collapse" data-target="#navBar" aria-expanded="false" aria-controls="navbar">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+			</div>
+			<div class="collapse navbar-collapse navbar-right" id="navBar">
+				<ul class="nav navbar-nav navbar-right">
+					<li><a id="relay"><strong>关闭</strong></a></li>
+					<li><a id="date" >2019-01-01 00:00:00 星期一</a></li>
+					<li><a id="information" data-toggle="modal" data-target="#aboutModal">关于</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<div id="content">
+
+	<div class="container-fluid">
+		<div class="row">
+			<div class="main">
+				<ul class="breadcrumb">
+					<li><a id="timer">定时</a></li>
+					<li><a id="delay">延时</a></li>
+					<li><a id="set">设置</a></li>
+				</ul>
+
+				<div class="table-responsive">
+					<table id="tabTimer" class="table tah3e-striped table-hover"></table>
+				</div>
+
+				<div class="table-responsive">
+					<table id="tabDelay" class="table table-striped table-hover"></table>
+				</div>
+
+				<form id="formSet" class="form-horizontal hidden" action="#" method="POST">
+				<div class="form-group">
+					<label class="col-sm-1 control-label">提示 :</label>
+					<span class="help-block col-sm-10">短按按键可直接控制开关，按下按键3-6s当wifi指示灯快速闪烁进入热点模式；按键按下6s以上wifi指示灯常亮进入客户端模式</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">名称 :</label>
+					<div class="col-sm-3 ">
+						<input id="plugName" class="form-control" type="text" placeholder="请输入名称...">
+					</div>
+					<span class="help-block col-sm-5">32个字符以内（每个中文占3个字符）</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">模式 :</label>
+					<div class="col-sm-3 ">
+						<select id="modeSelect" class="form-control">
+							<option value=0 disabled selected hidden>请选择模式...</option>
+							<option value=1>客户端</option>
+							<option value=2>热点</option>
+							<option value=3>智能配对</option>
+						</select>
+					</div>
+					<span class="help-block col-sm-6">热点模式：设备将发射WIFI信号；客户端模式：设备需要连接路由器</span>
+				</div>
+				<div id="wifiClass" class="form-group hidden">
+					<label class="col-sm-1 control-label">WIFI :</label>
+					<div class="col-sm-2 ">
+						<select id="wifiList" class="form-control"></select>
+					</div>
+					<div class="col-sm-1 ">
+						<button id="scanWifi" class="btn btn-info btn-block" type="button">扫描</button>
+					</div>
+					<span class="help-block col-sm-5">点击“扫描”，选择需要连接的WIFI名称</span>
+				</div>
+				<div id="wifiCustomCloss" class="form-group hidden">
+					<label class="col-sm-1 control-label">WIFI :</label>
+					<div class="col-sm-3 ">
+						<input id="wifiCustom" class="form-control" type="text" placeholder="WIFI名称">
+					</div>
+					<span class="help-block col-sm-5">请输入要连接的WIFI</span>
+				</div>
+				<div id="wifiPasswdClass" class="form-group hidden">
+					<label class="col-sm-1 control-label">密码 :</label>
+					<div class="col-sm-3 ">
+						<input id="wifiPasswd" class="form-control" type="password" placeholder="请输入密码">
+					</div>
+					<span class="help-block col-sm-5">请输入要连接的WIFI密码</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label"></label>
+					<div class="col-sm-3">
+						<button id="setCommit" class="btn btn-primary btn-block" type="button">确定</button>
+					</div>
+					<span class="help-block col-sm-5">修改后重启生效</span>
+				</div>
+				<br/>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">升级 :</label>
+					<div class="col-sm-2">
+						<input id="file" type="file" accept=".bin" style="display:none">
+						<input id="binFile" class="form-control" type="text" placeholder="请选择固件">
+					</div>
+					<div class="col-sm-1">
+						<button id="chooseBin" class="btn btn-primary btn-info" type="button">文件</button>
+					</div>
+					<div class="col-sm-1">
+						<button id="upload" class="btn btn-primary btn-block" type="button">升级</button>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">重启 :</label>
+					<div class="col-sm-3">
+						<button id="reboot" class="btn btn-primary btn-block" type="button">重启</button>
+					</div>
+					<span class="help-block col-sm-5">重启设备</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">重置 :</label>
+					<div class="col-sm-3">
+						<button id="reset" class="btn btn-warning btn-block" type="button">恢复出厂设置</button>
+					</div>
+					<span class="help-block col-sm-5">数据将全部清零，恢复到出厂模式</span>
+				</div>
+			</form>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="aboutModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4>关于</h4>
+				</div>
+				<div id="aboutBody" class="modal-body"></div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary" data-dismiss="modal">关闭</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="infoModal" tabindex="1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4>提示</h4>
+				</div>
+				<div id="infoBody" class="modal-body"></div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary" data-dismiss="modal">关闭</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="rebootModal" tabindex="1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4>提示</h4>
+				</div>
+				<div id="submitBody" class="modal-body">确认重启设备</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+					<button id="rebootModalButton" type="submit" class="btn btn-primary">确定</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="resetModal" tabindex="1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4>提示</h4>
+				</div>
+				<div class="modal-body">数据将全部清零，恢复到出厂模式</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+					<button id="resetModalButton" type="submit" class="btn btn-primary">确定</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<form id="timerSubmitForm" class="form-horizontal" role="form" action="timer" method="post">
+		<div class="modal fade" id="timerSubmitModal" tabindex="2" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 id="timerModalHead">定时</h4>
+					</div>
+					<div class="modal-body">
+						<div class="form-group">
+							<label class="col-sm-3 control-label">名称：</label>
+							<div class="col-sm-4">
+								<input id="timeName" name="timeName" type="text" class="form-control input-inline">
+							</div>
+							<label class="col-sm-2 control-label">启用：</label>
+							<div class="col-sm-3 checkbox">
+								<input id="timeEnable" type="checkbox" checked="true">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="col-sm-3 control-label">开启时间：</label>
+							<div class="col-sm-4">
+								<input id="onTime" name="onTime" type="time" class="form-control input-inline form_time">
+							</div>
+							<label class="col-sm-2 control-label">启用：</label>
+							<div class="col-sm-3 checkbox">
+								<input id="onTimeEnable" type="checkbox" checked="true">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="col-sm-3 control-label">关闭时间：</label>
+							<div class="col-sm-4">
+								<input id="offTime" name="offTime" type="time" class="form-control input-inline form_time">
+							</div>
+							<label class="col-sm-2 control-label">启用：</label>
+							<div class="col-sm-3 checkbox">
+								<input id="offTimeEnable" type="checkbox" value="">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="col-sm-3 control-label">关联延时：</label>
+							<div class="col-sm-4">
+								<input id="timerCascodeNum" name="timerCascodeNum" type="number" min="1" max="10" class="form-control input-inline">
+							</div>
+							<label class="col-sm-2 control-label">启用：</label>
+							<div class="col-sm-3 checkbox">
+								<input id="timerCascodeEnable" type="checkbox" value="">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="col-sm-3 control-label">重&nbsp;&nbsp;复：</label>
+							<div class="col-sm-7">
+								<label class="checkbox-inline"><input id="week1" type="checkbox">周一</label>
+								<label class="checkbox-inline"><input id="week2" type="checkbox">周二</label>
+								<label class="checkbox-inline"><input id="week3" type="checkbox">周三</label>
+								<label class="checkbox-inline"><input id="week4" type="checkbox">周四</label>
+								<label class="checkbox-inline"><input id="week5" type="checkbox">周五</label>
+							</div>
+								<div class="col-sm-3"></div>
+							<div class="col-sm-7">
+								<label class="checkbox-inline"><input id="week6" type="checkbox">周六</label>
+								<label class="checkbox-inline"><input id="week7" type="checkbox">周日</label>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+						<button id="timerSubmitBtn" type="submit" class="btn btn-primary">确定</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+
+	<form id="delaySubmitForm" class="form-horizontal" role="form" action="delay" method="post">
+		<div class="modal fade" id="delaySubmitModal" tabindex="2" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 id="delayModalHead">延时</h4>
+					</div>
+					<div class="modal-body">
+						<div class="form-group">
+							<label class="col-sm-3 control-label">名称：</label>
+							<div class="col-sm-4">
+								<input id="delayName" name="delayName" type="text" class="form-control input-inline">
+							</div>
+							<label class="col-sm-2 control-label">启用：</label>
+							<div class="col-sm-3 checkbox">
+								<input id="delayEnable" type="checkbox" checked="true">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="col-sm-3 control-label">开启间隔：</label>
+							<div class="col-sm-4">
+								<input id="onInterval" name="onInterval" type="time" class="form-control input-inline form_time">
+							</div>
+							<label class="col-sm-2 control-label">启用：</label>
+							<div class="col-sm-3 checkbox">
+								<input id="onIntervalEnable" type="checkbox" checked="true">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="col-sm-3 control-label">关闭间隔：</label>
+							<div class="col-sm-4">
+								<input id="offInterval" name="offInterval" type="time" class="form-control input-inline form_time">
+							</div>
+							<label class="col-sm-2 control-label">启用：</label>
+							<div class="col-sm-3 checkbox">
+								<input id="offIntervalEnable" type="checkbox" value="">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="col-sm-3 control-label">关联延时：</label>
+							<div class="col-sm-4">
+								<input id="delayCascodeNum" name="delayCascodeNum" type="number" min="1" max="10" class="form-control input-inline">
+							</div>
+							<label class="col-sm-2 control-label">启用：</label>
+							<div class="col-sm-3 checkbox">
+								<input id="delayCascodeEnable" type="checkbox" value="">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="col-sm-3 control-label">重复次数：</label>
+							<div class="col-sm-4">
+								<input id="cycleTimes" name="cycleTimes" type="number" min="1" max="9999" class="form-control input-inline">
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+						<button id="delaySubmitBtn" type="submit" class="btn btn-primary">确定</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+	</div>
+
+	<nav id="delayTaskClass" class="navbar navbar-default navbar-fixed-bottom">
+		<div class="container">
+			<div class="navbar-header">
+				<p id="delayTask" class="navbar-text"></p>
+			</div>
+		</div>
+	</nav>
+
+	<script src="jquery-1.11.1.min.js"></script>
+	<script src="bootstrap.min.js"></script>
+	<script src="index.js"></script>
+	<link href="bootstrapValidator.min.css" rel="stylesheet">
+	<script src="bootstrapValidator.min.js"></script>
+</body>
+</html>
+
