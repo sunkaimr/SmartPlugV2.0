@@ -703,29 +703,32 @@ VOID PLUG_SetTimeSyncFlag( PLUG_TIME_SYNC_E ucFlag )
 
 INT32 PLUG_GetTimeFromInternet()
 {
+	CHAR szSntpServer[3][20] = {"ntp1.aliyun.com", "0.cn.pool.ntp.org", "time.windows.com"};
 	UINT32 uiRet = 0;
 	INT iRetry = 5;
+	UINT uiLoopi = 0;
 
-	sntp_stop();
-	sntp_setservername(0,"ntp1.aliyun.com");
-    sntp_setservername(1,"0.cn.pool.ntp.org");
-    sntp_setservername(2,"time.windows.com");
-    sntp_init();
-
-	vTaskDelay( 500/portTICK_RATE_MS );
-
-	while( iRetry-- )
+	for ( uiLoopi = 0; uiLoopi < 3; uiLoopi++)
 	{
-		uiRet = sntp_get_current_timestamp();
-		if ( uiRet )
-		{
-			PLUG_SetTimeSyncFlag(TIME_SYNC_NET);
-			return OK;
-		}
-		vTaskDelay( 1000/portTICK_RATE_MS );
-	}
-	sntp_stop();
+		sntp_stop();
+		sntp_setservername(0, szSntpServer[uiLoopi]);
+		sntp_init();
+		LOG_OUT(LOGOUT_DEBUG, "Set sntp server: %s", szSntpServer[uiLoopi]);
 
+		vTaskDelay( 500/portTICK_RATE_MS );
+
+		iRetry = 5;
+		while( iRetry-- )
+		{
+			uiRet = sntp_get_current_timestamp();
+			if ( uiRet )
+			{
+				PLUG_SetTimeSyncFlag(TIME_SYNC_NET);
+				return OK;
+			}
+			vTaskDelay( 500/portTICK_RATE_MS );
+		}
+	}
 	return FAIL;
 }
 
@@ -1687,11 +1690,8 @@ VOID PLUG_StartDelayTime( PLUG_DELAY_S *pstDelay )
 
 VOID PLUG_TimerHandle( VOID *pPara )
 {
-	PLUG_TIME_SYNC_E ucFlag = 0;
 	g_uiRunTime++;
-
-	ucFlag = PLUG_GetTimeSyncFlag();
-	if ( ucFlag != TIME_SYNC_NONE  )
+	if ( PLUG_GetTimeSyncFlag() != TIME_SYNC_NONE  )
 	{
 		PLUG_JudgeTimer();
 		PLUG_JudgeDelay();

@@ -69,7 +69,7 @@ STATIC VOID WEB_WebSendTask( VOID *Para )
 
 				if ( stClientSktfd[iLoop].stReqHead.bIsCouldSend )
 				{
-					//LOG_OUT(LOGOUT_DEBUG, "bIsCouldSend iLoop:%d fd:%d", iLoop, stClientSktfd[iLoop].iClientFd);
+					LOG_OUT(LOGOUT_DEBUG, "bIsCouldSend iLoop:%d fd:%d", iLoop, stClientSktfd[iLoop].iClientFd);
 					break;
 				}
 			}
@@ -118,7 +118,7 @@ STATIC VOID WEB_WebSendTask( VOID *Para )
 		}
 		else if ( 0 == iRet )
 		{
-			//LOG_OUT(LOGOUT_DEBUG, "select timeout.");
+			LOG_OUT(LOGOUT_DEBUG, "WEB_WebSendTask, select timeout.");
 
 			for ( iLoop = 0; iLoop < WEB_MAX_FD; iLoop++ )
 			{
@@ -143,7 +143,7 @@ STATIC VOID WEB_WebSendTask( VOID *Para )
 			continue;
 		}
 
-		//LOG_OUT(LOGOUT_DEBUG, "select ok");
+		LOG_OUT(LOGOUT_DEBUG, "WEB_WebSendTask, select ok");
 
 		for ( iLoop = 0; iLoop < WEB_MAX_FD; iLoop++ )
 		{
@@ -162,7 +162,7 @@ STATIC VOID WEB_WebSendTask( VOID *Para )
 					continue;
 				}
 
-				//LOG_OUT(LOGOUT_DEBUG, "WEB_WebSendTask, send... iClientFd:%d", stClientSktfd[iLoop].iClientFd);
+				LOG_OUT(LOGOUT_DEBUG, "WEB_WebSendTask, send... iClientFd:%d", stClientSktfd[iLoop].iClientFd);
 
 				iRet = send( stClientSktfd[iLoop].iClientFd,
 							 stClientSktfd[iLoop].stReqHead.pcResponBody,
@@ -201,7 +201,7 @@ STATIC VOID WEB_WebSendTask( VOID *Para )
 				//发送完成
 				if ( stClientSktfd[iLoop].stReqHead.uiSentLength >= stClientSktfd[iLoop].stReqHead.uiSendTotalLength )
 				{
-					//LOG_OUT(LOGOUT_INFO, "send finished. uiRequestId:%d.", stClientSktfd[iLoop].stReqHead.uiRequestId);
+					LOG_OUT(LOGOUT_DEBUG, "send finished.");
 					stClientSktfd[iLoop].uiElapsedTime = 0;
 					memset(&stClientSktfd[iLoop].stReqHead, 0, sizeof(HTTP_REQUEST_HEAD_S));
 				}
@@ -245,7 +245,7 @@ STATIC VOID WEB_WebRecvTask( VOID *Para )
 
 	HTTP_RouterInit();
 
-	pcRecvBuf = ( CHAR* )malloc( USER_RECVBUF_SIZE + 5);
+	pcRecvBuf = ( CHAR* )malloc( USER_RECVBUF_SIZE );
     if ( NULL == pcRecvBuf )
 	{
 		LOG_OUT(LOGOUT_ERROR, "malloc pcRecvBuf failed.");
@@ -278,7 +278,7 @@ STATIC VOID WEB_WebRecvTask( VOID *Para )
 		}
 		else if ( 0 == iRet )
 		{
-			//LOG_OUT(LOGOUT_DEBUG, "select timeout.");
+			LOG_OUT(LOGOUT_DEBUG, "WEB_WebRecvTask, select timeout.");
 
 			for ( iLoop = 0; iLoop < WEB_MAX_FD; iLoop++ )
 			{
@@ -288,7 +288,7 @@ STATIC VOID WEB_WebRecvTask( VOID *Para )
 				}
 
 				stClientSktfd[iLoop].uiElapsedTime ++;
-				//LOG_OUT(LOGOUT_DEBUG, "select timeout, Fd:%d, uiElapsedTime:%d", stClientSktfd[iLoop].iClientFd, stClientSktfd[iLoop].uiElapsedTime);
+				LOG_OUT(LOGOUT_DEBUG, "select timeout, Fd:%d, uiElapsedTime:%d", stClientSktfd[iLoop].iClientFd, stClientSktfd[iLoop].uiElapsedTime);
 
 				if ( stClientSktfd[iLoop].uiElapsedTime >= stClientSktfd[iLoop].uiTimeOut )
 				{
@@ -305,7 +305,7 @@ STATIC VOID WEB_WebRecvTask( VOID *Para )
 			continue;
 		}
 
-		//LOG_OUT(LOGOUT_DEBUG, "select ok");
+		LOG_OUT(LOGOUT_DEBUG, "WEB_WebRecvTask, select ok");
 
 		for ( iLoop = 0; iLoop < WEB_MAX_FD; iLoop++ )
 		{
@@ -314,10 +314,10 @@ STATIC VOID WEB_WebRecvTask( VOID *Para )
 				continue;
 			}
 
-			//LOG_OUT(LOGOUT_DEBUG, "Judege Fd:%d can read", stClientSktfd[iLoop].iClientFd);
+			LOG_OUT(LOGOUT_DEBUG, "Judege Fd:%d can read", stClientSktfd[iLoop].iClientFd);
 			if ( FD_ISSET(stClientSktfd[iLoop].iClientFd, &stFdRead ))
 			{
-				//LOG_OUT(LOGOUT_DEBUG, "Fd:%d can recv", stClientSktfd[iLoop].iClientFd);
+				LOG_OUT(LOGOUT_DEBUG, "Fd:%d can recv", stClientSktfd[iLoop].iClientFd);
 
 				FD_CLR(stClientSktfd[iLoop].iClientFd, &stFdRead);
 				stClientSktfd[iLoop].uiElapsedTime = 0;
@@ -396,7 +396,7 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 	{
     	LOG_OUT(LOGOUT_ERROR, "socket failed started. iSocketFd:%d", iSocketFd);
     }
-    //LOG_OUT(LOGOUT_DEBUG, "socket ok, iSocketFd:%d.", iSocketFd);
+    LOG_OUT(LOGOUT_DEBUG, "socket ok, iSocketFd:%d.", iSocketFd);
 
 	//不知道为什么一直失败
 	//iRet = setsockopt(iSocketFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&Reuseaddr, sizeof(Reuseaddr));
@@ -417,7 +417,7 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
         }
     } while ( iRet != 0 );
 
-    //LOG_OUT(LOGOUT_DEBUG, "bind ok, iSocketFd:%d.", iSocketFd);
+    LOG_OUT(LOGOUT_DEBUG, "bind ok, iSocketFd:%d.", iSocketFd);
 
 	do
 	{
@@ -462,16 +462,16 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 		}
 		else if ( 0 == iRet || errno == EINTR )
 		{
-			//LOG_OUT(LOGOUT_DEBUG, "select timeout.");
+			LOG_OUT(LOGOUT_DEBUG, "WEB_WebServerTask, select timeout.");
 			vTaskDelay(100/portTICK_RATE_MS);
 			continue;
 		}
 		
-		//LOG_OUT(LOGOUT_DEBUG, "select ok, iRet:%d.", iRet);
+		LOG_OUT(LOGOUT_DEBUG, "WEB_WebServerTask, select ok, iRet:%d.", iRet);
 
 		if ( FD_ISSET(iSocketFd, &stFdRead ))
 		{
-			//LOG_OUT(LOGOUT_DEBUG, "accept...");
+			LOG_OUT(LOGOUT_DEBUG, "accept...");
 			iClientFd = accept(iSocketFd, (struct sockaddr *)&stClientAddr, (socklen_t *)&iClientAddrLen);
 			if ( -1 != iClientFd )
 			{

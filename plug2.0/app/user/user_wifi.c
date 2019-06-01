@@ -439,7 +439,7 @@ UINT WIFI_SetWifiModeSmartConfig( VOID )
 	//等待连接完成
 	while ( wifi_station_get_connect_status() != STATION_GOT_IP )
 	{
-		LOG_OUT(LOGOUT_DEBUG, "uiWifiConnSta: %d", szWifiStatusString[wifi_station_get_connect_status()]);
+		LOG_OUT(LOGOUT_DEBUG, "uiWifiConnSta: %s", szWifiStatusString[wifi_station_get_connect_status()]);
 		vTaskDelay( 1000/portTICK_RATE_MS );
 	}
 
@@ -463,7 +463,6 @@ VOID WIFI_SetWifiModeTask( void *para )
 
 		PLUG_SetDate(&pstDate);
 		LOG_OUT(LOGOUT_INFO, "Socket_SetDate: 2018-01-01 12:00:00");
-		//PLUG_SetTimeSyncFlag(TIME_SYNC_MAN);
 
 		WEB_StartWebServerTheard();
 		LED_SetWifiStatus(LED_WIFI_STATUS_SYNC_TIME);
@@ -483,6 +482,10 @@ VOID WIFI_SetWifiModeTask( void *para )
 		if ( uiRet != OK )
 		{
 			LOG_OUT(LOGOUT_ERROR, "Get time from internet failed.");
+			PLUG_SetDate(&pstDate);
+			LOG_OUT(LOGOUT_INFO, "Socket_SetDate: %d-%02d-%02d %02d:%02d:%02d",
+									pstDate.iYear, pstDate.iMonth, pstDate.iDay,
+									pstDate.iHour, pstDate.iMinute, pstDate.iSecond);
 		}
 		else
 		{
