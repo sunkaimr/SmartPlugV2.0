@@ -1,12 +1,12 @@
 #include "user_common.h"
 
-#define LOG_PREFIX_BUF_SIZE 	(50)
-#define LOG_BUF_SIZE 			(1024)
+#define LOG_PREFIX_BUF_SIZE 	(100)
+#define LOG_BUF_SIZE 			(300)
 
 
 //日志默认INFO级别
 static UINT uiLogLevel = LOGOUT_INFO;
-STATIC CHAR *g_pcLogBuf = NULL;
+static CHAR *g_pcLogBuf = NULL;
 
 VOID LOG_LogInit( VOID )
 {
@@ -15,7 +15,8 @@ VOID LOG_LogInit( VOID )
  	g_pcLogBuf = (CHAR*)malloc( LOG_PREFIX_BUF_SIZE + LOG_BUF_SIZE + 5 );
 	if ( NULL == g_pcLogBuf )
 	{
-		printf("LOG_LogInit failed, malloc failed.\r\n");
+		printf("[ERROR][%s:%d][%s]# malloc failed, Free heap:%d.",
+				__FILE__, __LINE__, __func__, system_get_free_heap_size());
 		while(1);
 	}
 	//printf("LOG_LogInit over.\r\n");
@@ -34,7 +35,7 @@ VOID LOG_SetLogLevel( UINT uiLevel )
 }
 
 
-VOID LOG_Logout(UINT uiLevel, CHAR *pcFileName, INT iLine, CHAR *pcFamt, ...)
+VOID LOG_Logout(UINT uiLevel, CHAR *pcFileName, INT iLine, CHAR *pcfunc, CHAR *pcFamt, ...)
 {
 	va_list Arg;
 	CHAR *pcPos = NULL;
@@ -55,13 +56,13 @@ VOID LOG_Logout(UINT uiLevel, CHAR *pcFileName, INT iLine, CHAR *pcFamt, ...)
 	switch ( uiLevel )
 	{
 	    case LOGOUT_ERROR :
-			pcPos += snprintf(pcBuf, LOG_PREFIX_BUF_SIZE, "[%s][%s:%d]# ", "ERROR", pcFileName, iLine );
+			pcPos += snprintf(pcBuf, LOG_PREFIX_BUF_SIZE, "[%s][%s:%d][%s]# ", "ERROR", pcFileName, iLine, pcfunc );
 			break;
 	    case LOGOUT_INFO :
-			pcPos += snprintf(pcBuf, LOG_PREFIX_BUF_SIZE, "[%s][%s:%d]# ", "INFO", pcFileName, iLine );
+			pcPos += snprintf(pcBuf, LOG_PREFIX_BUF_SIZE, "[%s][%s:%d][%s]# ", "INFO", pcFileName, iLine, pcfunc );
 	        break;
 	    case LOGOUT_DEBUG :
-			pcPos += snprintf(pcBuf, LOG_PREFIX_BUF_SIZE, "[%s][%s:%d]# ", "DEBUG", pcFileName, iLine );
+			pcPos += snprintf(pcBuf, LOG_PREFIX_BUF_SIZE, "[%s][%s:%d][%s]# ", "DEBUG", pcFileName, iLine, pcfunc );
 	        break;
 	    default:
 	        return;
@@ -78,7 +79,7 @@ VOID LOG_Logout(UINT uiLevel, CHAR *pcFileName, INT iLine, CHAR *pcFamt, ...)
 	//判断输出日志是否过大截断
 	if ( (pcPos - pcBuf) > (LOG_BUF_SIZE + LOG_PREFIX_BUF_SIZE))
 	{
-		printf("[%s][%s:%d]# Log too large has been cut off.\r\n", "ERROR", __FILE__, __LINE__);
+		printf("[%s][%s:%d][%s]# Log too large has been cut off.\r\n", "ERROR", __FILE__, __LINE__, __func__);
 	}
 	return;
 }

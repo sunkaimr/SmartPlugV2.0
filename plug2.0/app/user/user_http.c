@@ -8,8 +8,6 @@
 #include "user_common.h"
 #include "esp_common.h"
 
-
-
 const CHAR* HttpStatus_Ok 					= "OK";
 const CHAR* HttpStatus_Created				= "Created";
 const CHAR* HttpStatus_Found			 	= "Found";
@@ -22,7 +20,32 @@ const CHAR* STRING_ENTER= "\n";
 
 HTTP_ROUTER_MAP_S stHttpRouterMap[HTTP_ROUTER_MAP_MAX];
 
-const CHAR szHttpMethodStringmap[][10] =
+
+const CHAR szHttpCodeMap[][5] =
+{
+	"200",
+	"201",
+	"302",
+	"400",
+	"404",
+	"500",
+
+	""
+};
+
+const CHAR szHttpStatusMap[][20] =
+{
+	"OK",
+	"Created",
+	"Found",
+	"BadRequest",
+	"NotFound",
+	"InternalServerError",
+
+	""
+};
+
+const CHAR szHttpMethodStr[][10] =
 {
 	"GET",
 	"POST",
@@ -41,7 +64,7 @@ const CHAR szHttpUserAgentStringmap[][10] =
 	""
 };
 
-const CHAR szHttpContentTypeStr[][30] =
+const CHAR szHttpContentTypeStr[][25] =
 {
 	"text/html, charset=utf-8",
 	"application/x-javascript",
@@ -55,7 +78,7 @@ const CHAR szHttpContentTypeStr[][30] =
 	""
 };
 
-const CHAR szHttpCacheControlStr[][30] =
+const CHAR szHttpCacheControlStr[][20] =
 {
 	"no-cache",
 	"max-age=3600",
@@ -67,8 +90,9 @@ const CHAR szHttpCacheControlStr[][30] =
 	""
 };
 
+UINT HTTP_RequestInit( HTTP_CTX *pstCtx );
 
-INT32 HTTP_ParsingHttpHead( CHAR * pcData, UINT32 uiLen,  HTTP_REQUEST_HEAD_S *pstHttpHead )
+INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
 {
 	CHAR *pcCurPos = NULL;
 	CHAR *pcTmpPos = NULL;
@@ -76,38 +100,37 @@ INT32 HTTP_ParsingHttpHead( CHAR * pcData, UINT32 uiLen,  HTTP_REQUEST_HEAD_S *p
 	INT32 iLoop = 0;
 	int i = 0;
 
-	if ( NULL == pcData || NULL == pstHttpHead )
+	if ( NULL == pcData || NULL == pstCtx)
 	{
-		LOG_OUT( LOGOUT_ERROR, "HTTP_ParsingHttpHead: pcData or  pstHttpHead is NULL.");
+		LOG_OUT( LOGOUT_ERROR, "pcData:%p, pstCtx:%p", pcData, pstCtx);
 		return FAIL;
 	}
 
-	if ( pstHttpHead->eProcess == HTTP_PROCESS_GetBody )
+	//正在接收body体
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_GetBody ||
+		 pstCtx->stReq.eProcess == HTTP_PROCESS_GotHeader )
 	{
-		//LOG_OUT(LOGOUT_DEBUG, "HTTP_ParsingHttpHead HTTP_PROCESS_GetBody.");
-
-		pstHttpHead->uiRecvCurLenth = uiLen;
-		pstHttpHead->pcResqBody = pcData;
-
-		pstHttpHead->uiRecvPresentLenth += uiLen;
-		if ( pstHttpHead->uiRecvPresentLenth >= pstHttpHead->uiContentLenth )
+		//LOG_OUT(LOGOUT_DEBUG, "Getting Body...");
+		if ( pstCtx->stReq.eProcess == HTTP_PROCESS_GotHeader )
 		{
-			pstHttpHead->eProcess = HTTP_PROCESS_Finished;
+			pstCtx->stReq.eProcess = HTTP_PROCESS_GetBody;
+		}
 
-			//LOG_OUT(LOGOUT_DEBUG, "HTTP_ParsingHttpHead HTTP_PROCESS_Finished.");
+		pstCtx->stReq.uiRecvCurLen = uiLen;
+		pstCtx->stReq.pcResqBody = pcData;
+		pstCtx->stReq.uiRecvLen += uiLen;
+		if ( pstCtx->stReq.uiRecvLen >= pstCtx->stReq.uiRecvTotalLen )
+		{
+			pstCtx->stReq.eProcess = HTTP_PROCESS_Finished;
+			//LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_Finished.");
 			return OK;
 		}
+		//LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_Finished.");
 		return OK;
 	}
-	else if ( pstHttpHead->eProcess != HTTP_PROCESS_None )
+	else if ( pstCtx->stReq.eProcess != HTTP_PROCESS_None )
 	{
-		pstHttpHead->uiRecvCurLenth = 0;
-		pstHttpHead->uiRecvPresentLenth = 0;
-		pstHttpHead->pcResqBody = NULL;
-		pstHttpHead->eProcess = HTTP_PROCESS_Invalid;
-		pstHttpHead->eMethod = HTTP_METHOD_BUFF;
-
-		//LOG_OUT(LOGOUT_DEBUG, "HTTP_ParsingHttpHead HTTP_PROCESS_None.");
+		HTTP_RequestInit( pstCtx );
 		return FAIL;
 	}
 
@@ -115,80 +138,80 @@ INT32 HTTP_ParsingHttpHead( CHAR * pcData, UINT32 uiLen,  HTTP_REQUEST_HEAD_S *p
 	pcData[uiLen+1] = '\n';
 	pcData[uiLen+2] = 0;
 	pcPos = pcCurPos = pcData;
-	//LOG_OUT(LOGOUT_DEBUG, "\ndata:[%s]\n", pcData);
 
-	pstHttpHead->eMethod = HTTP_METHOD_BUFF;
-	pstHttpHead->uiRecvCurLenth = 0;
-	pstHttpHead->uiRecvPresentLenth = 0;
-	pstHttpHead->pcResqBody = NULL;
-	pstHttpHead->szURL[0] = 0;
+	//LOG_OUT(LOGOUT_DEBUG, "\ndata:[%s]\n", pcData);
+	HTTP_RequestInit( pstCtx );
 
 	/* 逐行解析 */
 	while ( pcData != NULL )
 	{
+		//LOG_OUT(LOGOUT_DEBUG, "pcData：[%s]", pcData);
 		pcCurPos = strsep(&pcData, STRING_ENTER);
 		if ( NULL == pcCurPos )
 		{
+			//LOG_OUT(LOGOUT_DEBUG, "continue");
 			continue;
 		}
 		//LOG_OUT(LOGOUT_DEBUG, "pcCurPos：[%s]", pcCurPos);
 
 		//header结束
-		if ( strlen(pcCurPos) <= 1 && pstHttpHead->uiContentLenth != 0 &&
-			 ( pstHttpHead->eMethod == HTTP_METHOD_POST || pstHttpHead->eMethod == HTTP_METHOD_PUT ))
+		if ( strlen(pcCurPos) <= 1 && pstCtx->stReq.uiRecvTotalLen != 0 &&
+		   ( pstCtx->stReq.eMethod == HTTP_METHOD_POST ||
+			 pstCtx->stReq.eMethod == HTTP_METHOD_PUT ))
 		{
 			pcCurPos = pcCurPos + 2;
-			pstHttpHead->pcResqBody = pcCurPos;
-			pstHttpHead->uiRecvCurLenth = uiLen - (pcCurPos - pcPos);
+			pstCtx->stReq.pcResqBody = pcCurPos;
+			pstCtx->stReq.uiRecvCurLen = uiLen - (pcCurPos - pcPos);
+			pstCtx->stReq.uiRecvLen += pstCtx->stReq.uiRecvCurLen;
 
-			pstHttpHead->uiRecvPresentLenth += pstHttpHead->uiRecvCurLenth;
-			if ( pstHttpHead->uiRecvPresentLenth >= pstHttpHead->uiContentLenth )
+			if ( pstCtx->stReq.uiRecvCurLen == 0 )
 			{
-				//LOG_OUT(LOGOUT_DEBUG, "HTTP_ParsingHttpHead HTTP_PROCESS_Finished.");
-				pstHttpHead->eProcess = HTTP_PROCESS_Finished;
+				//LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_GotHeader.");
+				pstCtx->stReq.eProcess = HTTP_PROCESS_GotHeader;
 				return OK;
 			}
-			pstHttpHead->eProcess = HTTP_PROCESS_GetBody;
-			//LOG_OUT(LOGOUT_DEBUG, "HTTP_ParsingHttpHead HTTP_PROCESS_GetBody.");
+
+			if ( pstCtx->stReq.uiRecvLen >= pstCtx->stReq.uiRecvTotalLen )
+			{
+				//LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_Finished.");
+				pstCtx->stReq.eProcess = HTTP_PROCESS_Finished;
+				return OK;
+			}
+			pstCtx->stReq.eProcess = HTTP_PROCESS_GetBody;
+			//LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_GetBody.");
 			return OK;
 		}
 
 		/* GET / HTTP/1.1 : eMethod, URL*/
-		if ( HTTP_METHOD_BUFF == pstHttpHead->eMethod )
+		if ( HTTP_METHOD_BUFF == pstCtx->stReq.eMethod )
 		{
 			//解析eMethod
 			//LOG_OUT(LOGOUT_DEBUG, "eMethod：[%s]", pcCurPos);
 			for ( iLoop = HTTP_METHOD_GET; iLoop < HTTP_METHOD_BUFF; iLoop++ )
 			{
-				if ( strstr( pcCurPos, szHttpMethodStringmap[iLoop]) )
+				if ( strstr( pcCurPos, szHttpMethodStr[iLoop]) )
 				{
-					pstHttpHead->eMethod = iLoop;
+					pstCtx->stReq.eMethod = iLoop;
+					//LOG_OUT(LOGOUT_DEBUG, "eMethod：[%d]", pstCtx->stReq.eMethod);
 				}
 			}
 
 			/* 解析URL */
-			if ( pstHttpHead->eMethod != HTTP_METHOD_BUFF && NULL != (pcTmpPos = strstr( pcCurPos, "/" )))
+			if ( pstCtx->stReq.eMethod != HTTP_METHOD_BUFF && NULL != (pcTmpPos = strstr( pcCurPos, "/" )))
 			{
 				while( *pcTmpPos != ' ' )
 				{
 					pcTmpPos++;
 				}
 				pcTmpPos[0] = 0;
-				//LOG_OUT(LOGOUT_DEBUG, "pcCurPos:[%s]", pcCurPos);
-				strncpy( pstHttpHead->szURL, strstr( pcCurPos, "/" ), sizeof(pstHttpHead->szURL));
-				//LOG_OUT(LOGOUT_DEBUG, "szURL:[%s]", pstHttpHead->szURL);
+				//LOG_OUT(LOGOUT_DEBUG, "pcTmpPos:[%s]", strstr( pcCurPos, "/" ));
+				strncpy( pstCtx->stReq.szURL, strstr( pcCurPos, "/" ), sizeof(pstCtx->stReq.szURL));
 			}
 
-			if ( pstHttpHead->eMethod == HTTP_METHOD_BUFF || pstHttpHead->szURL[0] == 0 )
+			if ( pstCtx->stReq.eMethod == HTTP_METHOD_BUFF || pstCtx->stReq.szURL[0] == 0 )
 			{
-				LOG_OUT( LOGOUT_ERROR, "HTTP_ParsingHttpHead get eMethod or URL failed.");
-
-				pstHttpHead->uiRecvCurLenth = 0;
-				pstHttpHead->uiRecvPresentLenth = 0;
-				pstHttpHead->pcResqBody = NULL;
-				pstHttpHead->szURL[0] = 0;
-				pstHttpHead->eProcess = HTTP_PROCESS_Invalid;
-
+				//LOG_OUT( LOGOUT_ERROR, "HTTP_ParsingHttpHead get eMethod or URL failed.");
+				HTTP_RequestInit( pstCtx );
 				return FAIL;
 			}
 		}
@@ -196,7 +219,7 @@ INT32 HTTP_ParsingHttpHead( CHAR * pcData, UINT32 uiLen,  HTTP_REQUEST_HEAD_S *p
 		else if ( NULL != (pcTmpPos = strstr( pcCurPos, "Host: " )))
 		{
 		    pcTmpPos = pcTmpPos + 6;
-			strncpy( pstHttpHead->szHost, pcTmpPos, sizeof(pstHttpHead->szHost));
+			strncpy( pstCtx->stReq.szHost, pcTmpPos, sizeof(pstCtx->stReq.szHost));
 		}
 		/* eUserAgent */
 		else if ( strstr( pcCurPos, "User-Agent: " ))
@@ -206,7 +229,7 @@ INT32 HTTP_ParsingHttpHead( CHAR * pcData, UINT32 uiLen,  HTTP_REQUEST_HEAD_S *p
 			{
 				if ( strstr( pcCurPos, szHttpUserAgentStringmap[iLoop]) )
 				{
-					pstHttpHead->eUserAgent = iLoop;
+					pstCtx->stReq.eUserAgent = iLoop;
 					break;
 				}
 			}
@@ -216,24 +239,18 @@ INT32 HTTP_ParsingHttpHead( CHAR * pcData, UINT32 uiLen,  HTTP_REQUEST_HEAD_S *p
 		{
 		    pcTmpPos = pcTmpPos + 16;
 		    //LOG_OUT(LOGOUT_DEBUG, "Content-Length:[%s]", pcTmpPos);
-			pstHttpHead->uiContentLenth = atoi(pcTmpPos);
-			//LOG_OUT(LOGOUT_DEBUG, "Content-Length:[%d]", pstHttpHead->uiContentLenth);
+		    pstCtx->stReq.uiRecvTotalLen = atoi(pcTmpPos);
 		}
 		//postman 发送的字段内容长度字段是小写字母"content-length"
 		else if ( NULL != (pcTmpPos = strstr( pcCurPos, "content-length: " )))
 		{
 		    pcTmpPos = pcTmpPos + 16;
 		    //LOG_OUT(LOGOUT_DEBUG, "Content-Length:[%s]", pcTmpPos);
-			pstHttpHead->uiContentLenth = atoi(pcTmpPos);
-			//LOG_OUT(LOGOUT_DEBUG, "Content-Length:[%d]", pstHttpHead->uiContentLenth);
+		    pstCtx->stReq.uiRecvTotalLen = atoi(pcTmpPos);
 		}
 	}
-
-	pstHttpHead->uiRecvCurLenth = 0;
-	pstHttpHead->uiRecvPresentLenth = 0;
-	pstHttpHead->pcResqBody = NULL;
-	pstHttpHead->eProcess = HTTP_PROCESS_GotHeader;
-	//LOG_OUT( LOGOUT_DEBUG, "HTTP_ParsingHttpHead HTTP_PROCESS_GotHeader.");
+	//LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_GotHeader.");
+	pstCtx->stReq.eProcess = HTTP_PROCESS_GotHeader;
 	return OK;
 }
 
@@ -247,7 +264,6 @@ VOID HTTP_RouterMapInit( VOID )
 		stHttpRouterMap[uiLoop].eMethod = HTTP_METHOD_BUFF;
 		stHttpRouterMap[uiLoop].pfHttpHandler = NULL;
 		memset(stHttpRouterMap[uiLoop].szURL, 0, HTTP_URL_MAX_LEN);
-		memset(stHttpRouterMap[uiLoop].szHttpHandlerStr, 0, HTTP_HANDLE_MAX_LEN);
 	}
 }
 
@@ -274,7 +290,6 @@ VOID HTTP_RouterRegiste( UINT uiMethod, CHAR* pcUrl, VOID* pfFunc, CHAR* pcFunSt
 			 strcmp(stHttpRouterMap[uiLoop].szURL, pcUrl ) == 0 )
 		{
 			stHttpRouterMap[uiLoop].pfHttpHandler = pfFunc;
-			strncpy(stHttpRouterMap[uiLoop].szHttpHandlerStr, pcFunStr, HTTP_HANDLE_MAX_LEN);
 			return;
 		}
 	}
@@ -286,7 +301,6 @@ VOID HTTP_RouterRegiste( UINT uiMethod, CHAR* pcUrl, VOID* pfFunc, CHAR* pcFunSt
 			stHttpRouterMap[uiLoop].eMethod = uiMethod;
 			stHttpRouterMap[uiLoop].pfHttpHandler = pfFunc;
 			strncpy(stHttpRouterMap[uiLoop].szURL, pcUrl, HTTP_URL_MAX_LEN);
-			strncpy(stHttpRouterMap[uiLoop].szHttpHandlerStr, pcFunStr, HTTP_HANDLE_MAX_LEN);
 			break;
 		}
 	}
@@ -329,21 +343,15 @@ VOID HTTP_RouterInit( VOID )
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/date",	    	HTTP_PostDate,		"HTTP_PostDate");
 
 	HTTP_RouterRegiste(HTTP_METHOD_PUT,  "/upgrade",	    HTTP_PutUpgrade,	"HTTP_PutUpgrade");
-	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/upload",    		HTTP_GetUpload,		"HTTP_GetUpload");
-	//HTTP_RouterRegiste(HTTP_METHOD_GET, "/upgrade",	    HTTP_GetUpgrade,"HTTP_GetUpgrade");
+	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/upload",    		HTTP_GetUploadHtml,		"HTTP_GetUploadHtml");
 
-	HTTP_HtmlUrlRegiste();
-
-	//测试
-	//HTTP_RouterRegiste(HTTP_METHOD_GET, "/test", 			HTTP_GetTest, 	"HTTP_GetTest");
-	//HTTP_RouterRegiste(HTTP_METHOD_PUT, "/test",			HTTP_PutTest,	"HTTP_PutTest");
-	//HTTP_RouterRegiste(HTTP_METHOD_PUT, "/image",			HTTP_PutImage,	"HTTP_PutImage");
-	//HTTP_RouterRegiste(HTTP_METHOD_GET, "/image",			HTTP_GetImage,	"HTTP_GetImage");
+	HTTP_FileListRegiste();
 }
 
 BOOL HTTP_RouterIsMatch( const CHAR* pcRouter, const CHAR* pcUrl)
 {
-	CHAR *pcRBuf, *pcUBuf = NULL;
+	CHAR pcRBuf[HTTP_URL_MAX_LEN] = { 0 };
+	CHAR pcUBuf[HTTP_URL_MAX_LEN] = { 0 };
 	CHAR *pcRData, *pcUData = NULL;
 	CHAR *pcRtmp, *pcUtmp = NULL;
 
@@ -353,23 +361,9 @@ BOOL HTTP_RouterIsMatch( const CHAR* pcRouter, const CHAR* pcUrl)
 		return FALSE;
 	}
 
-	pcRBuf = malloc(HTTP_URL_MAX_LEN);
-	if ( NULL == pcRBuf )
-	{
-	    LOG_OUT(LOGOUT_ERROR, "malloc pcRBuf is NULL.");
-	    goto error;
-	}
-
-	pcUBuf = malloc(HTTP_URL_MAX_LEN);
-	if ( NULL == pcUBuf )
-	{
-	    LOG_OUT(LOGOUT_ERROR, "malloc pcUBuf is NULL.");
-	    goto error;
-	}
-
 	if ( strcmp(pcRouter, pcUrl) == 0 )
 	{
-		goto succ;
+		return TRUE;
 	}
 
 	strncpy(pcRBuf, pcRouter,	HTTP_URL_MAX_LEN);
@@ -385,67 +379,45 @@ BOOL HTTP_RouterIsMatch( const CHAR* pcRouter, const CHAR* pcUrl)
 
 		if (pcRtmp == NULL || pcUtmp == NULL )
 		{
-			goto error;
+			return FALSE;
 		}
 
 		if ( NULL != strstr(pcRtmp, ":") )
 		{
 			continue;
 		}
+
 		if ( strcmp(pcRtmp, pcUtmp) != 0 )
 		{
-			goto error;
+			return FALSE;
 		}
 	}
 
 	if (pcRData == NULL && pcUData == NULL )
 	{
-		goto succ;
-	}
-	else
-	{
-		goto error;
+		return TRUE;
 	}
 
-error:
-	FREE_MEM(pcRBuf);
-	FREE_MEM(pcUBuf);
 	return FALSE;
-
-succ:
-	FREE_MEM(pcRBuf);
-	FREE_MEM(pcUBuf);
-	return TRUE;
 }
 
-UINT HTTP_GetRouterPara( HTTP_REQUEST_HEAD_S *pstHeader, const CHAR* pcKey, CHAR* pcValue )
+UINT HTTP_GetRouterPara( HTTP_CTX *pstCtx, const CHAR* pcKey, CHAR* pcValue )
 {
-	CHAR *pcRBuf, *pcUBuf = NULL;
+	CHAR pcRBuf[HTTP_URL_MAX_LEN];
+	CHAR pcUBuf[HTTP_URL_MAX_LEN];
 	CHAR *pcRData, *pcUData = NULL;
 	CHAR *pcRtmp, *pcUtmp = NULL;
 
-	if ( pstHeader == NULL || pcKey == NULL || pcValue == NULL )
+	if ( pstCtx == NULL || pcKey == NULL || pcValue == NULL ||
+		 pstCtx->stReq.pcRouter == NULL || pstCtx->stReq.szURL == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "pstHeader:%p, pcKey:%p, pcValue:%p", pstHeader, pcKey, pcValue);
+	    LOG_OUT(LOGOUT_ERROR, "pstCtx:%p, pcKey:%p, pcValue:%p, pcRouter:%p, szURL:%p",
+	    		pstCtx, pcKey, pcValue, pstCtx->stReq.pcRouter, pstCtx->stReq.szURL);
 	    return FAIL;
 	}
 
-	pcRBuf = malloc(HTTP_URL_MAX_LEN);
-	if ( NULL == pcRBuf )
-	{
-	    LOG_OUT(LOGOUT_ERROR, "malloc pcRBuf is NULL.");
-	    goto error;
-	}
-
-	pcUBuf = malloc(HTTP_URL_MAX_LEN);
-	if ( NULL == pcUBuf )
-	{
-	    LOG_OUT(LOGOUT_ERROR, "malloc pcUBuf is NULL.");
-	    goto error;
-	}
-
-	strncpy(pcRBuf, pstHeader->pcRouter,	HTTP_URL_MAX_LEN);
-	strncpy(pcUBuf, pstHeader->szURL, 		HTTP_URL_MAX_LEN);
+	strncpy(pcRBuf, pstCtx->stReq.pcRouter,	HTTP_URL_MAX_LEN);
+	strncpy(pcUBuf, pstCtx->stReq.szURL, 	HTTP_URL_MAX_LEN);
 
 	pcRData = pcRBuf;
 	pcUData = pcUBuf;
@@ -460,180 +432,297 @@ UINT HTTP_GetRouterPara( HTTP_REQUEST_HEAD_S *pstHeader, const CHAR* pcKey, CHAR
 			if ( strcmp(pcRtmp+1, pcKey) == 0 )
 			{
 				strcpy(pcValue, pcUtmp);
-				goto succ;
+				return OK;
 			}
 		}
 	}
-
-error:
-	FREE_MEM(pcRBuf);
-	FREE_MEM(pcUBuf);
 	return FAIL;
+}
 
-succ:
-	FREE_MEM(pcRBuf);
-	FREE_MEM(pcUBuf);
+UINT HTTP_RequestInit( HTTP_CTX *pstCtx )
+{
+	if ( pstCtx == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pstCtx:%p", pstCtx);
+		return FAIL;
+	}
+
+	memset(&pstCtx->stReq, 0, sizeof(HTTP_REQ_S));
+	pstCtx->stReq.eMethod  = HTTP_METHOD_BUFF;
+
 	return OK;
 }
 
-VOID HTTP_RouterHandle( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_ResponInit( HTTP_CTX *pstCtx )
+{
+	if ( pstCtx == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pstCtx:%p", pstCtx);
+		return FAIL;
+	}
+
+	FREE_MEM(pstCtx->stResp.pcResponBody);
+	memset(&pstCtx->stResp, 0, sizeof(pstCtx->stResp));
+
+	return OK;
+}
+
+UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 {
 	UINT uiLoop = 0;
 
-	FREE_MEM( pstHeader->pcResponBody );
-
-	if ( pstHeader->eProcess == HTTP_PROCESS_Invalid )
+	if ( NULL == pstCtx )
 	{
-		LOG_OUT(LOGOUT_INFO, "HTTP_RouterHandle BadRequest.");
-		HTTP_BadRequest( pstHeader );
-		return;
+		LOG_OUT( LOGOUT_ERROR, "pstCtx:%p", pstCtx);
+		return FAIL;
 	}
 
-	if ( pstHeader->szURL[0] == 0 )
+	HTTP_ResponInit(pstCtx);
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_None ||
+		 pstCtx->stReq.eProcess == HTTP_PROCESS_Invalid )
 	{
-		LOG_OUT(LOGOUT_INFO, "HTTP_RouterHandle szURL is NULL.");
-		return;
+		LOG_OUT(LOGOUT_ERROR, "fd:%d, eProcess:%d", pstCtx->iClientFd, pstCtx->stReq.eProcess);
+		return FAIL;
+	}
+
+	if ( (pstCtx->stReq.eMethod == HTTP_METHOD_POST ||
+		  pstCtx->stReq.eMethod == HTTP_METHOD_PUT ) &&
+		  pstCtx->stReq.eProcess == HTTP_PROCESS_GotHeader )
+	{
+		//LOG_OUT( LOGOUT_DEBUG, "got header");
+		return OK;
+	}
+
+	if ( pstCtx->stReq.szURL[0] == 0 )
+	{
+		LOG_OUT(LOGOUT_INFO, "szURL is NULL");
+		return FAIL;
 	}
 
 	for ( uiLoop = 0; uiLoop < HTTP_ROUTER_MAP_MAX; uiLoop++ )
 	{
-		if ( stHttpRouterMap[uiLoop].eMethod == pstHeader->eMethod &&
-			 HTTP_RouterIsMatch(stHttpRouterMap[uiLoop].szURL, pstHeader->szURL) )
+		if ( stHttpRouterMap[uiLoop].eMethod == pstCtx->stReq.eMethod &&
+			 HTTP_RouterIsMatch(stHttpRouterMap[uiLoop].szURL, pstCtx->stReq.szURL) )
 		{
-			if ( pstHeader->uiRecvCurLenth == pstHeader->uiRecvPresentLenth )
+			if ( pstCtx->stReq.uiRecvCurLen == pstCtx->stReq.uiRecvLen )
 			{
-				LOG_OUT(LOGOUT_INFO, "router: %s.", stHttpRouterMap[uiLoop].szHttpHandlerStr);
+				LOG_OUT(LOGOUT_INFO, "fd:%d, %s %s",
+						pstCtx->iClientFd,
+						szHttpMethodStr[pstCtx->stReq.eMethod],
+						pstCtx->stReq.szURL);
 			}
-
-			pstHeader->pcRouter = stHttpRouterMap[uiLoop].szURL;
-			stHttpRouterMap[uiLoop].pfHttpHandler(pstHeader);
-			return;
+			pstCtx->stReq.pcRouter = stHttpRouterMap[uiLoop].szURL;
+			return stHttpRouterMap[uiLoop].pfHttpHandler(pstCtx);
 		}
 	}
-
 	if ( uiLoop >= HTTP_ROUTER_MAP_MAX )
 	{
-		LOG_OUT(LOGOUT_INFO, "Not match any router. Method:%s,URL:%s.",
-				szHttpMethodStringmap[pstHeader->eMethod],  pstHeader->szURL);
-		HTTP_NotFound( pstHeader );
+		LOG_OUT(LOGOUT_INFO, "fd:%d, %s %s",
+				pstCtx->iClientFd,
+				szHttpMethodStr[pstCtx->stReq.eMethod],
+				pstCtx->stReq.szURL);
+		HTTP_NotFound( pstCtx );
 	}
 
-	return;
+	if ( HTTP_IS_SEND_FINISH( pstCtx ) )
+	{
+		HTTP_RequestInit( pstCtx );
+	}
+
+	return OK;
 }
 
-UINT HTTP_SetHeaderCode( CHAR* pcBuf, UINT uiBufLen, HTTP_RESPONSE_HEAD_S* pstResponse )
+UINT HTTP_SetHeader( HTTP_CTX *pstCtx )
 {
-	UINT uiPos = 0;
-	const CHAR* pcHttpStatus = NULL;
-
-	if ( pcBuf == NULL || pstResponse == NULL)
+	if ( pstCtx->stResp.eHttpCode >= HTTP_CODE_Buff )
 	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_SetHeaderCode pcBuf:%p, pstResponse:%p.", pcBuf, pstResponse);
-		return 0;
+		LOG_OUT(LOGOUT_ERROR, "uiHttpCode unknown, %d.", pstCtx->stResp.eHttpCode);
+		return FAIL;
 	}
 
-	if ( pstResponse->eHttpCode >= HTTP_CODE_Buff )
+	if ( pstCtx->stResp.eContentType >= HTTP_CONTENT_TYPE_Buff )
 	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_SetHeaderCode ContentType error uiContentType:%d.", pstResponse->eHttpCode);
-		return 0;
+		LOG_OUT(LOGOUT_ERROR, "ContentType unknown, %d.", pstCtx->stResp.eContentType);
+		return FAIL;
 	}
 
-	switch ( pstResponse->eHttpCode )
+	if (pstCtx->stResp.eCacheControl >= HTTP_CACHE_CTL_TYPE_Buff )
 	{
-		case HTTP_CODE_Ok:
-			pcHttpStatus = HttpStatus_Ok;
-			break;
-		case HTTP_CODE_Created:
-			pcHttpStatus = HttpStatus_Created;
-			break;
-		case HTTP_CODE_Found:
-			pcHttpStatus = HttpStatus_Found;
-			break;
-		case HTTP_CODE_BadRequest:
-			pcHttpStatus = HttpStatus_BadRequest;
-			break;
-		case HTTP_CODE_NotFound:
-			pcHttpStatus = HttpStatus_NotFound;
-			break;
-		case HTTP_CODE_InternalServerError:
-			pcHttpStatus = HttpStatus_InternalServerError;
-			break;
-		default:
-			LOG_OUT(LOGOUT_ERROR, "HTTP_SetHeaderCode uiHttpCode unknown, uiHttpCode:%d.", pstResponse->eHttpCode);
-			return 0;
+		LOG_OUT(LOGOUT_ERROR, "CacheControl unknown, %d.", pstCtx->stResp.eCacheControl);
+		return FAIL;
 	}
 
-	uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos, "HTTP/1.1 %d %s \r\n", pstResponse->eHttpCode, pcHttpStatus );
-	uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos, "Accept-Ranges: bytes \r\n");
-	uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos, "Content-Type: %s \r\n", szHttpContentTypeStr[pstResponse->eContentType]);
-	uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos, "Cache-Control: %s \r\n", szHttpCacheControlStr[pstResponse->eCacheControl]);
-	uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos, "Connection: Keep-Alive \r\n");
+	pstCtx->stResp.uiPos += snprintf(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			"HTTP/1.1 %s %s \r\n",
+			szHttpCodeMap[pstCtx->stResp.eHttpCode],
+			szHttpStatusMap[pstCtx->stResp.eHttpCode] );
 
-	if ( pstResponse->eHttpCode == HTTP_CODE_Found )
-	{
-		WIFI_INFO_S stWifiInfo = WIFI_GetIpInfo();
-		uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos, "Location: http://%d.%d.%d.%d/index.html \r\n", stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
-				(stWifiInfo.uiIp>>16)&0xFF,(stWifiInfo.uiIp>>24)&0xFF);
-	}
+	pstCtx->stResp.uiPos += snprintf(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			"Accept-Ranges: bytes \r\n");
 
-	uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos, "Content-Length:           \r\n\r\n");//长度稍后待body体确定后填写，保持10个以上空格避免数字过大被截断
+	pstCtx->stResp.uiPos += snprintf(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			"Content-Type: %s \r\n", szHttpContentTypeStr[pstCtx->stResp.eContentType]);
 
+	pstCtx->stResp.uiPos += snprintf(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			"Cache-Control: %s \r\n", szHttpCacheControlStr[pstCtx->stResp.eCacheControl]);
 
-	return uiPos;
+	pstCtx->stResp.uiPos += snprintf(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			"Connection: Keep-Alive \r\n");
+
+	pstCtx->stResp.uiPos += snprintf(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+				"Content-Length:           \r\n\r\n");
+
+	pstCtx->stResp.uiHeaderLen = pstCtx->stResp.uiPos;
+	return OK;
 }
 
-VOID HTTP_SetHeaderContentLength( CHAR* pcBuf, UINT uiBodyLen )
+UINT HTTP_SetCustomHeader( HTTP_CTX *pstCtx, CHAR* pcKey, CHAR *pcValues, ... )
 {
+	va_list Arg;
+
+	if ( pstCtx == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pstCtx is NULL.");
+		return FAIL;
+	}
+
+	//先填充header再填充body，body一旦填充就不能再设置header了
+	if ( pstCtx->stResp.uiBodyLen != 0 )
+	{
+		LOG_OUT(LOGOUT_ERROR, "response body has be set, Cannot set herder.");
+		return FAIL;
+	}
+
+	pstCtx->stResp.uiPos -= 2;
+
+	pstCtx->stResp.uiPos += snprintf(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			"%s: ", pcKey);
+
+	va_start(Arg, pcValues);
+	pstCtx->stResp.uiPos += vsnprintf(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			pcValues, Arg);
+	va_end(Arg);
+
+	pstCtx->stResp.uiPos += snprintf(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			"\r\n\r\n");
+
+	pstCtx->stResp.uiHeaderLen = pstCtx->stResp.uiPos;
+
+	return OK;
+}
+
+
+UINT HTTP_SetBodyLen( HTTP_CTX *pstCtx, UINT uiBodyLen )
+{
+	UINT uiLen = 0;
+	CHAR* pcPos = NULL;
+
+	if ( pstCtx == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pstCtx is NULL.");
+		return FAIL;
+	}
+
+	pcPos = strstr(pstCtx->stResp.pcResponBody, "Content-Length: ");
+	if ( pcPos != NULL )
+	{
+		uiLen = sprintf( pcPos, "Content-Length: %d", uiBodyLen );
+		*(pcPos + uiLen) = ' ';
+	}
+
+	return OK;
+}
+
+UINT HTTP_SendOnce( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
 	UINT uiLen = 0;
 	CHAR* pcLength = NULL;
 
-	if ( pcBuf == NULL )
+	if ( pstCtx == NULL )
 	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_SetHeaderContentLength pcBuf is NULL.");
-		return;
+		LOG_OUT(LOGOUT_ERROR, "pstCtx is NULL.");
+		return FAIL;
 	}
 
-	pcLength = strstr(pcBuf, "Content-Length: ");
+	if( pstCtx->stResp.uiBodyLen != pstCtx->stResp.uiPos - pstCtx->stResp.uiHeaderLen )
+	{
+		pstCtx->stResp.uiBodyLen = pstCtx->stResp.uiPos - pstCtx->stResp.uiHeaderLen;
+	}
+
+	pcLength = strstr(pstCtx->stResp.pcResponBody, "Content-Length: ");
 	if ( pcLength != NULL )
 	{
-		uiLen = sprintf( pcLength, "Content-Length: %d", uiBodyLen );
+		uiLen = sprintf( pcLength, "Content-Length: %d", pstCtx->stResp.uiBodyLen );
 		*(pcLength + uiLen) = ' ';
 	}
 
-	return;
+	pstCtx->stResp.uiSendCurLen		= pstCtx->stResp.uiPos;
+	pstCtx->stResp.uiSendTotalLen	= pstCtx->stResp.uiSendCurLen;
+
+	uiRet = WEB_WebSend(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT(LOGOUT_ERROR, "fd:%d, send failed", pstCtx->iClientFd);
+		return FAIL;
+	}
+
+#if 0
+	LOG_OUT( LOGOUT_INFO, "eHttpCode:%d", 		pstCtx->stResp.eHttpCode);
+	LOG_OUT( LOGOUT_INFO, "eContentType:%d", 	pstCtx->stResp.eContentType);
+	LOG_OUT( LOGOUT_INFO, "eCacheControl:%d", 	pstCtx->stResp.eCacheControl);
+	LOG_OUT( LOGOUT_INFO, "uiBodyLen;%d", 		pstCtx->stResp.uiBodyLen);
+	LOG_OUT( LOGOUT_INFO, "uiHeaderLen:%d", 	pstCtx->stResp.uiHeaderLen);
+	LOG_OUT( LOGOUT_INFO, "uiSendCurLen:%d", 	pstCtx->stResp.uiSendCurLen);
+	LOG_OUT( LOGOUT_INFO, "uiPos:%d", 			pstCtx->stResp.uiPos);
+	LOG_OUT( LOGOUT_INFO, "uiSendBufLen:%d", 	pstCtx->stResp.uiSendBufLen);
+	LOG_OUT( LOGOUT_INFO, "uiSendTotalLen:%d", pstCtx->stResp.uiSendTotalLen);
+	LOG_OUT( LOGOUT_INFO, "uiSentLen:%d", 		pstCtx->stResp.uiSentLen);
+#endif
+	return OK;
 }
 
-VOID HTTP_SetDefaultSendHeader( HTTP_REQUEST_HEAD_S *pstHeader, CHAR* pcBody, UINT uiSendLen )
+
+
+UINT HTTP_SetResponseBody( HTTP_CTX *pstCtx, CHAR* pcBody )
 {
 	UINT uiLen = 0;
 	CHAR* pcLength = NULL;
 
-	if ( pstHeader == NULL )
+	if ( pstCtx == NULL || pcBody == NULL )
 	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_SetRequestHeader pstHeader is NULL.");
-		return;
+		LOG_OUT(LOGOUT_ERROR, "pstCtx:%p, pcBody:%p", pstCtx, pcBody);
+		return FAIL;
 	}
 
-	pstHeader->uiSentLength = 0;
-    pstHeader->pcResponBody = pcBody;
-    pstHeader->uiSendCurLength = uiSendLen;
-    pstHeader->uiSendTotalLength = pstHeader->uiSendCurLength;
-    pstHeader->bIsCouldSend = TRUE;
+	pstCtx->stResp.uiBodyLen = snprintf(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			pcBody);
 
-	return;
+	pstCtx->stResp.uiPos += pstCtx->stResp.uiBodyLen;
+
+	return OK;
 }
 
-INT HTTP_SetResponseBody( CHAR* pcBuf, UINT uiBodyLen, CHAR* pcBody )
-{
-	UINT uiLen = 0;
-	CHAR* pcLength = NULL;
 
-	if ( pcBuf == NULL )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_SetResponseBody pcBuf is NULL.");
-		return 0;
-	}
-
-	return snprintf(pcBuf, uiBodyLen, "%s", pcBody);
-}
 

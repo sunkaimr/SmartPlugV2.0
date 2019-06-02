@@ -37,7 +37,7 @@ UINT FlASH_Write( UINT uiAddr, CHAR* pcBuf, UINT uiLen )
 	pcFlashBuf = malloc( FLASH_SEC_SIZE );
 	if ( NULL == pcFlashBuf )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "malloc failed, pcFlashBuf is NULL.");
+		LOG_OUT(LOGOUT_ERROR, "malloc size:%d failed, Free heap:%d.", FLASH_SEC_SIZE, system_get_free_heap_size());
 		return FAIL;
 	}
 
@@ -128,7 +128,7 @@ UINT FlASH_Read( UINT uiAddr, CHAR* pcBuf, UINT uiLen )
 	pcFlashBuf = malloc( FLASH_SEC_SIZE );
 	if ( NULL == pcFlashBuf )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "malloc failed, pcFlashBuf is NULL.");
+		LOG_OUT(LOGOUT_ERROR, "malloc size:%d failed, Free heap:%d.", FLASH_SEC_SIZE, system_get_free_heap_size());
 		return FAIL;
 	}
 
@@ -189,7 +189,7 @@ UINT FlASH_Erase( UINT uiAddr, UINT uiLen )
 	pcFlashBuf = malloc( FLASH_SEC_SIZE );
 	if ( NULL == pcFlashBuf )
 	{
-	    LOG_OUT(pcFlashBuf, "malloc pcFlashBuf is NULL.");
+		LOG_OUT(LOGOUT_ERROR, "malloc size:%d failed, Free heap:%d.", FLASH_SEC_SIZE, system_get_free_heap_size());
 		return FAIL;
 	}
 

@@ -66,7 +66,6 @@ UINT32 UPGRADE_GetUpgradeUserBinAddr( VOID )
 {
 	UINT8 ucUserBin = 0;
 	UINT8 ucFlashSize = 0;
-	UINT32 uiAddr = 0;
 
 	ucUserBin = system_upgrade_userbin_check();
 	ucFlashSize = system_get_flash_size_map();
@@ -74,22 +73,18 @@ UINT32 UPGRADE_GetUpgradeUserBinAddr( VOID )
 	if ( ucUserBin == UPGRADE_FW_BIN1 )
 	{
 		//当前运行的是user1.bin则升级user2.bin的数据
-		uiAddr = User2BinFlashSizeMap[ucFlashSize];
+		return User2BinFlashSizeMap[ucFlashSize];
 	}
 	else if ( ucUserBin == UPGRADE_FW_BIN2 )
 	{
 		//当前运行的是user2.bin则升级user1.bin的数据
-		uiAddr = User1BinFlashSizeMap[ucFlashSize];
+		return User1BinFlashSizeMap[ucFlashSize];
 	}
 	else
 	{
 		LOG_OUT(LOGOUT_ERROR, "not support upgrade.");
 		return 0;
 	}
-
-	//LOG_OUT(LOGOUT_DEBUG, "FlashMap:%d, user%d.bin, addr:0x%X", system_get_flash_size_map(), ucUserBin, uiAddr);
-
-	return uiAddr;
 }
 
 UINT32 UPGRADE_GetUser1BinAddr( VOID )
@@ -176,7 +171,7 @@ VOID UPGRADE_Reset()
 	PLUG_TimerDataDeInit();
 	PLUG_DelayDataDeInit();
 	PLUG_SystemSetDataDeInit();
-	HTTP_HtmlDataInit();
+	HTTP_FileListInit();
 	CONFIG_SaveConfig(PLUG_MOUDLE_BUFF);
 
 	UPGRADE_StartRebootTimer();

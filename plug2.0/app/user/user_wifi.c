@@ -668,3 +668,90 @@ err:
 }
 
 
+UINT WIFI_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen )
+{
+	WIFI_SCAN_S *pstData = NULL;
+	UINT uiLoopi = 0;
+	UINT8 uiRet = 0;
+	CHAR *pJsonStr = NULL;
+	cJSON  *pJsonArry, *pJsonsub;
+
+	//只有在stataion模式下才能扫描
+	if ( PLUG_GetWifiMode() != WIFI_MODE_STATION )
+	{
+		return 0;
+	}
+
+	if( g_pstWifiScanHead == NULL )
+	{
+		g_pstWifiScanHead = ( WIFI_SCAN_S* )malloc( sizeof(WIFI_SCAN_S) * WIFI_SCAN_NUM );
+	    if ( NULL == pcBuf )
+		{
+			LOG_OUT(LOGOUT_ERROR, "WIFI_WifiScanMarshalJson, malloc pcBuf failed.");
+			return 0;
+	    }
+	    memset(g_pstWifiScanHead, 0, sizeof(WIFI_SCAN_S) * WIFI_SCAN_NUM);
+	}
+
+	uiRet = WIFI_ScanWifiSsid();
+	if ( uiRet != OK )
+	{
+		FREE_MEM(pJsonStr);
+		LOG_OUT(LOGOUT_ERROR, "WIFI_ScanWifiSsid failed.");
+		return 0;
+	}
+
+	pstData = g_pstWifiScanHead;
+	pJsonArry = cJSON_CreateArray();
+	for ( uiLoopi = 0 ; uiLoopi < WIFI_SCAN_NUM; uiLoopi++, pstData++ )
+	{
+		if( pstData->szMac[0] == 0 )
+		{
+			break;
+		}
+		pJsonsub=cJSON_CreateObject();
+
+		cJSON_AddStringToObject( pJsonsub,	"Ssid", 			pstData->szSsid);
+		cJSON_AddStringToObject( pJsonsub,	"Mac", 				pstData->szMac);
+		cJSON_AddStringToObject( pJsonsub,	"AuthMode",			pstData->szAuthMode);
+		cJSON_AddNumberToObject( pJsonsub,	"Rssi",				pstData->iRssi);
+		cJSON_AddNumberToObject( pJsonsub,	"Channel",			pstData->ucChannel);
+
+		cJSON_AddItemToArray(pJsonArry, pJsonsub);
+	}
+	FREE_MEM(g_pstWifiScanHead);
+
+    pJsonStr = cJSON_PrintUnformatted(pJsonArry);
+    strncpy(pcBuf, pJsonStr, uiBufLen);
+    cJSON_Delete(pJsonArry);
+    FREE_MEM(pJsonStr);
+	return strlen(pcBuf);
+}
+
+
+UINT WIFI_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen)
+{
+	cJSON  *pJson = NULL;
+	CHAR *pJsonStr = NULL;
+	CHAR szBuf[20];
+
+	pJson = cJSON_CreateObject();
+
+	snprintf(szBuf, sizeof(szBuf),  "%s %s", __DATE__, __TIME__);
+	cJSON_AddStringToObject( pJson, "BuildDate", 	szBuf);
+
+	cJSON_AddStringToObject( pJson, "SDKVersion", 	system_get_sdk_version());
+	cJSON_AddStringToObject( pJson, "FlashMap", 	UPGRADE_GetFlashMap());
+
+	snprintf(szBuf, sizeof(szBuf),  "user%d.bin", 	system_upgrade_userbin_check()+1);
+	cJSON_AddStringToObject( pJson, "UserBin", 		szBuf);
+
+	cJSON_AddNumberToObject( pJson, "RunTime", 		PLUG_GetRunTime());
+
+    pJsonStr = cJSON_PrintUnformatted(pJson);
+    strncpy(pcBuf, pJsonStr, uiBufLen);
+    cJSON_Delete(pJson);
+    FREE_MEM(pJsonStr);
+
+	return strlen(pcBuf);
+}

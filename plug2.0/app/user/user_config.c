@@ -178,7 +178,7 @@ UINT CONFIG_SysSetDataCheck( PLUG_SYSSET_S *pstData )
 	return OK;
 }
 /*
-static UINT CONFIG_HtmlDataCheck( HTTP_HTMLDATA_S *pstData )
+static UINT CONFIG_HtmlDataCheck( HTTP_FILE_LIST_S *pstData )
 {
 	UINT uiLoopi = 0;
 
@@ -188,7 +188,7 @@ static UINT CONFIG_HtmlDataCheck( HTTP_HTMLDATA_S *pstData )
 		return FAIL;
 	}
 
-	for ( uiLoopi = 0 ; uiLoopi < HTTP_HTML_DATE_MAX; uiLoopi++, pstData++ )
+	for ( uiLoopi = 0 ; uiLoopi < HTTP_FILE_NUM_MAX; uiLoopi++, pstData++ )
 	{
 		if ( pstData->szName[0] == 0 )
 		{
@@ -209,7 +209,7 @@ static UINT CONFIG_HtmlDataCheck( HTTP_HTMLDATA_S *pstData )
 		}
 	}
 
-	if ( HTTP_HTML_DATE_MAX > uiLoopi )
+	if ( HTTP_FILE_NUM_MAX > uiLoopi )
 	{
 		LOG_OUT(LOGOUT_ERROR, "CONFIG_HtmlDataCheck. pstData[%d] check failed.", uiLoopi);
 		return FAIL;
@@ -232,7 +232,7 @@ UINT CONFIG_ReadConfig( PLUG_MOUDLE_E uiMoudle )
 		PLUG_TimerDataDeInit();
 		PLUG_DelayDataDeInit();
 		PLUG_SystemSetDataDeInit();
-		HTTP_HtmlDataInit();
+		HTTP_FileListInit();
 		CONFIG_SaveConfig(PLUG_MOUDLE_BUFF);
 	    LOG_OUT(LOGOUT_INFO, "Flash check failed, Loaded Default Config.");
 		return FAIL;
@@ -316,10 +316,10 @@ UINT CONFIG_ReadConfig( PLUG_MOUDLE_E uiMoudle )
 		}
 	}
 
-	if ( uiMoudle & PLUG_MOUDLE_HTML )
+	if ( uiMoudle & PLUG_MOUDLE_FILELIST )
 	{
 	    LOG_OUT(LOGOUT_INFO, "Read html data...");
-		uiRet = FlASH_Read((UINT32)FLASH_HTML_ADDR, (VOID*)HTTP_GetHtmlData(NULL), HTTP_GetHtmlDataLength());
+		uiRet = FlASH_Read((UINT32)FLASH_HTML_ADDR, (VOID*)HTTP_GetFileList(NULL), HTTP_GetFileListLength());
 		if ( OK != uiRet )
 		{
 		    LOG_OUT(LOGOUT_ERROR, "FlASH_Read html data failed.");
@@ -369,9 +369,9 @@ UINT CONFIG_SaveConfig( PLUG_MOUDLE_E uiMoudle )
 		}
 	}
 
-	if ( uiMoudle & PLUG_MOUDLE_HTML )
+	if ( uiMoudle & PLUG_MOUDLE_FILELIST )
 	{
-		uiRet = FlASH_Write(FLASH_HTML_ADDR, (CHAR*)HTTP_GetHtmlData(NULL), HTTP_GetHtmlDataLength());
+		uiRet = FlASH_Write(FLASH_HTML_ADDR, (CHAR*)HTTP_GetFileList(NULL), HTTP_GetFileListLength());
 		if ( OK != uiRet )
 		{
 			LOG_OUT(LOGOUT_ERROR, "FlASH_Write html data failed.");

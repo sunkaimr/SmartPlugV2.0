@@ -553,12 +553,12 @@ UINT PLUG_MarshalJsonSystemSet( CHAR* pcBuf, UINT uiBufLen )
 UINT PLUG_MarshalJsonHtmlData( CHAR* pcBuf, UINT uiBufLen )
 {
 	UINT uiLoopi = 0;
-	HTTP_HTMLDATA_S* pstHtmlData = NULL;
+	HTTP_FILE_LIST_S* pstHtmlData = NULL;
 	cJSON  *pJsonArry, *pJsonsub;
 
 	pJsonArry = cJSON_CreateArray();
-	pstHtmlData = HTTP_GetHtmlData(NULL);
-	for ( uiLoopi = 0 ; uiLoopi < HTTP_HTML_DATE_MAX; uiLoopi++, pstHtmlData++ )
+	pstHtmlData = HTTP_GetFileList(NULL);
+	for ( uiLoopi = 0 ; uiLoopi < HTTP_FILE_NUM_MAX; uiLoopi++, pstHtmlData++ )
 	{
 		if ( pstHtmlData->szName[0] == 0 )
 		{
@@ -589,7 +589,7 @@ UINT PLUG_ParseHtmlData( CHAR* pData )
 	cJSON *pJsonIteam = NULL;
 	INT iCount = 0;
 	UINT uiLoop = 0;
-	HTTP_HTMLDATA_S *pstHtml, *pstHtmlPrev;
+	HTTP_FILE_LIST_S *pstHtml, *pstHtmlPrev;
 	CHAR *pcTmp = NULL;
 	UINT uiRet = 0;
 	UINT uiIndex = 0;
@@ -615,14 +615,14 @@ UINT PLUG_ParseHtmlData( CHAR* pData )
 	    goto error;
 	}
 
-	if ( iCount > HTTP_HTML_DATE_MAX )
+	if ( iCount > HTTP_FILE_NUM_MAX )
 	{
-		LOG_OUT(LOGOUT_ERROR, "PLUG_ParseHtmlData ArraySize:%d big than %d.", iCount, HTTP_HTML_DATE_MAX);
+		LOG_OUT(LOGOUT_ERROR, "PLUG_ParseHtmlData ArraySize:%d big than %d.", iCount, HTTP_FILE_NUM_MAX);
 		goto error;
 	}
 
-	HTTP_HtmlDataInit();
-	pstHtml = HTTP_GetHtmlData(NULL);
+	HTTP_FileListInit();
+	pstHtml = HTTP_GetFileList(NULL);
 	for ( uiLoop = 0; uiLoop < iCount; uiLoop++ )
 	{
 		pJsonArr = cJSON_GetArrayItem(pJsonRoot, uiLoop);
@@ -630,7 +630,7 @@ UINT PLUG_ParseHtmlData( CHAR* pData )
 		pJsonIteam = cJSON_GetObjectItem(pJsonArr, "Name");
 		if (pJsonIteam && pJsonIteam->type == cJSON_String)
 		{
-			strncpy(pstHtml->szName, pJsonIteam->valuestring, HTTP_HTML_NAME_MAX_LEN);
+			strncpy(pstHtml->szName, pJsonIteam->valuestring, HTTP_FILE_NAME_MAX_LEN);
 		}
 
 		pJsonIteam = cJSON_GetObjectItem(pJsonArr, "Length");
@@ -667,10 +667,10 @@ UINT PLUG_ParseHtmlData( CHAR* pData )
 		pstHtml++;
 	}
 
-	uiRet = HTTP_SaveHtmlData();
+	uiRet = HTTP_SaveFileListToFlash();
 	if ( uiRet != OK )
 	{
-		LOG_OUT(LOGOUT_ERROR, "PLUG_ParseTimerData, HTTP_SaveHtmlData failed.");
+		LOG_OUT(LOGOUT_ERROR, "PLUG_ParseTimerData, HTTP_SaveFileListToFlash failed.");
 		goto error;
 	}
 
@@ -705,7 +705,7 @@ INT32 PLUG_GetTimeFromInternet()
 {
 	CHAR szSntpServer[3][20] = {"ntp1.aliyun.com", "0.cn.pool.ntp.org", "time.windows.com"};
 	UINT32 uiRet = 0;
-	INT iRetry = 5;
+	INT iRetry = 3;
 	UINT uiLoopi = 0;
 
 	for ( uiLoopi = 0; uiLoopi < 3; uiLoopi++)
@@ -715,9 +715,9 @@ INT32 PLUG_GetTimeFromInternet()
 		sntp_init();
 		LOG_OUT(LOGOUT_DEBUG, "Set sntp server: %s", szSntpServer[uiLoopi]);
 
-		vTaskDelay( 500/portTICK_RATE_MS );
+		vTaskDelay( 100/portTICK_RATE_MS );
 
-		iRetry = 5;
+		iRetry = 2;
 		while( iRetry-- )
 		{
 			uiRet = sntp_get_current_timestamp();
@@ -726,7 +726,7 @@ INT32 PLUG_GetTimeFromInternet()
 				PLUG_SetTimeSyncFlag(TIME_SYNC_NET);
 				return OK;
 			}
-			vTaskDelay( 500/portTICK_RATE_MS );
+			vTaskDelay( 100/portTICK_RATE_MS );
 		}
 	}
 	return FAIL;
@@ -885,7 +885,7 @@ UINT PLUG_ParseDate( CHAR* pDateStr)
 
 	if ( pDateStr == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "PLUG_ParseDate, pDateStr is NULL.");
+	    LOG_OUT(LOGOUT_ERROR, "pDateStr is NULL.");
 	    return FAIL;
 	}
 
@@ -1380,6 +1380,24 @@ succ:
 error:
 	cJSON_Delete(pJsonRoot);
 	return FAIL;
+}
+
+UINT PLUG_MarshalJsonRelayStatus( CHAR* pcBuf, UINT uiBufLen )
+{
+	return snprintf( pcBuf, uiBufLen, "{\"status\":\"%s\"}", PLUG_GetRelayStatus() ? "on" : "off");
+}
+
+
+UINT PLUG_MarshalJsonDate( CHAR* pcBuf, UINT uiBufLen )
+{
+	PLUG_DATE_S stDate;
+    PLUG_GetDate(&stDate);
+
+    return snprintf( pcBuf, uiBufLen,
+			"{\"Date\":\"%02d-%02d-%02d %02d:%02d:%02d\", \"SyncTime\":%s}",
+			stDate.iYear, stDate.iMonth, stDate.iDay,
+			stDate.iHour, stDate.iMinute, stDate.iSecond,
+			PLUG_GetTimeSyncFlag() == TIME_SYNC_NONE ? "false" : "true");
 }
 
 static VOID PLUG_JudgeTimer( VOID )

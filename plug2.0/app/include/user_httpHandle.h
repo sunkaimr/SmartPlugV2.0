@@ -19,63 +19,50 @@
 
 
 
-#define HTTP_HTML_NAME_MAX_LEN	100
-#define HTTP_HTML_DATE_MAX		20
+#define HTTP_FILE_NAME_MAX_LEN	50
+#define HTTP_FILE_NUM_MAX		20
 
 
 
 
-extern const CHAR szHttpMethodStringmap[][10];
+extern const CHAR szHttpMethodStr[][10];
 extern const CHAR szHttpUserAgentStringmap[][10];
-extern const CHAR szHttpContentTypeStr[][30];
+extern const CHAR szHttpContentTypeStr[][25];
 
 
-VOID HTTP_HtmlDataInit( VOID );
-HTTP_HTMLDATA_S* HTTP_GetHtmlData( CHAR* pcName );
-UINT HTTP_SaveHtmlData( VOID );
-UINT32 HTTP_GetHtmlDataLength();
-VOID HTTP_HtmlUrlRegiste( VOID );
-VOID HTTP_NotFound( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_BadRequest( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_InternalServerError( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetHome( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetHealth( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetInfo( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetDate( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_PutTest( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetTest( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetTimerData( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetDelayData( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetSystemData( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetHtmlHeader( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_PostHtmlHeader( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_PutHtml( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetHtml( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_PostTimerData( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_PostDelayData( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_PostSystemData( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_PostDeviceControl( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetScanWifi( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_PostDate( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_PutUpgrade( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_GetRelayStatus( HTTP_REQUEST_HEAD_S *pstHeader );
-VOID HTTP_PostRelayStatus( HTTP_REQUEST_HEAD_S *pstHeader );
-UINT HTTP_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen);
-UINT HTTP_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen);
-VOID HTTP_GetUpload( HTTP_REQUEST_HEAD_S *pstHeader );
-
-
-
-
-
-
-
-
-
-
-
-
-
+VOID HTTP_FileListInit( VOID );
+HTTP_FILE_LIST_S* HTTP_GetFileList( CHAR* pcName );
+UINT HTTP_SaveFileListToFlash( VOID );
+UINT32 HTTP_GetFileListLength();
+VOID HTTP_FileListRegiste( VOID );
+UINT HTTP_NotFound( HTTP_CTX *pstCtx );
+UINT HTTP_BadRequest( HTTP_CTX *pstCtx );
+UINT HTTP_InternalServerError( HTTP_CTX *pstCtx );
+UINT HTTP_GetHome( HTTP_CTX *pstCtx );
+UINT HTTP_GetHealth( HTTP_CTX *pstCtx );
+UINT HTTP_GetInfo( HTTP_CTX *pstCtx );
+UINT HTTP_GetDate( HTTP_CTX *pstCtx );
+UINT HTTP_PutTest( HTTP_CTX *pstCtx );
+UINT HTTP_GetTest( HTTP_CTX *pstCtx );
+UINT HTTP_GetTimerData( HTTP_CTX *pstCtx );
+UINT HTTP_GetDelayData( HTTP_CTX *pstCtx );
+UINT HTTP_GetSystemData( HTTP_CTX *pstCtx );
+UINT HTTP_GetHtmlHeader( HTTP_CTX *pstCtx );
+UINT HTTP_PostHtmlHeader( HTTP_CTX *pstCtx );
+UINT HTTP_PutHtml( HTTP_CTX *pstCtx );
+UINT HTTP_GetHtml( HTTP_CTX *pstCtx );
+UINT HTTP_PostTimerData( HTTP_CTX *pstCtx );
+UINT HTTP_PostDelayData( HTTP_CTX *pstCtx );
+UINT HTTP_PostSystemData( HTTP_CTX *pstCtx );
+UINT HTTP_PostDeviceControl( HTTP_CTX *pstCtx );
+UINT HTTP_GetScanWifi( HTTP_CTX *pstCtx );
+UINT HTTP_PostDate( HTTP_CTX *pstCtx );
+UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx );
+UINT HTTP_GetRelayStatus( HTTP_CTX *pstCtx );
+UINT HTTP_PostRelayStatus( HTTP_CTX *pstCtx );
+UINT WIFI_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen);
+UINT WIFI_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen);
+UINT HTTP_GetUploadHtml( HTTP_CTX *pstCtx );
 
 
 

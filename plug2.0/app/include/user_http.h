@@ -9,13 +9,31 @@
 #define __USER_HTTP_H__
 
 #define HTTP_HOST_MAX_LEN 		30
-#define HTTP_URL_MAX_LEN 		100
-#define HTTP_HANDLE_MAX_LEN 	100
+#define HTTP_URL_MAX_LEN 		50
+#define HTTP_HANDLE_MAX_LEN 	50
 
 #define HTTP_ROUTER_MAP_MAX 	40
 
-#define HTTP_HTML_NAME_MAX_LEN	100
-#define HTTP_HTML_DATE_MAX		20
+#define HTTP_FILE_NAME_MAX_LEN	50
+#define HTTP_FILE_NUM_MAX		20
+
+
+#define HTTP_Malloc(ctx, len) 											\
+do{																		\
+	if ( ctx->stResp.pcResponBody == NULL )								\
+	{																	\
+		ctx->stResp.pcResponBody = ( CHAR* )malloc( len );				\
+		if ( NULL == ctx->stResp.pcResponBody ){						\
+			LOG_OUT(LOGOUT_ERROR, "malloc buf size:%d failed, Free heap:%d",\
+					len, system_get_free_heap_size());				\
+			return FAIL;												\
+		}																\
+		ctx->stResp.uiSendBufLen = len;									\
+	}																	\
+}while(0);
+
+
+#define HTTP_IS_SEND_FINISH(ctx) (ctx->stResp.uiSendTotalLen > 0 && ctx->stResp.uiSentLen >= ctx->stResp.uiSendTotalLen)
 
 
 typedef enum {
@@ -51,12 +69,12 @@ typedef enum {
 
 
 typedef enum {
-	HTTP_CODE_Ok 					= 200,
-	HTTP_CODE_Created 				= 201,
-	HTTP_CODE_Found 				= 302,
-	HTTP_CODE_BadRequest			= 400,
-	HTTP_CODE_NotFound				= 404,
-	HTTP_CODE_InternalServerError	= 500,
+	HTTP_CODE_Ok = 0,
+	HTTP_CODE_Created,
+	HTTP_CODE_Found,
+	HTTP_CODE_BadRequest,
+	HTTP_CODE_NotFound,
+	HTTP_CODE_InternalServerError,
 
 	HTTP_CODE_Buff
 }HTTP_CODE_E;
@@ -92,61 +110,100 @@ typedef struct tagHttpResponseHead
 	HTTP_CONTENT_TYPE_E 	eContentType;
 	HTTP_CACHE_CTL_TYPE_E	eCacheControl;
 
-}HTTP_RESPONSE_HEAD_S;
+	UINT 					uiSendBufLen;					// 发送缓冲区大小
 
-typedef struct tagHttpRequestHead
+	UINT 					uiHeaderLen;					// 响应头长度
+	UINT 					uiBodyLen;						// 响应体长度
+	UINT 					uiPos;							// 位置
+
+	UINT 					uiSendTotalLen;					// 应发送总长度长度
+	UINT 					uiSentLen;						// 已发送长度
+	UINT					uiSendCurLen;					// 本次应发送长度
+	CHAR*					pcResponBody;					// 应答体
+	BOOL					bIsCouldSend;
+
+}HTTP_RESP_S;
+
+typedef struct tagHttpRequest
 {
 	HTTP_METHOD_E 		eMethod;						// GET, POST PUT DELETE
 	CHAR 				szURL[HTTP_URL_MAX_LEN];       	// /index.html
 	HTTP_USERAGENT_E 	eUserAgent;	    				// windows, Android,
 	CHAR 				szHost[HTTP_HOST_MAX_LEN];     	// 192.168.0.102:8080
-	UINT 				uiContentLenth;					// 请求body体长度，不包括head长度
 
 	CHAR*               pcRouter;						//匹配到的Router
 
 	HTTP_PROCESS_E		eProcess;
-	UINT 				uiRecvPresentLenth;				// 已收到body的长度
-	UINT 				uiRecvCurLenth;					// 本次收到body的长度
+	UINT 				uiRecvTotalLen;					// 请求body体长度，不包括head长度
+	UINT 				uiRecvLen;						// 已收到body的长度
+	UINT 				uiRecvCurLen;					// 本次收到body的长度
 	CHAR*				pcResqBody;						// 请求体
 
-	BOOL				bIsCouldSend;
-	UINT 				uiSendTotalLength;				// 应发送总长度长度
-	UINT 				uiSentLength;					// 已发送长度
-	UINT				uiSendCurLength;				// 本次应发送长度
-	CHAR*				pcResponBody;					// 应答体
-}HTTP_REQUEST_HEAD_S;
+}HTTP_REQ_S;
 
-typedef VOID(*ROUTER)(HTTP_REQUEST_HEAD_S*);
+typedef struct tagHttpCtx
+{
+	INT				iClientFd;
+	UINT			uiCostTime;
+	HTTP_REQ_S     	stReq;
+	HTTP_RESP_S		stResp;
+
+}HTTP_CTX;
+
+typedef enum {
+	RESULT_Fail = 0,
+	RESULT_Success,
+	RESULT_Finish,
+
+	RESULT_Buff
+}HTTP_FILE_RESULT_E;
+
+typedef enum {
+	STATUS_Close = 0,
+	STATUS_Open,
+
+	STATUS_Buff
+}HTTP_FILE_STATUS_E;
+
+typedef struct tagHttpFile
+{
+	CHAR*				pcName;
+	UINT				uiLength;
+	UINT				uiAddr;
+	UINT				uiPos;
+	HTTP_FILE_STATUS_E	eStatus;
+	HTTP_CONTENT_TYPE_E	eType;
+}HTTP_FILE_S;
+
+typedef UINT (*ROUTER_FUN)(HTTP_CTX *pstCtx);
 
 typedef struct tagHttpRouterMap
 {
 	HTTP_METHOD_E 		eMethod;									/* GET, POST PUT DELETE */
 	CHAR 				szURL[HTTP_URL_MAX_LEN];    				/* URL地址 */
-	CHAR 				szHttpHandlerStr[HTTP_HANDLE_MAX_LEN];    	/* 路由名称 */
-	ROUTER 				pfHttpHandler;								/* 回调函数 */
+	ROUTER_FUN 			pfHttpHandler;								/* 回调函数 */
 }HTTP_ROUTER_MAP_S;
 
 
-
-typedef struct tagHttpHtmlData
+typedef struct tagHttpFileList
 {
-	CHAR 				szName[HTTP_HTML_NAME_MAX_LEN];	//html名称
+	CHAR 				szName[HTTP_FILE_NAME_MAX_LEN];	//文件名称
 	BOOL				bIsUpload;						//数据是否已上传
 	UINT32				uiAddr;							//数据在FLASH中的存放地址
 	UINT32				uiLength;						//数据长度
 	HTTP_CONTENT_TYPE_E eType;							//数据类型
-}HTTP_HTMLDATA_S;
+}HTTP_FILE_LIST_S;
 
 
-extern const CHAR szHttpMethodStringmap[][10];
+extern const CHAR szHttpMethodStr[][10];
 extern const CHAR szHttpUserAgentStringmap[][10];
-extern const CHAR szHttpContentTypeStr[][30];
+extern const CHAR szHttpContentTypeStr[][25];
 
 VOID HTTP_RouterInit( VOID );
-VOID HTTP_RouterHandle( HTTP_REQUEST_HEAD_S *pstHeader );
-INT32 HTTP_ParsingHttpHead( CHAR* pcData, UINT32 uiLen, HTTP_REQUEST_HEAD_S *pstHttpHead );
-HTTP_HTMLDATA_S* HTTP_GetHtmlData( CHAR* pcName );
-UINT32 HTTP_GetHtmlDataLength();
+//extern VOID HTTP_RouterHandle( HTTP_CTX *pstCtx );
+//extern INT32 HTTP_ParsingHttpHead( CHAR * pcData, UINT32 uiLen,  HTTP_CTX *pstCtx );
+HTTP_FILE_LIST_S* HTTP_GetFileList( CHAR* pcName );
+UINT32 HTTP_GetFileListLength();
 
 
 #endif /* __USER_HTTP_H__ */

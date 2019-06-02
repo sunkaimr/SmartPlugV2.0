@@ -24,9 +24,9 @@ extern "C" {
 
 #if LOG_OUT_ENABLE
 
-	#define GET_FILE_NAME(str) 	(strrchr(str,'\\')) ? (strrchr(str,'\\')+1) : str
+	#define GET_FILE_NAME(str) 	((strrchr(str,'\\')) ? (strrchr(str,'\\')+1) : str)
 
-	#define LOG_OUT(Level, Fmt, Args...) LOG_Logout((UINT)Level, GET_FILE_NAME(__FILE__), __LINE__, (CHAR*)Fmt, ##Args)
+	#define LOG_OUT(Level, Fmt, Args...) LOG_Logout((UINT)Level, GET_FILE_NAME(__FILE__), __LINE__, __func__, (CHAR*)Fmt, ##Args)
 #else
 	#define LOG_OUT(Level, Fmt, Args...) 
 #endif

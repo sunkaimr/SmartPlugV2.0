@@ -9,28 +9,315 @@
 #include "esp_common.h"
 
 
-const char HTML_UploadHtml[] = "<!DOCTYPE html>\r\n<html>\r\n<head>\r\n <meta http-equiv=\"content-type\" content=\"text/html;charset=gb2312\">\r\n <title>升级</title>\r\n</head>\r\n<body>\r\n	<table border=\"0\" width=\"70%\" align=\"center\" cellpadding=\"6\" id=\"tab\" cellspacing=\"0\" >\r\n		<tr><th colspan=\"4\">固件升级</th></tr>\r\n		<tr><td colspan=\"4\"><hr/></td></tr>\r\n		<tr align=\"left\">\r\n			<th width=\"40%\">文件</th>\r\n			<th width=\"15%\">大小</th>\r\n			<th width=\"20%\">状态</th>\r\n			<th width=\"25%\"></th>\r\n		</tr>\r\n <tr align=\"left\">\r\n <td><input type=\"file\" id=\"binFile\" accept=\".bin\" onchange=\"return fileChg(this);\"></td>\r\n <td>----</td>\r\n <td>----</td>\r\n <td><input type=\"button\" onclick=\"upgread()\" value=\"升级\"/></td>\r\n </tr>\r\n		<tr><td colspan=\"4\"><hr/></td></tr>\r\n <tr><td colspan=\"4\">&nbsp;</td></tr>\r\n		<tr><th colspan=\"4\">网页升级</th></tr>\r\n <tr><td colspan=\"4\"><hr/></td></tr>\r\n <tr><td colspan=\"4\"><hr/></td></tr>\r\n		<tr>\r\n			<td colspan=\"3\"></td>\r\n			<td>\r\n <input type=\"button\" onclick=\"addFile()\" value=\"添加\"/>\r\n <input type=\"button\" onclick=\"uploadFile()\" value=\"上传\"/>\r\n <input type=\"button\" onclick=\"reboot()\" value=\"重启\"/>\r\n </td>\r\n		</tr>\r\n	</table>\r\n <script type=\"text/javascript\">\r\n window.onload = function() {\r\n			addFile();\r\n }\r\n	 function addFile() {\r\n			var t = document.getElementById('tab');\r\n			var r = t.insertRow(t.rows.length-2);\r\n			r.insertCell(0).innerHTML=\"<input type=\\\"file\\\" onchange=\\\"return fileChg(this);\\\">\";\r\n			r.insertCell(1).innerHTML=\"----\";\r\n			r.insertCell(2).innerHTML=\"----\";\r\n			r.insertCell(3).innerHTML=\"<a href=\\\"javascript:void(0);\\\" onclick=\\\"this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode)\\\">删除</a>\";\r\n }\r\n		function fileChg(obj) {\r\n			var fz=obj.files[0].size;\r\n			if( fz > 1024*1024 ){\r\n				fz=(fz/1024/1024).toFixed(1) + \"MB\";\r\n			}else if(fz > 1024){\r\n				fz=(fz/1024).toFixed(1) + \"KB\";\r\n			}else{\r\n				fz=fz+\"B\";\r\n			}\r\n			var sta = obj.parentNode.parentNode.cells;\r\n sta[1].innerHTML = fz;\r\n sta[2].innerHTML = \"等待上传\";\r\n }\r\n\r\n		function uploadFile() {\r\n			var files = new Array();\r\n			var tableObj = document.getElementById(\"tab\");\r\n			for (var i = 8; i < tableObj.rows.length-2; i++) {\r\n				file = tableObj.rows[i].cells[0].getElementsByTagName(\"input\")[0];\r\n				if ( file.files[0] == null ){\r\n					continue;\r\n				}\r\n				files.push(file.files[0]);\r\n tableObj.rows[i].cells[2].innerHTML = \"等待上传\";\r\n			}\r\n			if (files.length == 0){\r\n			 alert(\"请选择文件！\");\r\n			 return;\r\n			}\r\n			if( sendHead(files)){\r\n sendFile(files, 0);\r\n }\r\n\r\n }\r\n function sendHead(fileObj) {\r\n			var dataArr=[];\r\n			for ( var i in fileObj ){\r\n				var data = {};\r\n				data.Name = fileObj[i].name;\r\n				data.Length = parseInt(fileObj[i].size);\r\n				dataArr.push(data);\r\n			}\r\n xhr = new XMLHttpRequest();\r\n xhr.open(\"post\", \"/html/header\", false);\r\n xhr.send(JSON.stringify(dataArr));\r\n return true;\r\n }\r\n function sendFile(fileObj, index) {\r\n if ( index >= fileObj.length){\r\n alert(\"上传完成\");\r\n return;\r\n }\r\n var t = document.getElementById('tab');\r\n xhr = new XMLHttpRequest();\r\n url = \"/html/\"+fileObj[index].name\r\n xhr.open(\"put\", url, true);\r\n xhr.upload.onprogress = function progressFunction(evt) {\r\n if (evt.lengthComputable) {\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = Math.round(evt.loaded / evt.total * 100) + \"%\";\r\n }\r\n };\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"%0\";\r\n xhr.onreadystatechange = function () {\r\n if ( xhr.readyState == 2 ){\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"正在校验\";\r\n }else if (xhr.readyState == 4) {\r\n if( xhr.status == 201){\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"上传成功\";\r\n index=index+1;\r\n sendFile(fileObj, index);\r\n }else{\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"上传失败\";\r\n }\r\n }\r\n }\r\n xhr.send(fileObj[index]);\r\n }\r\n function reboot(){\r\n xhr = new XMLHttpRequest();\r\n xhr.open(\"post\", \"/control\", true);\r\n xhr.onreadystatechange = function () {\r\n if (xhr.readyState == 4) {\r\n if( xhr.status == 200){\r\n alert(\"设备正在重启\");\r\n }else{\r\n alert(\"设备重启失败\");\r\n }\r\n }\r\n }\r\n xhr.send(\"{\\\"Action\\\":0}\");\r\n }\r\n function upgread(){\r\n var file = document.getElementById(\"binFile\").files[0];\r\n if(file == null){\r\n alert(\"请选择固件\");\r\n return;\r\n }\r\n var t = document.getElementById('tab');\r\n xhr = new XMLHttpRequest();\r\n xhr.upload.onprogress = function progressFunction(evt) {\r\n if (evt.lengthComputable) {\r\n t.rows[3].cells[2].innerHTML= Math.round(evt.loaded / evt.total * 100) + \"%\";\r\n }\r\n };\r\n xhr.open(\"put\", \"/upgrade\", true);\r\n t.rows[3].cells[2].innerHTML = \"0%\";\r\n xhr.onreadystatechange = function () {\r\n if ( xhr.readyState == 2 ){\r\n t.rows[3].cells[2].innerHTML = \"正在校验\";\r\n }else if (xhr.readyState == 4) {\r\n if( xhr.status == 201){\r\n t.rows[3].cells[2].innerHTML = \"上传成功\";\r\n alert(\"升级成功，设备正在重启\");\r\n }else{\r\n t.rows[3].cells[2].innerHTML = \"上传失败\";\r\n alert(\"升级是失败\");\r\n }\r\n }\r\n }\r\n xhr.send(file);\r\n }\r\n </script>\r\n</body>\r\n</html>\r\n";
+#define HTTP_HEADER_LEN		(500) 	//http 响应头长度可根据实际情况调整
 
 
-HTTP_HTMLDATA_S astHttpHtmlData[HTTP_HTML_DATE_MAX];
+const CHAR HTML_UploadHtml[] = "<!DOCTYPE html>\r\n<html>\r\n<head>\r\n <meta http-equiv=\"content-type\" content=\"text/html;charset=gb2312\">\r\n <title>升级</title>\r\n</head>\r\n<body>\r\n	<table border=\"0\" width=\"70%\" align=\"center\" cellpadding=\"6\" id=\"tab\" cellspacing=\"0\" >\r\n		<tr><th colspan=\"4\">固件升级</th></tr>\r\n		<tr><td colspan=\"4\"><hr/></td></tr>\r\n		<tr align=\"left\">\r\n			<th width=\"40%\">文件</th>\r\n			<th width=\"15%\">大小</th>\r\n			<th width=\"20%\">状态</th>\r\n			<th width=\"25%\"></th>\r\n		</tr>\r\n <tr align=\"left\">\r\n <td><input type=\"file\" id=\"binFile\" accept=\".bin\" onchange=\"return fileChg(this);\"></td>\r\n <td>----</td>\r\n <td>----</td>\r\n <td><input type=\"button\" onclick=\"upgread()\" value=\"升级\"/></td>\r\n </tr>\r\n		<tr><td colspan=\"4\"><hr/></td></tr>\r\n <tr><td colspan=\"4\">&nbsp;</td></tr>\r\n		<tr><th colspan=\"4\">网页升级</th></tr>\r\n <tr><td colspan=\"4\"><hr/></td></tr>\r\n <tr><td colspan=\"4\"><hr/></td></tr>\r\n		<tr>\r\n			<td colspan=\"3\"></td>\r\n			<td>\r\n <input type=\"button\" onclick=\"addFile()\" value=\"添加\"/>\r\n <input type=\"button\" onclick=\"uploadFile()\" value=\"上传\"/>\r\n <input type=\"button\" onclick=\"reboot()\" value=\"重启\"/>\r\n </td>\r\n		</tr>\r\n	</table>\r\n <script type=\"text/javascript\">\r\n window.onload = function() {\r\n			addFile();\r\n }\r\n	 function addFile() {\r\n			var t = document.getElementById('tab');\r\n			var r = t.insertRow(t.rows.length-2);\r\n			r.insertCell(0).innerHTML=\"<input type=\\\"file\\\" onchange=\\\"return fileChg(this);\\\">\";\r\n			r.insertCell(1).innerHTML=\"----\";\r\n			r.insertCell(2).innerHTML=\"----\";\r\n			r.insertCell(3).innerHTML=\"<a href=\\\"javascript:void(0);\\\" onclick=\\\"this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode)\\\">删除</a>\";\r\n }\r\n		function fileChg(obj) {\r\n			var fz=obj.files[0].size;\r\n			if( fz > 1024*1024 ){\r\n				fz=(fz/1024/1024).toFixed(1) + \"MB\";\r\n			}else if(fz > 1024){\r\n				fz=(fz/1024).toFixed(1) + \"KB\";\r\n			}else{\r\n				fz=fz+\"B\";\r\n			}\r\n			var sta = obj.parentNode.parentNode.cells;\r\n sta[1].innerHTML = fz;\r\n sta[2].innerHTML = \"等待上传\";\r\n }\r\n\r\n		function uploadFile() {\r\n			var files = new Array();\r\n			var tableObj = document.getElementById(\"tab\");\r\n			for (var i = 8; i < tableObj.rows.length-2; i++) {\r\n				file = tableObj.rows[i].cells[0].getElementsByTagName(\"input\")[0];\r\n				if ( file.files[0] == null ){\r\n					continue;\r\n				}\r\n				files.push(file.files[0]);\r\n tableObj.rows[i].cells[2].innerHTML = \"等待上传\";\r\n			}\r\n			if (files.length == 0){\r\n			 alert(\"请选择文件！\");\r\n			 return;\r\n			}\r\n			if( sendHead(files)){\r\n sendFile(files, 0);\r\n }\r\n\r\n }\r\n function sendHead(fileObj) {\r\n			var dataArr=[];\r\n			for ( var i in fileObj ){\r\n				var data = {};\r\n				data.Name = fileObj[i].name;\r\n				data.Length = parseInt(fileObj[i].size);\r\n				dataArr.push(data);\r\n			}\r\n xhr = new XMLHttpRequest();\r\n xhr.open(\"post\", \"/html/header\", false);\r\n xhr.send(JSON.stringify(dataArr));\r\n return true;\r\n }\r\n function sendFile(fileObj, index) {\r\n if ( index >= fileObj.length){\r\n alert(\"上传完成\");\r\n return;\r\n }\r\n var t = document.getElementById('tab');\r\n xhr = new XMLHttpRequest();\r\n url = \"/html/\"+fileObj[index].name\r\n xhr.open(\"put\", url, true);\r\n xhr.upload.onprogress = function progressFunction(evt) {\r\n if (evt.lengthComputable) {\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = Math.round(evt.loaded / evt.total * 100) + \"%\";\r\n }\r\n };\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"%0\";\r\n xhr.onreadystatechange = function () {\r\n if ( xhr.readyState == 2 ){\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"正在校验\";\r\n }else if (xhr.readyState == 4) {\r\n if( xhr.status == 201){\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"上传成功\";\r\n index=index+1;\r\n sendFile(fileObj, index);\r\n }else{\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"上传失败\";\r\n }\r\n }\r\n }\r\n xhr.send(fileObj[index]);\r\n }\r\n function reboot(){\r\n xhr = new XMLHttpRequest();\r\n xhr.open(\"post\", \"/control\", true);\r\n xhr.onreadystatechange = function () {\r\n if (xhr.readyState == 4) {\r\n if( xhr.status == 200){\r\n alert(\"设备正在重启\");\r\n }else{\r\n alert(\"设备重启失败\");\r\n }\r\n }\r\n }\r\n xhr.send(\"{\\\"Action\\\":0}\");\r\n }\r\n function upgread(){\r\n var file = document.getElementById(\"binFile\").files[0];\r\n if(file == null){\r\n alert(\"请选择固件\");\r\n return;\r\n }\r\n var t = document.getElementById('tab');\r\n xhr = new XMLHttpRequest();\r\n xhr.upload.onprogress = function progressFunction(evt) {\r\n if (evt.lengthComputable) {\r\n t.rows[3].cells[2].innerHTML= Math.round(evt.loaded / evt.total * 100) + \"%\";\r\n }\r\n };\r\n xhr.open(\"put\", \"/upgrade\", true);\r\n t.rows[3].cells[2].innerHTML = \"0%\";\r\n xhr.onreadystatechange = function () {\r\n if ( xhr.readyState == 2 ){\r\n t.rows[3].cells[2].innerHTML = \"正在校验\";\r\n }else if (xhr.readyState == 4) {\r\n if( xhr.status == 201){\r\n t.rows[3].cells[2].innerHTML = \"上传成功\";\r\n alert(\"升级成功，设备正在重启\");\r\n }else{\r\n t.rows[3].cells[2].innerHTML = \"上传失败\";\r\n alert(\"升级是失败\");\r\n }\r\n }\r\n }\r\n xhr.send(file);\r\n }\r\n </script>\r\n</body>\r\n</html>\r\n";
+
+const CHAR HTML_NotFound[] = "<html><head><title>404 Not Found</title></head><center><h1>404 Not Found</h1></center><hr><center>SmartPlug</center></body></html>";
+
+const CHAR HTML_ResultOk[] = "{\"result\":\"success\", \"msg\":\"\"}";
+const CHAR HTML_BadRequest[] = "{\"result\":\"failed\", \"msg\":\"bad request\"}";
+const CHAR HTML_InternalServerError[] ="{\"result\":\"failed\", \"msg\":\"internal server error\"}";
+
+HTTP_FILE_LIST_S astHttpHtmlData[HTTP_FILE_NUM_MAX];
 
 
-VOID HTTP_HtmlDataInit( VOID )
+HTTP_FILE_S* HTTP_FileOpen( CHAR *pcFileName )
+{
+	HTTP_FILE_LIST_S* pstHtmlData = NULL;
+	HTTP_FILE_S* pstFile = NULL;
+
+	if ( NULL == pcFileName )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pcFileName:%p.", pcFileName);
+		return NULL;
+	}
+
+	pstHtmlData = HTTP_GetFileList(pcFileName);
+	if ( NULL == pstHtmlData )
+	{
+		LOG_OUT(LOGOUT_ERROR, "%s not found", pcFileName);
+		return NULL;
+	}
+
+	pstFile = malloc(sizeof(HTTP_FILE_S));
+	if ( NULL == pstFile )
+	{
+		LOG_OUT(LOGOUT_ERROR, "malloc pstFile failed");
+		return NULL;
+	}
+
+	pstFile->pcName		= pstHtmlData->szName;
+	pstFile->eStatus	= STATUS_Open;
+	pstFile->uiAddr		= pstHtmlData->uiAddr;
+	pstFile->uiLength	= pstHtmlData->uiLength;
+	pstFile->uiPos		= 0;
+	pstFile->eType		= pstHtmlData->eType;
+
+	return pstFile;
+}
+
+UINT HTTP_FileClose( HTTP_FILE_S** ppstFile )
+{
+	CHAR szName[HTTP_FILE_NAME_MAX_LEN];
+	HTTP_FILE_LIST_S* pstHtmlData = NULL;
+
+	if ( NULL == ppstFile || NULL == *ppstFile)
+	{
+		LOG_OUT(LOGOUT_ERROR, "ppstFile:%p, *ppstFile:%p", ppstFile, *ppstFile);
+		return RESULT_Fail;
+	}
+
+	if ( (*ppstFile)->uiPos >= (*ppstFile)->uiLength )
+	{
+		pstHtmlData = HTTP_GetFileList((*ppstFile)->pcName);
+		if ( NULL == pstHtmlData )
+		{
+			LOG_OUT(LOGOUT_ERROR, "%s not found", (*ppstFile)->pcName);
+			return RESULT_Fail;
+		}
+
+		pstHtmlData->bIsUpload = TRUE;
+		if ( HTTP_SaveFileListToFlash() != OK )
+		{
+			LOG_OUT(LOGOUT_ERROR, "save file list failed, fileName:%s.", (*ppstFile)->pcName);
+			return RESULT_Fail;
+		}
+		sprintf(szName, "/%s", pstHtmlData->szName);
+		HTTP_RouterRegiste(HTTP_METHOD_GET, szName, HTTP_GetHtml, szName);
+	}
+
+	memset(*ppstFile, 0, sizeof(HTTP_FILE_S));
+	FREE_MEM(*ppstFile);
+	*ppstFile = NULL;
+
+	return RESULT_Success;
+}
+
+UINT HTTP_ReadFile( HTTP_FILE_S* pstFile, CHAR *pcBuf, UINT uiLen )
+{
+	UINT uiRet = 0;
+
+	if ( NULL == pstFile )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pstFile:%p.", pstFile);
+		return RESULT_Fail;
+	}
+
+	if( pstFile->eStatus != STATUS_Open)
+	{
+		LOG_OUT(LOGOUT_ERROR, "%s not open", pstFile->pcName);
+		return RESULT_Fail;
+	}
+
+	//memcpy(pcBuf, pstFile->uiAddr + pstFile->uiPos, uiLen);
+    uiRet = FlASH_Read(pstFile->uiAddr + pstFile->uiPos,
+    					pcBuf,
+						uiLen);
+	if ( uiRet != OK  )
+	{
+		LOG_OUT(LOGOUT_ERROR, "read %s failed, FlASH_Read failed", pstFile->pcName);
+		return RESULT_Fail;
+	}
+
+	pstFile->uiPos = pstFile->uiPos + uiLen;
+	if ( pstFile->uiPos >= pstFile->uiLength )
+	{
+		return RESULT_Finish;
+	}
+
+	return RESULT_Success;
+}
+
+UINT HTTP_WriteFile( HTTP_FILE_S* pstFile, CHAR *pcBuf, UINT uiLen )
+{
+	UINT uiRet = 0;
+
+	if ( NULL == pstFile )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pstFile:%p.", pstFile);
+		return RESULT_Fail;
+	}
+
+	if( pstFile->eStatus != STATUS_Open)
+	{
+		LOG_OUT(LOGOUT_ERROR, "%s not open", pstFile->pcName);
+		return RESULT_Fail;
+	}
+
+    uiRet = FlASH_Write(pstFile->uiAddr + pstFile->uiPos,
+    					pcBuf,
+						uiLen);
+	if ( uiRet != OK  )
+	{
+		LOG_OUT(LOGOUT_ERROR, "write %s failed, FlASH_Read failed", pstFile->pcName);
+		return RESULT_Fail;
+	}
+	pstFile->uiPos = pstFile->uiPos + uiLen;
+
+	//写入完成
+	if ( pstFile->uiPos >= pstFile->uiLength )
+	{
+		return RESULT_Finish;
+	}
+
+	return RESULT_Success;
+}
+
+UINT HTTP_SendFile( HTTP_CTX *pstCtx, HTTP_FILE_S* pstFile )
+{
+	UINT uiBodyLen = 0;
+	UINT uiRet = 0;
+
+	//暂定，后边http响应头长度确定后再调整
+	pstCtx->stResp.uiSendTotalLen = pstFile->uiLength + HTTP_HEADER_LEN;
+
+	//发送结束时推出
+	while ( !HTTP_IS_SEND_FINISH(pstCtx) )
+	{
+		//申请内存
+		HTTP_Malloc(pstCtx, WEB_SENDBUF_SIZE);
+
+		//首次发送时发送http头部
+		if ( pstCtx->stResp.uiSentLen == 0 )
+		{
+			pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+			pstCtx->stResp.eContentType  = pstFile->eType;
+			pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_MaxAge_1y;
+
+			HTTP_SetHeader( pstCtx );
+			HTTP_SetBodyLen(pstCtx, pstFile->uiLength);
+		}
+
+		//http响应的body体一次最多WEB_MUX字节,确定本次发送body体的长度
+	    if ( pstCtx->stResp.uiSendTotalLen - pstCtx->stResp.uiSentLen > WEB_MUX )
+	    {
+			if ( pstCtx->stResp.uiSentLen == 0 )
+			{
+				//首次发送因为要发送http响应头
+		    	uiBodyLen = pstFile->uiLength > (WEB_MUX - pstCtx->stResp.uiHeaderLen) ? (WEB_MUX - pstCtx->stResp.uiHeaderLen) : pstFile->uiLength;
+		  	}
+			else
+			{
+				uiBodyLen = WEB_MUX;
+			}
+	    }
+	    else
+	    {
+	    	uiBodyLen = pstCtx->stResp.uiSendTotalLen - pstCtx->stResp.uiSentLen;
+	    }
+
+	    HTTP_ReadFile( pstFile,
+	    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+				uiBodyLen);
+
+	    pstCtx->stResp.uiSendCurLen = pstCtx->stResp.uiPos + uiBodyLen;
+		pstCtx->stResp.uiPos = 0;
+
+		uiRet = WEB_WebSend(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT(LOGOUT_ERROR, "fd:%d, send %s failed", pstCtx->iClientFd, pstFile->pcName);
+			return FAIL;
+		}
+	}
+
+	return OK;
+}
+
+UINT HTTP_SendMultiple( HTTP_CTX *pstCtx, const CHAR* pcContent )
+{
+	UINT uiRet = 0;
+	UINT uiBodyLen = 0;
+	UINT uiContentLen = 0;
+	UINT uiPos = 0;
+
+	uiContentLen = strlen(pcContent);
+	//暂定，后边http响应头长度确定后再调整
+	pstCtx->stResp.uiSendTotalLen = uiContentLen + HTTP_HEADER_LEN;
+
+	//发送结束时推出
+	while ( !HTTP_IS_SEND_FINISH(pstCtx) )
+	{
+		//申请内存
+		HTTP_Malloc(pstCtx, WEB_SENDBUF_SIZE);
+
+		//首次发送时发送http头部
+		if ( pstCtx->stResp.uiSentLen == 0 )
+		{
+			pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+			pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Html;
+			pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_MaxAge_1y;
+
+			uiRet = HTTP_SetHeader( pstCtx );
+			if ( uiRet != OK )
+			{
+				LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+				return FAIL;
+			}
+
+			uiRet = HTTP_SetBodyLen(pstCtx, uiContentLen);
+			if ( uiRet != OK )
+			{
+				LOG_OUT( LOGOUT_ERROR, "fd:%d, set body len failed", pstCtx->iClientFd );
+				return FAIL;
+			}
+		}
+
+		//http响应的body体一次最多4096字节,确定本次发送body体的长度
+	    if ( pstCtx->stResp.uiSendTotalLen - pstCtx->stResp.uiSentLen > 4096 )
+	    {
+			if ( pstCtx->stResp.uiSentLen == 0 )
+			{
+				//首次发送因为要发送http响应头
+		    	uiBodyLen = uiContentLen > (4096 - pstCtx->stResp.uiHeaderLen) ? (4096 - pstCtx->stResp.uiHeaderLen) : uiContentLen;
+		  	}
+			else
+			{
+				uiBodyLen = 4096;
+			}
+	    }
+	    else
+	    {
+	    	uiBodyLen = pstCtx->stResp.uiSendTotalLen - pstCtx->stResp.uiSentLen;
+	    }
+
+	    memcpy( pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+	    		pcContent + uiPos,
+				uiBodyLen);
+
+	    uiPos += uiBodyLen;
+	    pstCtx->stResp.uiSendCurLen = pstCtx->stResp.uiPos + uiBodyLen;
+		pstCtx->stResp.uiPos = 0;
+
+		uiRet = WEB_WebSend(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set body len failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+	}
+}
+
+
+
+VOID HTTP_FileListInit( VOID )
 {
 	UINT8 i = 0;
 
-	for ( i = 0; i < HTTP_HTML_DATE_MAX; i ++)
+	for ( i = 0; i < HTTP_FILE_NUM_MAX; i ++)
 	{
 		astHttpHtmlData[i].uiLength 	= 0;
 		astHttpHtmlData[i].uiAddr		= 0;
 		astHttpHtmlData[i].bIsUpload	= FALSE;
 		astHttpHtmlData[i].eType 		= HTTP_CONTENT_TYPE_Stream;
-		memset( astHttpHtmlData[i].szName, 0, HTTP_HTML_NAME_MAX_LEN);
+		memset( astHttpHtmlData[i].szName, 0, HTTP_FILE_NAME_MAX_LEN);
 	}
 }
 
 
-HTTP_HTMLDATA_S* HTTP_GetHtmlData( CHAR* pcName )
+HTTP_FILE_LIST_S* HTTP_GetFileList( CHAR* pcName )
 {
 	UINT8 i = 0;
 
@@ -39,8 +326,9 @@ HTTP_HTMLDATA_S* HTTP_GetHtmlData( CHAR* pcName )
 		return &astHttpHtmlData[0];
 	}
 
-	for ( i = 0; i < HTTP_HTML_DATE_MAX; i ++)
+	for ( i = 0; i < HTTP_FILE_NUM_MAX; i ++)
 	{
+
 		if ( strcmp( pcName, astHttpHtmlData[i].szName) == 0)
 		{
 			return &astHttpHtmlData[i];
@@ -49,405 +337,269 @@ HTTP_HTMLDATA_S* HTTP_GetHtmlData( CHAR* pcName )
 	return NULL;
 }
 
-UINT HTTP_SaveHtmlData( VOID )
+UINT HTTP_SaveFileListToFlash( VOID )
 {
 	UINT uiRet = 0;
 
-	uiRet = CONFIG_SaveConfig(PLUG_MOUDLE_HTML);
+	uiRet = CONFIG_SaveConfig(PLUG_MOUDLE_FILELIST);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "HTTP_SaveHtmlData failed.");
+		LOG_OUT( LOGOUT_ERROR, "HTTP_SaveFileListToFlash failed.");
 		return FAIL;
 	}
 	return OK;
 }
 
-UINT32 HTTP_GetHtmlDataLength()
+UINT32 HTTP_GetFileListLength()
 {
 	return sizeof(astHttpHtmlData);
 }
 
-VOID HTTP_HtmlUrlRegiste( VOID )
+VOID HTTP_FileListRegiste( VOID )
 {
 	UINT8 i = 0;
-	CHAR szUrl[HTTP_HTML_NAME_MAX_LEN]={};
+	CHAR szUrl[HTTP_FILE_NAME_MAX_LEN]={};
 
-	for ( i = 0; i < HTTP_HTML_DATE_MAX; i ++)
+	for ( i = 0; i < HTTP_FILE_NUM_MAX; i ++)
 	{
 		if ( astHttpHtmlData[i].bIsUpload == TRUE && strlen(astHttpHtmlData[i].szName) != 0 )
 		{
-			snprintf(szUrl, HTTP_HTML_NAME_MAX_LEN, "/%s", astHttpHtmlData[i].szName);
+			snprintf(szUrl, HTTP_FILE_NAME_MAX_LEN, "/%s", astHttpHtmlData[i].szName);
 			HTTP_RouterRegiste(HTTP_METHOD_GET, szUrl, HTTP_GetHtml, "HTTP_GetHtml");
-			LOG_OUT( LOGOUT_INFO, "HTTP_HtmlUrlRegiste: URL:%s.", szUrl);
+			LOG_OUT( LOGOUT_INFO, "Route registe:%s.", szUrl);
 		}
 	}
 }
 
-VOID HTTP_NotFound( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_NotFound( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_NotFound, HTTP_CONTENT_TYPE_Html, HTTP_CACHE_CTL_TYPE_No};
-
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_1K );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_NotFound, malloc pcBuf failed.");
-		return;
-    }
-
-    uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_1K, &stResponHead );
-    uiBodyLen = snprintf( pcBuf+uiHeaderLen, HTTP_BUF_1K-uiHeaderLen, "<html><head><title>404 Not Found</title></head><center><h1>404 Not Found</h1></center><hr><center>SmartPlug</center></body></html>");
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-    return;
-}
-
-
-VOID HTTP_BadRequest( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_BadRequest, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_1K );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_BadRequest, malloc pcBuf failed.");
-		return;
-    }
-
-    uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_1K, &stResponHead );
-    uiBodyLen = snprintf( pcBuf+uiHeaderLen, HTTP_BUF_1K-uiHeaderLen, "{\"result\":\"failed\", \"msg\":\"bad request\"}");
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-    return;
-}
-
-VOID HTTP_InternalServerError( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_InternalServerError, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_1K );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_InternalServerError, malloc pcBuf failed.");
-		return;
-    }
-
-    uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_1K, &stResponHead );
-    uiBodyLen = snprintf( pcBuf+uiHeaderLen, HTTP_BUF_1K-uiHeaderLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-
-    return;
-}
-
-VOID HTTP_GetHome( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Found, HTTP_CONTENT_TYPE_Html, HTTP_CACHE_CTL_TYPE_No};
-
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_1K );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_GetHome, malloc pcBuf failed.");
-		return;
-    }
-
-    uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_1K, &stResponHead );
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-
-    return;
-}
-
-
-VOID HTTP_GetHealth( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_1K );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_GetHealth, malloc pcBuf failed.");
-		return;
-    }
-
-    uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_1K, &stResponHead );
-    uiBodyLen = snprintf( pcBuf+uiHeaderLen, HTTP_BUF_1K-uiHeaderLen,
-    		"{\"health\":true}" );
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-
-    return;
-}
-
-VOID HTTP_GetInfo( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_1K );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_GetInfo, malloc pcBuf failed.");
-		return;
-    }
-    uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_1K, &stResponHead );
-	uiBodyLen = HTTP_DeviceInfoMarshalJson( pcBuf+uiHeaderLen, HTTP_BUF_1K-uiHeaderLen );
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-
-    return;
-}
-
-VOID HTTP_PutTest( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Created, HTTP_CONTENT_TYPE_Html, HTTP_CACHE_CTL_TYPE_No};
-
-	LOG_OUT(LOGOUT_DEBUG, "HTTP_PutTest process :%d.", pstHeader->uiRecvPresentLenth*100/pstHeader->uiContentLenth);
-	if ( pstHeader->eProcess == HTTP_PROCESS_Finished )
-	{
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PutUpgrade, malloc pcBuf failed.");
-			return;
-	    }
-
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-	   	HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-
-	    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-	}
-    return;
-}
-
-
-VOID HTTP_GetTest( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 4096;
-	UINT uiFileLength = 1024*1024*1;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Stream, HTTP_CACHE_CTL_TYPE_No};
-
-	pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
-	pstHeader->uiSentLength = 0;
-	while ( 1 )
-	{
-		while( pstHeader->bIsCouldSend == TRUE )
-		{
-			vTaskDelay(10/portTICK_RATE_MS);
-		}
-
-		if ( pstHeader->uiSentLength >= pstHeader->uiSendTotalLength)
-		{
-			break;
-		}
-
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_GetTest, malloc pcBuf failed.");
-			return;
-	    }
-
-	    if ( pstHeader->uiSentLength == 0 )
-	    {
-	    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-			HTTP_SetHeaderContentLength(pcBuf, uiFileLength);
-			pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
-	   }
-	    else
-	    {
-	    	uiHeaderLen = 0;
-	    }
-
-	    if ( pstHeader->uiSendTotalLength - pstHeader->uiSentLength > 4096 )
-	    {
-	    	uiBodyLen = uiFileLength > 4096 - uiHeaderLen ? 4096 - uiHeaderLen : uiFileLength;
-	    }
-	    else
-	    {
-	    	uiBodyLen = pstHeader->uiSendTotalLength - pstHeader->uiSentLength;
-	    }
-
-	    pstHeader->uiSendCurLength = uiHeaderLen + uiBodyLen;
-	    memset(pcBuf+uiHeaderLen, '0', uiBodyLen);
-	    pstHeader->pcResponBody = pcBuf;
-	    pstHeader->bIsCouldSend = TRUE;
-	}
-
-    return;
-}
-
-#if 0
-VOID HTTP_PutImage( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
 	UINT uiRet = 0;
-	STATIC UINT uiPos = 0;
-	HTTP_HTMLDATA_S* pstHtmlData = NULL;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Created, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
 
-	pstHtmlData = HTTP_GetHtmlData(HTTP_HTML_2);
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_NotFound;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Html;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 
-	LOG_OUT(LOGOUT_DEBUG, "HTTP_PutImage process :%d.", pstHeader->uiRecvPresentLenth*100/pstHeader->uiContentLenth);
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-	uiRet = FlASH_Write(pstHtmlData->uiAddr + uiPos,
-						pstHeader->pcResqBody,
-						pstHeader->uiRecvCurLenth);
-	if ( uiRet != OK  )
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
 	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_PutImage, FlASH_Write failed.");
-		return;
-	}
-	uiPos = pstHeader->uiRecvPresentLenth;
-
-	if (  pstHeader->eProcess == HTTP_PROCESS_Finished )
-	{
-    	uiPos = 0;
-
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PutImage, malloc pcBuf failed.");
-			return;
-	    }
-
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-	    uiBodyLen = snprintf( pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen, HttpStatus_Created);
-		HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-
-		pstHeader->uiSentLength = 0;
-		pstHeader->uiSendCurLength = uiHeaderLen + uiBodyLen;
-	    pstHeader->pcResponBody = pcBuf;
-	    pstHeader->uiSendTotalLength = pstHeader->uiSendCurLength;
-	    pstHeader->bIsCouldSend = TRUE;
-
-	    pstHtmlData->uiLength = pstHeader->uiContentLenth;
-	    CONFIG_SaveConfig(PLUG_MOUDLE_HTML);
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
 	}
 
-    return;
+	uiRet = HTTP_SetResponseBody(pstCtx, HTML_NotFound);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+    return OK;
 }
 
-VOID HTTP_GetImage( HTTP_REQUEST_HEAD_S *pstHeader )
+
+UINT HTTP_BadRequest( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 1;
-	UINT uiBodyLen = 0;
-	UINT uiFileLength = 0;
 	UINT uiRet = 0;
-	STATIC UINT uiPos = 0;
-	HTTP_HTMLDATA_S* pstHtmlData = NULL;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Stream, HTTP_CACHE_CTL_TYPE_No};
 
-	pstHtmlData = HTTP_GetHtmlData(HTTP_HTML_2);
-	uiFileLength =  pstHtmlData->uiLength;
-	pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_BadRequest;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 
-	pstHeader->uiSentLength = 0;
-	while ( 1 )
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
 	{
-		while( pstHeader->bIsCouldSend == TRUE )
-		{
-			vTaskDelay(10/portTICK_RATE_MS);
-		}
-
-		if ( pstHeader->uiSentLength >= pstHeader->uiSendTotalLength)
-		{
-			uiPos = 0;
-			break;
-		}
-
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_GetImage, malloc pcBuf failed.");
-			return;
-	    }
-
-	    if ( pstHeader->uiSentLength == 0 )
-	    {
-	    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-			HTTP_SetHeaderContentLength(pcBuf, uiFileLength);
-			pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
-	    }
-	    else
-	    {
-	    	uiHeaderLen = 0;
-	    }
-
-	    if ( pstHeader->uiSendTotalLength - pstHeader->uiSentLength > 4096 )
-	    {
-	    	uiBodyLen = uiFileLength > (4096 - uiHeaderLen) ? (4096 - uiHeaderLen) : uiFileLength;
-	    }
-	    else
-	    {
-	    	uiBodyLen = pstHeader->uiSendTotalLength - pstHeader->uiSentLength;
-	    }
-
-	    pstHeader->uiSendCurLength = uiHeaderLen + uiBodyLen;
-
-	    uiRet = FlASH_Read(pstHtmlData->uiAddr + uiPos,
-							pcBuf+uiHeaderLen,
-							uiBodyLen);
-
-		uiPos += uiBodyLen;
-	    pstHeader->pcResponBody = pcBuf;
-	    pstHeader->bIsCouldSend = TRUE;
-		if ( uiRet != OK  )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_GetImage, FlASH_Read failed.");
-		}
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
 	}
-	return;
+
+	uiRet = HTTP_SetResponseBody(pstCtx, HTML_BadRequest);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+    return OK;
+}
+
+UINT HTTP_InternalServerError( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_InternalServerError;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SetResponseBody(pstCtx, HTML_InternalServerError);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+    return OK;
+}
+
+UINT HTTP_GetHome( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Found;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Html;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	WIFI_INFO_S stWifiInfo = WIFI_GetIpInfo();
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+	uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%d.%d.%d.%d/index.html",
+    		stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
+    		(stWifiInfo.uiIp>>16)&0xFF,(stWifiInfo.uiIp>>24)&0xFF);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set custom header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SetResponseBody(pstCtx, "");
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
 }
 
 
-#endif
-
-VOID HTTP_GetTimerData( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_GetHealth( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SetResponseBody(pstCtx, "{\"health\":true}");
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+    return OK;
+}
+
+UINT HTTP_GetInfo( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+    pstCtx->stResp.uiPos += WIFI_DeviceInfoMarshalJson(
+    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+    return OK;
+}
+
+UINT HTTP_GetTimerData( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
 	CHAR szTimer[HTTP_URL_MAX_LEN];
 	UINT uiTimerNum = 0;
 
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_2K );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_GetTimerData, malloc pcBuf failed.");
-		return;
-    }
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 
-    if ( OK != HTTP_GetRouterPara(pstHeader, "timer", szTimer))
+	HTTP_Malloc(pstCtx, HTTP_BUF_2K);
+
+    if ( OK != HTTP_GetRouterPara(pstCtx, "timer", szTimer))
     {
-    	LOG_OUT(LOGOUT_ERROR, "HTTP_GetRouterPara, get timer failed.");
+    	LOG_OUT(LOGOUT_ERROR, "get timer failed.");
+    	goto err;
     }
     else
     {
@@ -463,37 +615,82 @@ VOID HTTP_GetTimerData( HTTP_REQUEST_HEAD_S *pstHeader )
 
     if ( uiTimerNum == 0 || uiTimerNum > PLUG_TIMER_ALL )
     {
-		stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+    	LOG_OUT(LOGOUT_ERROR, "unknow uiTimerNum:%d", uiTimerNum);
+    	pstCtx->stResp.eHttpCode = HTTP_CODE_BadRequest;
+    	goto err;
     }
 
-	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_2K, &stResponHead );
-    uiBodyLen = PLUG_MarshalJsonTimer( pcBuf+uiHeaderLen, HTTP_BUF_2K-uiHeaderLen, uiTimerNum);
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-    return;
+    goto succ;
+
+err:
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SetResponseBody(pstCtx, HTML_BadRequest);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
+
+succ:
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	pstCtx->stResp.uiPos += PLUG_MarshalJsonTimer(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			uiTimerNum);
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
 }
 
-VOID HTTP_GetDelayData( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_GetDelayData( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
+	UINT uiRet = 0;
 	CHAR szDelay[HTTP_URL_MAX_LEN];
 	UINT uiDelayNum = 0;
 
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_3K );
-    if ( NULL == pcBuf )
+	if ( NULL == pstCtx )
 	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_GetDelayData, malloc pcBuf failed.");
-		return;
-    }
+		LOG_OUT( LOGOUT_ERROR, "pstCtx:%p", pstCtx);
+		return FAIL;
+	}
 
-    if ( OK != HTTP_GetRouterPara(pstHeader, "delay", szDelay))
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_3K);
+
+    if ( OK != HTTP_GetRouterPara(pstCtx, "delay", szDelay))
     {
-    	LOG_OUT(LOGOUT_ERROR, "HTTP_GetRouterPara, get delay failed.");
+    	LOG_OUT(LOGOUT_ERROR, "get delay failed.");
+    	goto err;
     }
     else
     {
@@ -509,574 +706,571 @@ VOID HTTP_GetDelayData( HTTP_REQUEST_HEAD_S *pstHeader )
 
     if ( uiDelayNum == 0 || uiDelayNum > PLUG_DELAY_ALL )
     {
-		stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+    	LOG_OUT(LOGOUT_ERROR, "unknow uiDelayNum:%d", uiDelayNum);
+    	pstCtx->stResp.eHttpCode = HTTP_CODE_BadRequest;
+    	goto err;
     }
 
-	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_3K, &stResponHead );
-    uiBodyLen = PLUG_MarshalJsonDelay( pcBuf+uiHeaderLen, HTTP_BUF_3K-uiHeaderLen, uiDelayNum );
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-    return;
-}
+    goto succ;
 
-VOID HTTP_GetSystemData( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_1K );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_GetSystemData, malloc pcBuf failed.");
-		return;
-    }
-
-	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_1K, &stResponHead );
-    uiBodyLen = PLUG_MarshalJsonSystemSet( pcBuf+uiHeaderLen, HTTP_BUF_1K-uiHeaderLen );
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-    return;
-}
-
-VOID HTTP_GetHtmlHeader( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_2K );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_GetHtmlHeader, malloc pcBuf failed.");
-		return;
-    }
-
-	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_2K, &stResponHead );
-    uiBodyLen = PLUG_MarshalJsonHtmlData( pcBuf+uiHeaderLen, HTTP_BUF_2K-uiHeaderLen );
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-    return;
-}
-
-VOID HTTP_PostHtmlHeader( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-	UINT uiRet = 0;
-
-	if (pstHeader->uiRecvCurLenth < pstHeader->uiContentLenth)
-	{
-		return;
-	}
-
-	pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_PostHtmlHeader, malloc pcBuf failed.");
-		return;
-    }
-
-	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-
-	uiRet = PLUG_ParseHtmlData(pstHeader->pcResqBody);
+err:
+	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-		pstHeader->eProcess = HTTP_PROCESS_Finished;
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
 	}
 
-	if ( pstHeader->eProcess == HTTP_PROCESS_Finished )
+	uiRet = HTTP_SetResponseBody(pstCtx, HTML_BadRequest);
+	if ( uiRet != OK )
 	{
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PostHtmlHeader, malloc pcBuf failed.");
-			return;
-	    }
-
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-    	uiBodyLen = PLUG_MarshalJsonHtmlData( pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen );
-	   	HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-	    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-	    return;
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
 	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
+
+succ:
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	pstCtx->stResp.uiPos += PLUG_MarshalJsonDelay(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			uiDelayNum);
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
 }
 
-VOID HTTP_PutHtml( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_GetSystemData( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
 	UINT uiRet = 0;
-	STATIC UINT uiAddr = 0;
-	STATIC UINT uiPos = 0;
-	STATIC HTTP_HTMLDATA_S* pstHtmlData = NULL;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Created, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-	STATIC CHAR szHtmlName[HTTP_HTML_NAME_MAX_LEN];
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 
-	if ( uiAddr == 0 )
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
 	{
-	    if ( OK != HTTP_GetRouterPara(pstHeader, "html", szHtmlName))
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+    pstCtx->stResp.uiPos += PLUG_MarshalJsonSystemSet(
+    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
+}
+
+UINT HTTP_GetHtmlHeader( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_2K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+    pstCtx->stResp.uiPos += PLUG_MarshalJsonHtmlData(
+    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
+}
+
+UINT HTTP_PostHtmlHeader( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if (pstCtx->stReq.uiRecvCurLen < pstCtx->stReq.uiRecvTotalLen)
+	{
+		return OK;
+	}
+
+	uiRet = PLUG_ParseHtmlData(pstCtx->stReq.pcResqBody);
+	if ( uiRet != OK )
+	{
+		pstCtx->stResp.eHttpCode = HTTP_CODE_BadRequest;
+		return HTTP_InternalServerError( pstCtx );
+	}
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+		HTTP_Malloc(pstCtx, HTTP_BUF_2K);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+
+	    pstCtx->stResp.uiPos += PLUG_MarshalJsonHtmlData(
+	    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+	    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+	}
+	return OK;
+}
+
+UINT HTTP_PutHtml( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+	static HTTP_FILE_S* pstFile = NULL;
+	CHAR szHtmlName[HTTP_FILE_NAME_MAX_LEN];
+
+
+	if ( pstFile == NULL )
+	{
+		pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Created;
+		pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+		pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	    if ( OK != HTTP_GetRouterPara(pstCtx, "html", szHtmlName))
 	    {
 	    	LOG_OUT(LOGOUT_ERROR, "HTTP_PutHtml, get router para html failed.");
+	    	return HTTP_BadRequest(pstCtx);
 	    }
 	    else
 	    {
-			pstHtmlData = HTTP_GetHtmlData(szHtmlName);
-			if ( pstHtmlData == NULL )
+			pstFile = HTTP_FileOpen( szHtmlName );
+			if ( pstFile == NULL )
 			{
-				LOG_OUT(LOGOUT_ERROR, "HTTP_PutHtml, get html data failed.");
-
-				stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-				stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-				stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-				pstHeader->eProcess = HTTP_PROCESS_Finished;
-			}
-
-			uiAddr = pstHtmlData->uiAddr;
-			if ( pstHeader->uiContentLenth != pstHtmlData->uiLength )
-			{
-				LOG_OUT(LOGOUT_ERROR, "HTTP_PutHtml, %s length not equal header:%d != flash:%d.",
-						szHtmlName, pstHeader->uiContentLenth, pstHtmlData->uiLength);
-
-				stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-				stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-				stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-				pstHeader->eProcess = HTTP_PROCESS_Finished;
+				LOG_OUT(LOGOUT_ERROR, "open file failed, %s", &pstCtx->stReq.szURL[1]);
+				return HTTP_InternalServerError(pstCtx);
 			}
 	    }
 	}
 
-	uiRet = FlASH_Write(uiAddr + uiPos,
-						pstHeader->pcResqBody,
-						pstHeader->uiRecvCurLenth);
-	if ( uiRet != OK  )
+	uiRet = HTTP_WriteFile( pstFile, pstCtx->stReq.pcResqBody, pstCtx->stReq.uiRecvCurLen);
+	if ( uiRet == RESULT_Fail )
 	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_PutHtml: %s, FlASH_Write failed.", szHtmlName);
+		LOG_OUT(LOGOUT_ERROR, "wtite file failed, %s", &pstCtx->stReq.szURL[1]);
+		return HTTP_InternalServerError(pstCtx);
 
-		stResponHead.eHttpCode = HTTP_CODE_InternalServerError;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Html;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-		pstHeader->eProcess = HTTP_PROCESS_Finished;
 	}
-	else
+	else if ( uiRet == RESULT_Finish )
 	{
-		if (pstHeader->uiContentLenth > 0)
+		pstCtx->stReq.eProcess = HTTP_PROCESS_Finished;
+		pstCtx->stResp.eHttpCode = HTTP_CODE_Created;
+	}
+
+	if (pstCtx->stReq.uiRecvTotalLen > 0)
+	{
+		//输出下载进度
+		LOG_OUT(LOGOUT_INFO, "fd:%d, upload process:%d",
+				pstCtx->iClientFd,
+				pstCtx->stReq.uiRecvLen*100 / pstCtx->stReq.uiRecvTotalLen);
+	}
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+
+		uiRet = HTTP_FileClose( &pstFile );
+		if ( uiRet != RESULT_Success )
 		{
-			LOG_OUT(LOGOUT_INFO, "Put %s process :%d.", szHtmlName,
-					pstHeader->uiRecvPresentLenth*100 / pstHeader->uiContentLenth);
-		}
-	}
-	uiPos = pstHeader->uiRecvPresentLenth;
-
-	if ( pstHeader->eProcess == HTTP_PROCESS_Finished )
-	{
-		uiPos = 0;
-		uiAddr = 0;
-
-	    if ( stResponHead.eHttpCode == HTTP_CODE_Created )
-	    {
-	    	pstHtmlData->bIsUpload = TRUE;
-	    	uiRet = HTTP_SaveHtmlData();
-	    	if ( uiRet != OK )
-	    	{
-	    		LOG_OUT(LOGOUT_ERROR, "HTTP_PutHtml: %s, HTTP_SaveHtmlData failed.", szHtmlName);
-	    		stResponHead.eHttpCode = HTTP_CODE_InternalServerError;
-	    	}
-	    	sprintf(szHtmlName, "/%s", pstHtmlData->szName);
-	    	HTTP_RouterRegiste(HTTP_METHOD_GET, szHtmlName, HTTP_GetHtml, "HTTP_GetHtml");
-	    }
-
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-    		LOG_OUT(LOGOUT_ERROR, "HTTP_PutHtml: %s, malloc buf failed.", szHtmlName);
-			return;
-	    }
-
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-    	uiBodyLen = HTTP_SetResponseBody(pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen, "{\"result\":\"success\", \"msg\":\"success\"}");
-		HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-	    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-	}
-
-    return;
-}
-
-VOID HTTP_GetHtml( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	CHAR* pcHtmlName = NULL;
-	UINT uiHeaderLen = 1;
-	UINT uiBodyLen = 0;
-	UINT uiFileLength = 0;
-	UINT uiRet = 0;
-	STATIC UINT uiPos = 0, uiAddr = 0;
-	HTTP_HTMLDATA_S* pstHtmlData = NULL;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Html, HTTP_CACHE_CTL_TYPE_MaxAge_1y};
-
-	pcHtmlName = pstHeader->szURL;
-	pcHtmlName++;
-	pstHtmlData = HTTP_GetHtmlData(pcHtmlName);
-	if ( pstHtmlData != NULL )
-	{
-		uiFileLength =  pstHtmlData->uiLength;
-		uiAddr = pstHtmlData->uiAddr;
-		pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
-		stResponHead.eContentType = pstHtmlData->eType;
-
-		LOG_OUT(LOGOUT_INFO, "HTTP_GetHtml, name:%s addr:%d length:%d.",
-				pstHtmlData->szName, pstHtmlData->uiAddr, pstHtmlData->uiLength);
-	}
-	else
-	{
-		LOG_OUT(LOGOUT_DEBUG, "HTTP_GetHtml, cannot find %s.", pcHtmlName);
-
-		uiFileLength =  0;
-		uiAddr = 0;
-		pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
-	}
-
-	pstHeader->uiSentLength = 0;
-	while ( 1 )
-	{
-		//等待上一次发送完成
-		while( pstHeader->bIsCouldSend == TRUE )
-		{
-			vTaskDelay(10/portTICK_RATE_MS);
+			LOG_OUT(LOGOUT_ERROR, "close file failed, %s", pstFile->pcName );
+			return HTTP_InternalServerError(pstCtx);
 		}
 
-		//发送结束时退出循环
-		if ( pstHeader->uiSentLength >= pstHeader->uiSendTotalLength)
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
 		{
-			uiPos = 0;
-			break;
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
 		}
 
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
+		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
+		if ( uiRet != OK )
 		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_GetHtml, %s malloc pcBuf failed.", pcHtmlName);
-			return;
-	    }
-
-	    //首次发送时发送http头部
-		if ( pstHeader->uiSentLength == 0 )
-		{
-			uiPos = 0;
-			uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-			HTTP_SetHeaderContentLength(pcBuf, uiFileLength);
-			pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			return FAIL;
 		}
-	    else
-	    {
-	    	uiHeaderLen = 0;
-	    }
 
-		//http响应的body体一次最多4096字节
-	    if ( pstHeader->uiSendTotalLength - pstHeader->uiSentLength > 4096 )
-	    {
-	    	uiBodyLen = uiFileLength > (4096 - uiHeaderLen) ? (4096 - uiHeaderLen) : uiFileLength;
-	    }
-	    else
-	    {
-	    	uiBodyLen = pstHeader->uiSendTotalLength - pstHeader->uiSentLength;
-	    }
-
-	    pstHeader->uiSendCurLength = uiHeaderLen + uiBodyLen;
-
-	    uiRet = FlASH_Read(uiAddr + uiPos,
-							pcBuf + uiHeaderLen,
-							uiBodyLen);
-
-		uiPos += uiBodyLen;
-	    pstHeader->pcResponBody = pcBuf;
-	    pstHeader->bIsCouldSend = TRUE;
-		if ( uiRet != OK  )
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
 		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_GetHtml, %s FlASH_Read failed.", pcHtmlName);
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
 		}
 	}
-	return;
+	return OK;
 }
 
-
-VOID HTTP_GetDate( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_GetHtml( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-	PLUG_DATE_S stDate;
-
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_512 );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_GetDate, malloc pcBuf failed.");
-		return;
-    }
-
-    PLUG_GetDate(&stDate);
-	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_512, &stResponHead );
-
-	uiBodyLen = snprintf( pcBuf+uiHeaderLen, HTTP_BUF_512-uiHeaderLen,
-			"{\"Date\":\"%02d-%02d-%02d %02d:%02d:%02d\", \"SyncTime\":%s}",
-			stDate.iYear, stDate.iMonth, stDate.iDay,
-			stDate.iHour, stDate.iMinute, stDate.iSecond,
-			PLUG_GetTimeSyncFlag() == TIME_SYNC_NONE ? "false" : "true");
-
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-    return;
-}
-
-VOID HTTP_PostTimerData( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-	PLUG_DATE_S stDate;
 	UINT uiRet = 0;
+	HTTP_FILE_S* pstFile = NULL;
 
-	if (pstHeader->uiRecvCurLenth < pstHeader->uiContentLenth)
+	pstFile = HTTP_FileOpen( &pstCtx->stReq.szURL[1] );
+	if ( pstFile == NULL )
 	{
-		return;
+		LOG_OUT(LOGOUT_ERROR, "open file failed, %s", &pstCtx->stReq.szURL[1]);
+		return HTTP_InternalServerError( pstCtx );
 	}
 
-	uiRet = PLUG_ParseTimerData(pstHeader->pcResqBody);
+	uiRet = HTTP_SendFile( pstCtx, pstFile );
 	if ( uiRet != OK )
 	{
-		stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-		pstHeader->eProcess = HTTP_PROCESS_Finished;
+		LOG_OUT(LOGOUT_ERROR, "send file failed, %s", pstFile->pcName);
+		return FAIL;
 	}
 
-	if ( pstHeader->eProcess == HTTP_PROCESS_Finished )
+	uiRet = HTTP_FileClose( &pstFile );
+	if ( uiRet != RESULT_Success )
 	{
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PostTimerData, malloc pcBuf failed.");
-			return;
-	    }
-
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-    	uiBodyLen = HTTP_SetResponseBody(pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen, "{\"result\":\"success\", \"msg\":\"\"}");
-	   	HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-	    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-	    return;
+		LOG_OUT(LOGOUT_ERROR, "close file failed, %s", pstFile->pcName );
+		return FAIL;
 	}
+	return OK;
 }
 
-VOID HTTP_PostDelayData( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_GetDate( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-	PLUG_DATE_S stDate;
 	UINT uiRet = 0;
 
-	if (pstHeader->uiRecvCurLenth < pstHeader->uiContentLenth)
-	{
-		return;
-	}
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 
+	HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-	uiRet = PLUG_ParseDelayData(pstHeader->pcResqBody);
+	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-		pstHeader->eProcess = HTTP_PROCESS_Finished;
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
 	}
 
-	if ( pstHeader->eProcess == HTTP_PROCESS_Finished )
+    pstCtx->stResp.uiPos += PLUG_MarshalJsonDate(
+    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
 	{
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PostDelayData, malloc pcBuf failed.");
-			return;
-	    }
-
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-    	uiBodyLen = HTTP_SetResponseBody(pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen, "{\"result\":\"success\", \"msg\":\"\"}");
-	   	HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-	    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-	    return;
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
 	}
+
+    return OK;
 }
 
-VOID HTTP_PostSystemData( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_PostTimerData( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-	PLUG_DATE_S stDate;
 	UINT uiRet = 0;
 
-	if (pstHeader->uiRecvCurLenth < pstHeader->uiContentLenth)
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if (pstCtx->stReq.uiRecvCurLen < pstCtx->stReq.uiRecvTotalLen)
 	{
-		return;
+		return OK;
 	}
 
-	uiRet = PLUG_ParseSystemData(pstHeader->pcResqBody);
-	if ( uiRet != OK )
+	if ( OK != PLUG_ParseTimerData(pstCtx->stReq.pcResqBody) )
 	{
-		stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-		pstHeader->eProcess = HTTP_PROCESS_Finished;
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse timer data failed", pstCtx->iClientFd );
+		return HTTP_InternalServerError( pstCtx );
 	}
 
-	if ( pstHeader->eProcess == HTTP_PROCESS_Finished )
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
 	{
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
 		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PostSystemData, malloc pcBuf failed.");
-			return;
-	    }
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
+		}
 
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-    	uiBodyLen = HTTP_SetResponseBody(pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen, "{\"result\":\"success\", \"msg\":\"\"}");
-	   	HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-	    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-	    return;
+		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
+		}
 	}
+	return OK;
 }
 
-VOID HTTP_PostDeviceControl( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_PostDelayData( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-	PLUG_DATE_S stDate;
 	UINT uiRet = 0;
 
-	if (pstHeader->uiRecvCurLenth < pstHeader->uiContentLenth)
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if (pstCtx->stReq.uiRecvCurLen < pstCtx->stReq.uiRecvTotalLen)
 	{
-		return;
+		return OK;
 	}
 
-	uiRet = PLUG_ParseDeviceControlData(pstHeader->pcResqBody);
-	if ( uiRet != OK )
+	if ( OK != PLUG_ParseDelayData(pstCtx->stReq.pcResqBody) )
 	{
-		stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-		pstHeader->eProcess = HTTP_PROCESS_Finished;
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse daley data failed", pstCtx->iClientFd );
+		return HTTP_InternalServerError( pstCtx );
 	}
 
-	if ( pstHeader->eProcess == HTTP_PROCESS_Finished )
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
 	{
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
 		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PostDeviceControl, malloc pcBuf failed.");
-			return;
-	    }
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
+		}
 
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-    	uiBodyLen = HTTP_SetResponseBody(pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen, "{\"result\":\"success\", \"msg\":\"\"}");
-	   	HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-	    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-	    return;
+		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
+		}
 	}
+	return OK;
 }
 
-VOID HTTP_GetScanWifi( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_PostSystemData( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-
-	pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_GetRelayStatus, malloc pcBuf failed.");
-		return;
-    }
-
-	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-	uiBodyLen = HTTP_WifiScanMarshalJson( pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen );
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-    return;
-}
-
-VOID HTTP_PostDate( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
 	UINT uiRet = 0;
-	PLUG_DATE_S stDate;
 
-	if (pstHeader->uiRecvCurLenth < pstHeader->uiContentLenth)
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if (pstCtx->stReq.uiRecvCurLen < pstCtx->stReq.uiRecvTotalLen)
 	{
-		return;
+		return OK;
 	}
 
-	uiRet = PLUG_ParseDate(pstHeader->pcResqBody);
+	if ( OK != PLUG_ParseSystemData(pstCtx->stReq.pcResqBody) )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse system data failed", pstCtx->iClientFd );
+		return HTTP_InternalServerError( pstCtx );
+	}
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+
+		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+	}
+	return OK;
+}
+
+UINT HTTP_PostDeviceControl( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if (pstCtx->stReq.uiRecvCurLen < pstCtx->stReq.uiRecvTotalLen)
+	{
+		return OK;
+	}
+
+	if ( OK != PLUG_ParseDeviceControlData(pstCtx->stReq.pcResqBody) )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse device control data failed", pstCtx->iClientFd );
+		return HTTP_InternalServerError( pstCtx );
+	}
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+
+		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+	}
+	return OK;
+}
+
+UINT HTTP_GetScanWifi( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_4K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-		pstHeader->eProcess = HTTP_PROCESS_Finished;
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
 	}
 
-	if ( pstHeader->eProcess == HTTP_PROCESS_Finished )
+    pstCtx->stResp.uiPos += WIFI_WifiScanMarshalJson(
+    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
 	{
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PostDate, malloc pcBuf failed.");
-			return;
-	    }
-	    PLUG_GetDate(&stDate);
-
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-    	uiBodyLen = snprintf( pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen,
-    			"{\"Date\":\"%02d-%02d-%02d %02d:%02d:%02d\", \"SyncTime\":%s}",
-    			stDate.iYear, stDate.iMonth, stDate.iDay,
-    			stDate.iHour, stDate.iMinute, stDate.iSecond,
-    			PLUG_GetTimeSyncFlag() == TIME_SYNC_NONE ? "false" : "true");
-	   	HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-	    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-	    return;
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
 	}
+
+	return OK;
+}
+
+UINT HTTP_PostDate( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if ( OK != PLUG_ParseDate(pstCtx->stReq.pcResqBody) )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse date failed", pstCtx->iClientFd );
+		return HTTP_InternalServerError( pstCtx );
+	}
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+
+	    pstCtx->stResp.uiPos += PLUG_MarshalJsonDate(
+	    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+	    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+	}
+	return OK;
 }
 
 
-VOID HTTP_PutUpgrade( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
 	UINT uiRet = 0;
 	STATIC UINT uiPos = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Created, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
 	STATIC UINT32 uiAddr = 0;
-	HTTP_HTMLDATA_S* pstHtmlData = NULL;
 
 	//取要升级的user.bin的地址
 	if ( uiAddr == 0 )
@@ -1084,371 +1278,166 @@ VOID HTTP_PutUpgrade( HTTP_REQUEST_HEAD_S *pstHeader )
 		uiAddr = UPGRADE_GetUpgradeUserBinAddr();
 		if ( uiAddr != 0 )
 		{
-			LOG_OUT(LOGOUT_INFO, "new bin uiAddr:0x%X, length:%d", uiAddr, pstHeader->uiContentLenth);
+			LOG_OUT(LOGOUT_INFO, "new bin uiAddr:0x%X, length:%d", uiAddr, pstCtx->stReq.uiRecvTotalLen);
 		}
 	}
 
 	//将要升级的bin文件写入对应flash地址中
 	if ( uiAddr != 0 )
 	{
-		uiRet = FlASH_Write(uiAddr + uiPos,
-							pstHeader->pcResqBody,
-							pstHeader->uiRecvCurLenth);
+		uiRet = FlASH_Write( uiAddr + uiPos,
+							 pstCtx->stReq.pcResqBody,
+							 pstCtx->stReq.uiRecvCurLen);
 		//写失败直接返回500
 		if ( uiRet != OK  )
 		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PutUpgrade, FlASH_Write failed.");
-
-			stResponHead.eHttpCode = HTTP_CODE_InternalServerError;
-			stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-			stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-			pstHeader->eProcess = HTTP_PROCESS_Finished;
+			LOG_OUT(LOGOUT_ERROR, "upgread failed, FlASH_Write failed.");
+			return HTTP_InternalServerError( pstCtx );
 		}
 		else
 		{
-			if (pstHeader->uiContentLenth > 0)
+			pstCtx->stResp.eHttpCode = HTTP_CODE_Created;
+			pstCtx->stResp.eContentType = HTTP_CONTENT_TYPE_Json;
+			pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+			if (pstCtx->stReq.uiRecvTotalLen > 0)
 			{
 				//输出user.bin下载进度
-				LOG_OUT(LOGOUT_INFO, "upgrade process :%d.",
-						pstHeader->uiRecvPresentLenth*100 / pstHeader->uiContentLenth);
+				LOG_OUT(LOGOUT_INFO, "fd:%d, upgrade process:%d",
+						pstCtx->iClientFd,
+						pstCtx->stReq.uiRecvLen*100 / pstCtx->stReq.uiRecvTotalLen);
 			}
 		}
 	}
 	//user.bin的地址无效时返回500
 	else
 	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_PutUpgrade, Get user bin addr failed.");
+		LOG_OUT(LOGOUT_ERROR, "Get user bin addr failed.");
 
-		stResponHead.eHttpCode = HTTP_CODE_InternalServerError;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-		pstHeader->eProcess = HTTP_PROCESS_Finished;
+		return HTTP_InternalServerError( pstCtx );
 	}
 
 	//更新偏移地址
-	uiPos = pstHeader->uiRecvPresentLenth;
+	uiPos = pstCtx->stReq.uiRecvLen;
 
 	//bin数据接收完成
-	if ( pstHeader->eProcess == HTTP_PROCESS_Finished )
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
 	{
 		uiPos = 0;
 		uiAddr = 0;
 
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PutUpgrade, malloc pcBuf failed.");
-			return;
-	    }
-
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-    	//uiBodyLen = HTTP_SetResponseBody(pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen, "{\"result\":\"success\", \"msg\":\"\"}");
-    	uiBodyLen = snprintf( pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen, "{\"result\":\"success\", \"msg\":\"\"}");
-    	HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-	    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-
-	    if (stResponHead.eHttpCode == HTTP_CODE_Created )
+	    if (pstCtx->stResp.eHttpCode == HTTP_CODE_Created )
 	    {
-		    LOG_OUT(LOGOUT_INFO, "HTTP_PutUpgrade new bin download successed.");
+		    LOG_OUT(LOGOUT_INFO, "new bin download successed.");
 		    UPGRADE_StartUpgradeRebootTimer();
 	    }
 	    else
 	    {
-	    	LOG_OUT(LOGOUT_ERROR, "HTTP_PutUpgrade new bin download failed.");
+	    	LOG_OUT(LOGOUT_ERROR, "new bin download failed.");
+			return HTTP_InternalServerError( pstCtx );
 	    }
-	}
-    return;
-}
 
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-#if 0
-VOID HTTP_GetUpgrade( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 1;
-	UINT uiBodyLen = 0;
-	UINT uiFileLength = 0;
-	UINT uiRet = 0;
-	STATIC UINT uiPos = 0;
-	HTTP_HTMLDATA_S* pstHtmlData = NULL;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Stream, HTTP_CACHE_CTL_TYPE_MaxAge_1y};
-
-	pstHtmlData = HTTP_GetHtmlData(HTTP_HTML_1);
-	uiFileLength =  pstHtmlData->uiLength;
-	pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
-
-	pstHeader->uiSentLength = 0;
-	while ( 1 )
-	{
-		while( pstHeader->bIsCouldSend == TRUE )
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
 		{
-			vTaskDelay(10/portTICK_RATE_MS);
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
 		}
 
-		if ( pstHeader->uiSentLength >= pstHeader->uiSendTotalLength)
+		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
+		if ( uiRet != OK )
 		{
-			uiPos = 0;
-			break;
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			return FAIL;
 		}
-
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
 		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_GetUpgrade, malloc pcBuf failed.");
-			return;
-	    }
-
-	    if ( pstHeader->uiSentLength == 0 )
-	    {
-	    	uiPos = 0;
-	    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-			HTTP_SetHeaderContentLength(pcBuf, uiFileLength);
-			pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
-	   }
-	    else
-	    {
-	    	uiHeaderLen = 0;
-	    }
-
-	    if ( pstHeader->uiSendTotalLength - pstHeader->uiSentLength > 4096 )
-	    {
-	    	uiBodyLen = uiFileLength > (4096 - uiHeaderLen) ? (4096 - uiHeaderLen) : uiFileLength;
-	    }
-	    else
-	    {
-	    	uiBodyLen = pstHeader->uiSendTotalLength - pstHeader->uiSentLength;
-	    }
-
-	    pstHeader->uiSendCurLength = uiHeaderLen + uiBodyLen;
-
-	    uiRet = FlASH_Read(pstHtmlData->uiAddr + uiPos,
-							pcBuf+uiHeaderLen,
-							uiBodyLen);
-
-		uiPos += uiBodyLen;
-	    pstHeader->pcResponBody = pcBuf;
-	    pstHeader->bIsCouldSend = TRUE;
-		if ( uiRet != OK  )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_GetUpgrade, FlASH_Read failed.");
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
 		}
 	}
-	return;
-}
-#endif
-
-VOID HTTP_GetRelayStatus( HTTP_REQUEST_HEAD_S *pstHeader )
-{
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
-	PLUG_DATE_S stDate;
-
-	pcBuf = ( CHAR* )malloc( HTTP_BUF_512 );
-    if ( NULL == pcBuf )
-	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_GetRelayStatus, malloc pcBuf failed.");
-		return;
-    }
-
-    PLUG_GetDate(&stDate);
-	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, HTTP_BUF_512, &stResponHead );
-
-	uiBodyLen = snprintf( pcBuf+uiHeaderLen, HTTP_BUF_512-uiHeaderLen,
-			"{\"status\":\"%s\"}", PLUG_GetRelayStatus() ? "on" : "off");
-    HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-    return;
+	return OK;
 }
 
-VOID HTTP_PostRelayStatus( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_GetRelayStatus( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 0;
-	UINT uiBodyLen = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Json, HTTP_CACHE_CTL_TYPE_No};
 	UINT uiRet = 0;
 
-	if (pstHeader->uiRecvCurLenth < pstHeader->uiContentLenth)
-	{
-		return;
-	}
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 
-	uiRet = PLUG_ParseRelayStatus(pstHeader->pcResqBody);
+	HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		stResponHead.eHttpCode = HTTP_CODE_BadRequest;
-		stResponHead.eContentType = HTTP_CONTENT_TYPE_Json;
-		stResponHead.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-		pstHeader->eProcess = HTTP_PROCESS_Finished;
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
 	}
 
-	if ( pstHeader->eProcess == HTTP_PROCESS_Finished )
-	{
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_PostRelayStatus, malloc pcBuf failed.");
-			return;
-	    }
+    pstCtx->stResp.uiPos += PLUG_MarshalJsonRelayStatus(
+    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
 
-    	uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-    	uiBodyLen = snprintf( pcBuf+uiHeaderLen, USER_SENDBUF_SIZE-uiHeaderLen,
-    			"{\"status\":\"%s\"}", PLUG_GetRelayStatus() ? "on" : "off");
-	   	HTTP_SetHeaderContentLength(pcBuf, uiBodyLen);
-	    HTTP_SetDefaultSendHeader(pstHeader, pcBuf, uiBodyLen + uiHeaderLen);
-	    return;
-	}
-}
-
-UINT HTTP_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen)
-{
-	WIFI_SCAN_S *pstData = NULL;
-	UINT uiLoopi = 0;
-	UINT8 uiRet = 0;
-	CHAR *pJsonStr = NULL;
-	cJSON  *pJsonArry, *pJsonsub;
-
-	if( g_pstWifiScanHead == NULL )
-	{
-		g_pstWifiScanHead = ( WIFI_SCAN_S* )malloc( sizeof(WIFI_SCAN_S) * WIFI_SCAN_NUM );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_WifiScanMarshalJson, malloc pcBuf failed.");
-			return 0;
-	    }
-	    memset(g_pstWifiScanHead, 0, sizeof(WIFI_SCAN_S) * WIFI_SCAN_NUM);
-	}
-
-	uiRet = WIFI_ScanWifiSsid();
+	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		FREE_MEM(pJsonStr);
-		LOG_OUT(LOGOUT_ERROR, "WIFI_ScanWifiSsid failed.");
-		return 0;
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
 	}
 
-	pstData = g_pstWifiScanHead;
-	pJsonArry = cJSON_CreateArray();
-	for ( uiLoopi = 0 ; uiLoopi < WIFI_SCAN_NUM; uiLoopi++, pstData++ )
-	{
-		if( pstData->szMac[0] == 0 )
-		{
-			break;
-		}
-		pJsonsub=cJSON_CreateObject();
-
-		cJSON_AddStringToObject( pJsonsub,	"Ssid", 			pstData->szSsid);
-		cJSON_AddStringToObject( pJsonsub,	"Mac", 				pstData->szMac);
-		cJSON_AddStringToObject( pJsonsub,	"AuthMode",			pstData->szAuthMode);
-		cJSON_AddNumberToObject( pJsonsub,	"Rssi",				pstData->iRssi);
-		cJSON_AddNumberToObject( pJsonsub,	"Channel",			pstData->ucChannel);
-
-		cJSON_AddItemToArray(pJsonArry, pJsonsub);
-	}
-	FREE_MEM(g_pstWifiScanHead);
-
-    pJsonStr = cJSON_PrintUnformatted(pJsonArry);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
-    cJSON_Delete(pJsonArry);
-    FREE_MEM(pJsonStr);
-	return strlen(pcBuf);
+	return OK;
 }
 
-
-UINT HTTP_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen)
+UINT HTTP_PostRelayStatus( HTTP_CTX *pstCtx )
 {
-	cJSON  *pJson = NULL;
-	CHAR *pJsonStr = NULL;
-	CHAR szBuf[20];
+	UINT uiRet = 0;
 
-	pJson = cJSON_CreateObject();
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 
-	snprintf(szBuf, sizeof(szBuf), "%s %s", __DATE__, __TIME__);
-	cJSON_AddStringToObject( pJson, "BuildDate", 	szBuf);
+	if (pstCtx->stReq.uiRecvCurLen < pstCtx->stReq.uiRecvTotalLen)
+	{
+		return OK;
+	}
 
-	cJSON_AddStringToObject( pJson, "SDKVersion", 	system_get_sdk_version());
-	cJSON_AddStringToObject( pJson, "FlashMap", 	UPGRADE_GetFlashMap());
+	if ( OK != PLUG_ParseRelayStatus(pstCtx->stReq.pcResqBody) )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse relay status failed", pstCtx->iClientFd );
+		return HTTP_InternalServerError( pstCtx );
+	}
 
-	snprintf(szBuf, sizeof(szBuf), "user%d.bin", 	system_upgrade_userbin_check()+1);
-	cJSON_AddStringToObject( pJson, "UserBin", 		szBuf);
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-	cJSON_AddNumberToObject( pJson, "RunTime", 		PLUG_GetRunTime());
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
+		}
 
-    pJsonStr = cJSON_PrintUnformatted(pJson);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
-    cJSON_Delete(pJson);
-    FREE_MEM(pJsonStr);
+	    pstCtx->stResp.uiPos += PLUG_MarshalJsonRelayStatus(
+	    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+	    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
 
-	return strlen(pcBuf);
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+	}
+	return OK;
 }
 
-
-VOID HTTP_GetUpload( HTTP_REQUEST_HEAD_S *pstHeader )
+UINT HTTP_GetUploadHtml( HTTP_CTX *pstCtx )
 {
-	CHAR* pcBuf = NULL;
-	UINT uiHeaderLen = 1;
-	UINT uiBodyLen = 0;
-	UINT uiFileLength = 0;
-	STATIC UINT uiPos = 0;
-	HTTP_RESPONSE_HEAD_S stResponHead = {HTTP_CODE_Ok, HTTP_CONTENT_TYPE_Html, HTTP_CACHE_CTL_TYPE_MaxAge_1y};
-
-	uiFileLength =  uiFileLength = strlen(HTML_UploadHtml);
-	pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
-	pstHeader->uiSentLength = 0;
-	while ( 1 )
-	{
-		//等待上一次发送完成
-		while( pstHeader->bIsCouldSend == TRUE )
-		{
-			vTaskDelay(10/portTICK_RATE_MS);
-		}
-
-		//发送结束时推迟循环
-		if ( pstHeader->uiSentLength >= pstHeader->uiSendTotalLength)
-		{
-			uiPos = 0;
-			break;
-		}
-
-		pcBuf = ( CHAR* )malloc( USER_SENDBUF_SIZE + 5 );
-	    if ( NULL == pcBuf )
-		{
-			LOG_OUT(LOGOUT_ERROR, "HTTP_GetUpload, malloc pcBuf failed.");
-			return;
-	    }
-
-	    //首次发送时发送http头部
-		if ( pstHeader->uiSentLength == 0 )
-		{
-			uiPos = 0;
-			uiHeaderLen = HTTP_SetHeaderCode( pcBuf, USER_SENDBUF_SIZE, &stResponHead );
-			HTTP_SetHeaderContentLength(pcBuf, uiFileLength);
-			pstHeader->uiSendTotalLength = uiFileLength + uiHeaderLen;
-		}
-	    else
-	    {
-	    	uiHeaderLen = 0;
-	    }
-
-		//http响应的body体一次最多4096字节
-	    if ( pstHeader->uiSendTotalLength - pstHeader->uiSentLength > 4096 )
-	    {
-	    	uiBodyLen = uiFileLength > (4096 - uiHeaderLen) ? (4096 - uiHeaderLen) : uiFileLength;
-	    }
-	    else
-	    {
-	    	uiBodyLen = pstHeader->uiSendTotalLength - pstHeader->uiSentLength;
-	    }
-
-	    pstHeader->uiSendCurLength = uiHeaderLen + uiBodyLen;
-
-	    memcpy(pcBuf + uiHeaderLen, HTML_UploadHtml+uiPos, uiBodyLen);
-
-		uiPos += uiBodyLen;
-	    pstHeader->pcResponBody = pcBuf;
-	    pstHeader->bIsCouldSend = TRUE;
-	}
-	return;
+	return HTTP_SendMultiple(pstCtx, HTML_UploadHtml);
 }

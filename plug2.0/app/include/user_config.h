@@ -53,7 +53,7 @@ typedef enum tagPLUG_MOUDLE
 	PLUG_MOUDLE_TIMER			= 0x01, 	/* timer */
 	PLUG_MOUDLE_DELAY			= 0x02, 	/* delay */
 	PLUG_MOUDLE_SYSSET			= 0x04, 	/* system */
-	PLUG_MOUDLE_HTML			= 0x08, 	/* html */
+	PLUG_MOUDLE_FILELIST		= 0x08, 	/* file */
 
 	PLUG_MOUDLE_BUFF         	= 0xFF
 }PLUG_MOUDLE_E;

@@ -415,7 +415,7 @@ uart0_rx_intr_handler(void *para)
 				}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get device info\r\n") )
     			{
-					HTTP_DeviceInfoMarshalJson(Uart_SendBuf, UART_SENDMAXCNT);
+					WIFI_DeviceInfoMarshalJson(Uart_SendBuf, UART_SENDMAXCNT);
 					printf(Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get sys\r\n") )
@@ -440,28 +440,22 @@ uart0_rx_intr_handler(void *para)
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get wifi\r\n") )
     			{
-    				//HTTP_WifiScanMarshalJson(pcBuf, UART_SENDMAXCNT);
+    				//WIFI_WifiScanMarshalJson(pcBuf, UART_SENDMAXCNT);
 					printf(Uart_SendBuf);
     			}
       			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get relay status\r\n") )
     			{
-    				snprintf( Uart_SendBuf, UART_SENDMAXCNT, "{\"status\":\"%s\"}", PLUG_GetRelayStatus() ? "on" : "off");
+      				PLUG_MarshalJsonRelayStatus(Uart_SendBuf, UART_SENDMAXCNT);
     				printf(Uart_SendBuf);
     			}
       			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get date\r\n") )
     			{
-      				PLUG_DATE_S stDate;
-      				PLUG_GetDate(&stDate);
-      				snprintf( Uart_SendBuf, UART_SENDMAXCNT,
-      							"{\"Date\":\"%02d-%02d-%02d %02d:%02d:%02d\", \"SyncTime\":%s}",
-      							stDate.iYear, stDate.iMonth, stDate.iDay,
-      							stDate.iHour, stDate.iMinute, stDate.iSecond,
-      							PLUG_GetTimeSyncFlag() == TIME_SYNC_NONE ? "false" : "true");
+      				PLUG_MarshalJsonDate(Uart_SendBuf, UART_SENDMAXCNT);
       				printf(Uart_SendBuf);
     			}
       			else if ( 0 == strcmp((char*)Uart_RecvBuf, "debug free heap\r\n") )
     			{
-      				printf("Heap Size:%d", system_get_free_heap_size());
+      				printf("Free heap Size:%d", system_get_free_heap_size());
     			}
       			else if ( 0 == strcmp((char*)Uart_RecvBuf, "debug show malloc\r\n") )
     			{

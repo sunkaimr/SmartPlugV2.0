@@ -169,6 +169,8 @@ UINT PLUG_MarshalJsonTimer( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum );
 UINT PLUG_MarshalJsonDelay( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum);
 UINT PLUG_MarshalJsonSystemSet( CHAR* pcBuf, UINT uiBufLen );
 UINT PLUG_MarshalJsonHtmlData( CHAR* pcBuf, UINT uiBufLen );
+UINT PLUG_MarshalJsonRelayStatus( CHAR* pcBuf, UINT uiBufLen );
+UINT PLUG_MarshalJsonDate( CHAR* pcBuf, UINT uiBufLen );
 
 
 INT32 PLUG_GetTimeFromInternet();
