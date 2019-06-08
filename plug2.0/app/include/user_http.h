@@ -61,7 +61,7 @@ typedef enum {
 	HTTP_PROCESS_None = 0,		//空闲状态
 	HTTP_PROCESS_Invalid,		//收到了请求但是无法解析出http header信息，这种情况直接返回400
 	HTTP_PROCESS_GotHeader,		//http header解析完成
-	HTTP_PROCESS_GetBody,		//http携带的body体过长无法一次recv完成需要分多次接收
+	HTTP_PROCESS_GetBody,		//正在接收body体，http携带的body体过长无法一次recv完成需要分多次接收
 	HTTP_PROCESS_Finished,		//完成接收,开始发送成功的响应
 
 	HTTP_PROCESS_Buff
@@ -198,6 +198,7 @@ typedef struct tagHttpFileList
 extern const CHAR szHttpMethodStr[][10];
 extern const CHAR szHttpUserAgentStringmap[][10];
 extern const CHAR szHttpContentTypeStr[][25];
+extern const CHAR szHttpCodeMap[][5];
 
 VOID HTTP_RouterInit( VOID );
 //extern VOID HTTP_RouterHandle( HTTP_CTX *pstCtx );

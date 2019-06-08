@@ -507,7 +507,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 		{
 			if ( pstCtx->stReq.uiRecvCurLen == pstCtx->stReq.uiRecvLen )
 			{
-				LOG_OUT(LOGOUT_INFO, "fd:%d, %s %s",
+				LOG_OUT(LOGOUT_INFO, "fd:%d, Request: %s %s",
 						pstCtx->iClientFd,
 						szHttpMethodStr[pstCtx->stReq.eMethod],
 						pstCtx->stReq.szURL);
@@ -522,7 +522,8 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 				pstCtx->iClientFd,
 				szHttpMethodStr[pstCtx->stReq.eMethod],
 				pstCtx->stReq.szURL);
-		HTTP_NotFound( pstCtx );
+
+		return HTTP_NotFound( pstCtx );
 	}
 
 	if ( HTTP_IS_SEND_FINISH( pstCtx ) )

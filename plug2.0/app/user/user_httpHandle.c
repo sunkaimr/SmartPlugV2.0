@@ -215,6 +215,10 @@ UINT HTTP_SendFile( HTTP_CTX *pstCtx, HTTP_FILE_S* pstFile )
 	    pstCtx->stResp.uiSendCurLen = pstCtx->stResp.uiPos + uiBodyLen;
 		pstCtx->stResp.uiPos = 0;
 
+		LOG_OUT(LOGOUT_INFO, "fd:%d, send process:%d",
+				pstCtx->iClientFd,
+				pstCtx->stResp.uiSentLen * 100 / pstCtx->stResp.uiSendTotalLen);
+
 		uiRet = WEB_WebSend(pstCtx);
 		if ( uiRet != OK )
 		{
@@ -266,16 +270,16 @@ UINT HTTP_SendMultiple( HTTP_CTX *pstCtx, const CHAR* pcContent )
 		}
 
 		//http响应的body体一次最多4096字节,确定本次发送body体的长度
-	    if ( pstCtx->stResp.uiSendTotalLen - pstCtx->stResp.uiSentLen > 4096 )
+	    if ( pstCtx->stResp.uiSendTotalLen - pstCtx->stResp.uiSentLen > WEB_MUX )
 	    {
 			if ( pstCtx->stResp.uiSentLen == 0 )
 			{
 				//首次发送因为要发送http响应头
-		    	uiBodyLen = uiContentLen > (4096 - pstCtx->stResp.uiHeaderLen) ? (4096 - pstCtx->stResp.uiHeaderLen) : uiContentLen;
+		    	uiBodyLen = uiContentLen > (WEB_MUX - pstCtx->stResp.uiHeaderLen) ? (WEB_MUX - pstCtx->stResp.uiHeaderLen) : uiContentLen;
 		  	}
 			else
 			{
-				uiBodyLen = 4096;
+				uiBodyLen = WEB_MUX;
 			}
 	    }
 	    else
@@ -291,6 +295,10 @@ UINT HTTP_SendMultiple( HTTP_CTX *pstCtx, const CHAR* pcContent )
 	    pstCtx->stResp.uiSendCurLen = pstCtx->stResp.uiPos + uiBodyLen;
 		pstCtx->stResp.uiPos = 0;
 
+		LOG_OUT(LOGOUT_INFO, "fd:%d, send process:%d",
+				pstCtx->iClientFd,
+				pstCtx->stResp.uiSentLen * 100 / pstCtx->stResp.uiSendTotalLen);
+
 		uiRet = WEB_WebSend(pstCtx);
 		if ( uiRet != OK )
 		{
@@ -299,7 +307,6 @@ UINT HTTP_SendMultiple( HTTP_CTX *pstCtx, const CHAR* pcContent )
 		}
 	}
 }
-
 
 
 VOID HTTP_FileListInit( VOID )
@@ -1278,7 +1285,9 @@ UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx )
 		uiAddr = UPGRADE_GetUpgradeUserBinAddr();
 		if ( uiAddr != 0 )
 		{
-			LOG_OUT(LOGOUT_INFO, "new bin uiAddr:0x%X, length:%d", uiAddr, pstCtx->stReq.uiRecvTotalLen);
+			LOG_OUT(LOGOUT_INFO, "new bin uiAddr:0x%X, length:%d",
+					uiAddr,
+					pstCtx->stReq.uiRecvTotalLen);
 		}
 	}
 
@@ -1291,15 +1300,14 @@ UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx )
 		//写失败直接返回500
 		if ( uiRet != OK  )
 		{
+			uiPos = 0;
+			uiAddr = 0;
+
 			LOG_OUT(LOGOUT_ERROR, "upgread failed, FlASH_Write failed.");
 			return HTTP_InternalServerError( pstCtx );
 		}
 		else
 		{
-			pstCtx->stResp.eHttpCode = HTTP_CODE_Created;
-			pstCtx->stResp.eContentType = HTTP_CONTENT_TYPE_Json;
-			pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
-
 			if (pstCtx->stReq.uiRecvTotalLen > 0)
 			{
 				//输出user.bin下载进度
@@ -1312,8 +1320,10 @@ UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx )
 	//user.bin的地址无效时返回500
 	else
 	{
-		LOG_OUT(LOGOUT_ERROR, "Get user bin addr failed.");
+		uiPos = 0;
+		uiAddr = 0;
 
+		LOG_OUT(LOGOUT_ERROR, "Get user bin addr failed.");
 		return HTTP_InternalServerError( pstCtx );
 	}
 
@@ -1326,16 +1336,9 @@ UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx )
 		uiPos = 0;
 		uiAddr = 0;
 
-	    if (pstCtx->stResp.eHttpCode == HTTP_CODE_Created )
-	    {
-		    LOG_OUT(LOGOUT_INFO, "new bin download successed.");
-		    UPGRADE_StartUpgradeRebootTimer();
-	    }
-	    else
-	    {
-	    	LOG_OUT(LOGOUT_ERROR, "new bin download failed.");
-			return HTTP_InternalServerError( pstCtx );
-	    }
+		pstCtx->stResp.eHttpCode = HTTP_CODE_Created;
+		pstCtx->stResp.eContentType = HTTP_CONTENT_TYPE_Json;
+		pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 
 		HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
@@ -1352,13 +1355,18 @@ UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx )
 			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
 			return FAIL;
 		}
+
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
 			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
 			return FAIL;
 		}
+
+		LOG_OUT(LOGOUT_INFO, "new bin download successed.");
+		UPGRADE_StartUpgradeRebootTimer();
 	}
+
 	return OK;
 }
 

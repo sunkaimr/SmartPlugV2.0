@@ -90,7 +90,7 @@ void user_init(void)
 
 	uart_init_new();
 	LOG_LogInit();
-	LOG_SetLogLevel( LOGOUT_DEBUG );
+	LOG_SetLogLevel( LOGOUT_INFO );
 	LOG_OUT(LOGOUT_INFO, "build date:%s %s", __DATE__, __TIME__);
 	LOG_OUT(LOGOUT_INFO, "SDK version:%s, FlashMap:%d, user%d.bin",
 			system_get_sdk_version(),
@@ -104,7 +104,5 @@ void user_init(void)
 	KEY_StartKeyHanderTimer();
 	PLUG_StartJudgeTimeHanderTimer();
 	WIFI_StartWifiModeTheard();
-
-
 }
 
