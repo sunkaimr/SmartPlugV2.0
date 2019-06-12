@@ -8,7 +8,7 @@
 #include "user_common.h"
 #include "esp_common.h"
 
-#define CLIENT_FD(n)	stWebCtx[n].iClientFd
+
 
 xTaskHandle xWebServerHandle = NULL;
 xTaskHandle xWebHandle = NULL;
@@ -20,6 +20,7 @@ CHAR* pcRecvBuf = NULL;
 
 BOOL bIsWebSvcRunning = FALSE;
 BOOL bWebServerTaskTerminate = FALSE;
+
 
 VOID WEB_StartHandleTheard( VOID *Para );
 
@@ -177,7 +178,7 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 		{
 			for ( iLoop = 0; iLoop < WEB_MAX_FD; iLoop++ )
 			{
-				if ( CLIENT_FD(iLoop) < 0 )
+				if ( stWebCtx[iLoop].iClientFd < 0 )
 				{
 					break;
 				}
@@ -201,10 +202,10 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 				
 				for ( iLoop = 0; iLoop < WEB_MAX_FD; iLoop++ )
 				{
-					if ( CLIENT_FD(iLoop) < 0 )
+					if ( stWebCtx[iLoop].iClientFd < 0 )
 					{
 						LOG_OUT(LOGOUT_DEBUG, "fd:%d connect", iClientFd);
-						CLIENT_FD(iLoop) = iClientFd;
+						stWebCtx[iLoop].iClientFd = iClientFd;
 
 						//UINT oldHeap = system_get_free_heap_size();
 						WEB_StartHandleTheard( &stWebCtx[iLoop] );
@@ -317,11 +318,11 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
 
 		if ( HTTP_IS_SEND_FINISH( pstCtx ) )
 		{
-			LOG_OUT(LOGOUT_INFO, "fd:%d, Response: %s %s %s",
+			LOG_OUT(LOGOUT_INFO, "fd:%d, [Response] Code:%s Method:%s URL:%s",
 					pstCtx->iClientFd,
+					szHttpCodeMap[pstCtx->stResp.eHttpCode],
 					szHttpMethodStr[pstCtx->stReq.eMethod],
-					pstCtx->stReq.szURL,
-					szHttpCodeMap[pstCtx->stResp.eHttpCode]);
+					pstCtx->stReq.szURL);
 			HTTP_RequestInit( pstCtx );
 		}
 	}
@@ -346,8 +347,11 @@ UINT WEB_WebSend( HTTP_CTX *pstCtx )
     INT32 iRet = 0;
     struct timeval stTimeOut = {1, 0};
 	fd_set stFdWrite;
+	UINT8 ucRetry = 0;
 
 	//LOG_OUT(LOGOUT_DEBUG, "fd:%d, WEB_WebSend...", pstCtx->iClientFd);
+
+retry:
 
 	FD_ZERO( &stFdWrite );
 	FD_SET( pstCtx->iClientFd, &stFdWrite );
@@ -373,8 +377,14 @@ UINT WEB_WebSend( HTTP_CTX *pstCtx )
 
 	if ( !FD_ISSET(pstCtx->iClientFd, &stFdWrite ))
 	{
-		LOG_OUT(LOGOUT_ERROR, "fd:%d, FdWrite error", pstCtx->iClientFd);
-		return FAIL;
+		ucRetry ++;
+		if ( ucRetry >= 10 )
+		{
+			LOG_OUT(LOGOUT_ERROR, "fd:%d, FdWrite error", pstCtx->iClientFd);
+			return FAIL;
+		}
+		LOG_OUT(LOGOUT_INFO, "fd:%d, FdWrite error", pstCtx->iClientFd);
+		goto retry;
 	}
 
 	FD_CLR(pstCtx->iClientFd, &stFdWrite);

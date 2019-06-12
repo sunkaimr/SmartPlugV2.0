@@ -507,7 +507,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 		{
 			if ( pstCtx->stReq.uiRecvCurLen == pstCtx->stReq.uiRecvLen )
 			{
-				LOG_OUT(LOGOUT_INFO, "fd:%d, Request: %s %s",
+				LOG_OUT(LOGOUT_INFO, "fd:%d, [Request] Method:%s URL:%s",
 						pstCtx->iClientFd,
 						szHttpMethodStr[pstCtx->stReq.eMethod],
 						pstCtx->stReq.szURL);
