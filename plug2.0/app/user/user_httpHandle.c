@@ -328,6 +328,7 @@ UINT HTTP_SendMultiple( HTTP_CTX *pstCtx, const CHAR* pcContent )
 			return FAIL;
 		}
 	}
+	return OK;
 }
 
 

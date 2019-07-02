@@ -74,6 +74,7 @@ LINKFLAGS_eagle.app.v6 = \
 	-lgcc					\
 	-lhal					\
 	-ljson	\
+	-lmqtt	\
 	-llwip	\
 	-lmain	\
 	-lmirom	\

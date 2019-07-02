@@ -233,7 +233,7 @@ end:
 
 VOID WEB_StartWebServerTheard( VOID )
 {
-	xTaskCreate(WEB_WebServerTask, "WEB_WebServerTask", 512, NULL, 4, &xWebServerHandle);//512, 376 left,136 used
+	xTaskCreate(WEB_WebServerTask, "WEB_WebServerTask", 512, NULL, 4, &xWebServerHandle);
 }
 
 STATIC VOID WEB_WebHandleTask( VOID *Para )
