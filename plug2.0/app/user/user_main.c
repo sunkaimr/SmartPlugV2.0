@@ -88,10 +88,11 @@ void user_init(void)
 	vTaskDelay(3000/portTICK_RATE_MS );
 	//system_set_os_print(0);
 
+
 	uart_init_new();
 	LOG_LogInit();
 	LOG_SetLogLevel( LOGOUT_DEBUG );
-	LOG_OUT(LOGOUT_INFO, "build date:%s %s", __DATE__, __TIME__);
+	LOG_OUT(LOGOUT_INFO, "git commit:%s, build date:%s %s", GIT_COMMIT_SHA1, __DATE__, __TIME__);
 	LOG_OUT(LOGOUT_INFO, "SDK version:%s, FlashMap:%d, user%d.bin",
 			system_get_sdk_version(),
 			system_get_flash_size_map(),

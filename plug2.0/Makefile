@@ -205,6 +205,9 @@ OIMAGES := $(GEN_IMAGES:%=$(IMAGEODIR)/%)
 BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
 
+#¼ÇÂ¼gitµÄcommit id
+GIT_COMMIT_SHA1 = `git log -n 1 | head -n 1 | cut -d ' ' -f 2`
+
 CCFLAGS += 			\
 	-g			\
 	-Wpointer-arith		\
@@ -218,7 +221,8 @@ CCFLAGS += 			\
 	-ffunction-sections \
 	-fdata-sections	\
 	-fno-builtin-printf	\
-	-fno-jump-tables
+	-fno-jump-tables \
+	-DGIT_COMMIT_SHA1=\"$(GIT_COMMIT_SHA1)\"
 #	-Wall			
 
 CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(INCLUDES)

@@ -16,7 +16,7 @@ else
 fi
 
 cd $1
-make clean
+#make clean
 make
 cp .output/eagle/debug/lib/lib$1.a $SDK_PATH/lib/lib$1.a
 xtensa-lx106-elf-strip --strip-unneeded $SDK_PATH/lib/lib$1.a

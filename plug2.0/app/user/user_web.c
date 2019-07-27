@@ -85,9 +85,7 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 	struct sockaddr_in stClientAddr;
 	INT32 iClientAddrLen = sizeof( struct sockaddr_in );
     INT32 iClientFd = -1;
-
     INT32 iRet = 0;
-
 	INT32 Reuseaddr = 1;
 	INT32 iLoop = 0;
 	fd_set stFdRead;

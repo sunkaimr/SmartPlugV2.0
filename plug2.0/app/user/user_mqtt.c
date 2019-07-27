@@ -3,7 +3,7 @@
 #include "user_common.h"
 #include "mqtt/MQTTClient.h"
 
-#define MQTT_TASK
+
 
 #define MQTT_BROKER  "a1OzgtZp5Ep.iot-as-mqtt.cn-shanghai.aliyuncs.com"
 #define MQTT_PORT    1883
@@ -11,8 +11,6 @@
 #define MQTT_SENDSIZE 256
 #define MQTT_RECVSIZE 256
 
-
-static xTaskHandle xMqttClientHandle;
 
 UINT MQTT_ParsePowerSwitchData( CHAR* pData );
 UINT PLUG_MarshalJsonPowerSwitch( CHAR* pcBuf, UINT uiBufLen );
@@ -62,8 +60,9 @@ static void MQTT_MqttClientTask(void* pvParameters)
     UINT uiRelayStatus = TRUE;
     UINT uiLastRelayStatus = FALSE;
     MQTTMessage message;
+    static UINT8 MqttTaskRunningFlag = FALSE;
 
-    LOG_OUT(LOGOUT_INFO, "MQTT_MqttClientTask");
+    LOG_OUT(LOGOUT_INFO, "mqtt client start");
 
     pcSendBuf = ( CHAR* )malloc( MQTT_SENDSIZE );
     if ( NULL == pcSendBuf )
@@ -82,68 +81,107 @@ static void MQTT_MqttClientTask(void* pvParameters)
     NetworkInit(&network);
     MQTTClientInit(&client, &network, 3000, pcSendBuf, MQTT_SENDSIZE, pcRecvBuf, MQTT_RECVSIZE);
 
-    uiRet = NetworkConnect(&network, MQTT_GetMqttAddress(szAddr, sizeof(szAddr)), MQTT_PORT);
-    if ( uiRet != OK )
-    {
+reConnect:
+
+	//等待wifi连接就绪
+	while ( STATION_GOT_IP != wifi_station_get_connect_status() )
+	{
+		LOG_OUT(LOGOUT_DEBUG, "wait for connect");
+		vTaskDelay(1000 / portTICK_RATE_MS);
+	}
+
+	while ( 1 )
+	{
+	    uiRet = NetworkConnect(&network, MQTT_GetMqttAddress(szAddr, sizeof(szAddr)), MQTT_PORT);
+	    if ( uiRet == OK )
+	    {
+	    	LOG_OUT(LOGOUT_DEBUG, "NetworkConnect success");
+	    	break;
+	    }
     	LOG_OUT(LOGOUT_ERROR, "NetworkConnect failed, uiRet:%d", uiRet);
-    	goto end;
-    }
-    LOG_OUT(LOGOUT_DEBUG, "NetworkConnect success");
+    	vTaskDelay(1000 / portTICK_RATE_MS);
+	}
+
 
     connectData.keepAliveInterval = 30;
     connectData.MQTTVersion = 3;
     connectData.clientID.cstring = MQTT_GetMqttClientID(szClientID, sizeof(szClientID));
     connectData.username.cstring = MQTT_GetMqttUserName(szUserName, sizeof(szUserName));
     connectData.password.cstring = MQTT_GetMqttPassWord(szPassWord, sizeof(szPassWord));
+    connectData.cleansession = TRUE;
 
-    uiRet = MQTTConnect(&client, &connectData);
-	if ( uiRet != OK )
+	while ( 1 )
 	{
-		LOG_OUT(LOGOUT_ERROR, "MQTTConnect failed, uiRet:%d", uiRet);
-		goto end;
-	}
-	LOG_OUT(LOGOUT_DEBUG, "MQTTConnect success");
-
-    uiRet = MQTTStartTask(&client);
-    if ( uiRet != TRUE )
-    {
-    	LOG_OUT(LOGOUT_ERROR, "MQTTStartTask failed, uiRet:%d", uiRet);
-    	goto end;
-    }
-    LOG_OUT(LOGOUT_DEBUG, "MQTTStartTask success");
-
-    uiRet = MQTTSubscribe(&client, "/sys/a1OzgtZp5Ep/test001/thing/service/property/set", QOS0, MQTT_RecvMessage);
-	if ( uiRet != OK )
-	{
-		LOG_OUT(LOGOUT_ERROR, "MQTTSubscribe failed, uiRet:%d", uiRet);
-		goto end;
+		uiRet = MQTTConnect(&client, &connectData);
+	    if ( uiRet == OK )
+	    {
+	    	LOG_OUT(LOGOUT_DEBUG, "MQTTConnect success");
+	    	break;
+	    }
+	    LOG_OUT(LOGOUT_ERROR, "MQTTConnect failed, uiRet:%d, client.isconnected:%d", uiRet, client.isconnected);
+    	vTaskDelay(1000 / portTICK_RATE_MS);
 	}
 
-	for ( ;; )
-    {
-		for (;;)
+
+#ifdef MQTT_TASK
+	uiRet = MQTTStartTask(&client);
+	if ( uiRet != TRUE )
+	{
+		LOG_OUT(LOGOUT_ERROR, "MQTTStartTask failed, uiRet:%d", uiRet);
+		goto end;
+	}
+	LOG_OUT(LOGOUT_DEBUG, "MQTTStartTask success");
+#endif
+
+	while ( 1 )
+	{
+	    uiRet = MQTTSubscribe(&client, "/sys/a1OzgtZp5Ep/test001/thing/service/property/set", QOS0, MQTT_RecvMessage);
+	    if ( uiRet == OK )
+	    {
+	    	LOG_OUT(LOGOUT_DEBUG, "MQTTSubscribe success");
+	    	break;
+	    }
+	    LOG_OUT(LOGOUT_ERROR, "MQTTSubscribe failed, uiRet:%d", uiRet);
+    	vTaskDelay(1000 / portTICK_RATE_MS);
+	}
+
+	for (;;)
+	{
+		if ( STATION_GOT_IP != wifi_station_get_connect_status() )
 		{
-			uiRelayStatus = PLUG_GetRelayStatus();
-			if ( uiRelayStatus != uiLastRelayStatus )
-			{
-				uiLastRelayStatus = uiRelayStatus;
-				break;
-			}
-			vTaskDelay(1000 / portTICK_RATE_MS);
+			LOG_OUT(LOGOUT_INFO, "wifi has disconnected");
+			break;
 		}
 
-        message.qos = QOS0;
-        message.retained = 0;
-        message.payloadlen = PLUG_MarshalJsonPowerSwitch(payload, sizeof(payload));
-        message.payload = payload;
+		uiRelayStatus = PLUG_GetRelayStatus();
+		if ( uiRelayStatus != uiLastRelayStatus )
+		{
+			message.qos = QOS0;
+			message.retained = 0;
+			message.payloadlen = PLUG_MarshalJsonPowerSwitch(payload, sizeof(payload));
+			message.payload = payload;
 
-        uiRet = MQTTPublish(&client, "/sys/a1OzgtZp5Ep/test001/thing/event/property/post", &message);
-        if ( uiRet != OK )
-        {
-        	LOG_OUT(LOGOUT_ERROR, "MQTTPublish failed, uiRet:%d", uiRet);
-        }
-        LOG_OUT(LOGOUT_DEBUG, "MQTTPublish success");
-    }
+			LOG_OUT(LOGOUT_DEBUG, "ready to MQTTPublish");
+			uiRet = MQTTPublish(&client, "/sys/a1OzgtZp5Ep/test001/thing/event/property/post", &message);
+			if ( uiRet != OK )
+			{
+				LOG_OUT(LOGOUT_ERROR, "MQTTPublish failed, uiRet:%d", uiRet);
+				break;
+			}
+			LOG_OUT(LOGOUT_DEBUG, "MQTTPublish success");
+
+			uiLastRelayStatus = uiRelayStatus;
+		}
+		vTaskDelay(1000 / portTICK_RATE_MS);
+	}
+	LOG_OUT(LOGOUT_DEBUG, "");
+	vTaskDelay(2000 / portTICK_RATE_MS);
+    LOG_OUT(LOGOUT_DEBUG, "");
+	LOG_OUT(LOGOUT_DEBUG, "NetworkConnect disconnect:%d", MQTTDisconnect(&client));
+	LOG_OUT(LOGOUT_DEBUG, "");
+	network.disconnect(&network);
+	LOG_OUT(LOGOUT_DEBUG, "");
+	goto reConnect;
 
 end:
     LOG_OUT(LOGOUT_INFO, "MQTT_MqttClientTask stop");
@@ -155,7 +193,7 @@ end:
 
 void MQTT_StartMqttTheard(void)
 {
-    xTaskCreate( MQTT_MqttClientTask, "MQTT_MqttClientTask", 1024, NULL, 5, &xMqttClientHandle);
+    xTaskCreate( MQTT_MqttClientTask, "MQTT_MqttClientTask", 2048, NULL, 5, NULL);
 }
 
 

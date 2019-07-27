@@ -71,7 +71,7 @@ void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeou
     c->cleansession = 0;
     c->ping_outstanding = 0;
     c->defaultMessageHandler = NULL;
-	  c->next_packetid = 1;
+	c->next_packetid = 1;
     TimerInit(&c->last_sent);
     TimerInit(&c->last_received);
 #if defined(MQTT_TASK)
@@ -361,22 +361,25 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
 
 void MQTTRun(void* parm)
 {
-	Timer timer;
-	MQTTClient* c = (MQTTClient*)parm;
-
-	TimerInit(&timer);
-
-	while (1)
-	{
+    Timer timer;
+    MQTTClient* c = (MQTTClient*)parm;
+    int rc = 0;
+    TimerInit(&timer);
+    while (1) {
+        TimerCountdownMS(&timer, 500); // Don't wait too long if no traffic is incoming
 #if defined(MQTT_TASK)
-		MutexLock(&c->mutex);
+        MutexLock(&c->mutex);
 #endif
-		TimerCountdownMS(&timer, 500); /* Don't wait too long if no traffic is incoming */
-		cycle(c, &timer);
+        rc = cycle(c, &timer);
 #if defined(MQTT_TASK)
-		MutexUnlock(&c->mutex);
+        MutexUnlock(&c->mutex);
 #endif
-	}
+        if (rc < 0){
+        	break;
+        }
+    }
+    vTaskDelete(NULL);
+    return;
 }
 
 
@@ -416,8 +419,9 @@ int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTC
 #if defined(MQTT_TASK)
 	  MutexLock(&c->mutex);
 #endif
-	  if (c->isconnected) /* don't send connect packet again if we are already connected */
-		  goto exit;
+
+	if (c->isconnected) /* don't send connect packet again if we are already connected */
+		goto exit;
 
     TimerInit(&connect_timer);
     TimerCountdownMS(&connect_timer, c->command_timeout_ms);
@@ -428,10 +432,12 @@ int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTC
     c->keepAliveInterval = options->keepAliveInterval;
     c->cleansession = options->cleansession;
     TimerCountdown(&c->last_received, c->keepAliveInterval);
-    if ((len = MQTTSerialize_connect(c->buf, c->buf_size, options)) <= 0)
+    if ((len = MQTTSerialize_connect(c->buf, c->buf_size, options)) <= 0){
         goto exit;
-    if ((rc = sendPacket(c, len, &connect_timer)) != SUCCESS)  // send the connect packet
+    }
+    if ((rc = sendPacket(c, len, &connect_timer)) != SUCCESS){  // send the connect packet
         goto exit; // there was a problem
+    }
 
     // this will be a blocking call, wait for the connack
     if (waitfor(c, CONNACK, &connect_timer) == CONNACK)
@@ -684,7 +690,7 @@ int MQTTDisconnect(MQTTClient* c)
     TimerInit(&timer);
     TimerCountdownMS(&timer, c->command_timeout_ms);
 
-	  len = MQTTSerialize_disconnect(c->buf, c->buf_size);
+	len = MQTTSerialize_disconnect(c->buf, c->buf_size);
     if (len > 0)
         rc = sendPacket(c, len, &timer);            // send the disconnect packet
     MQTTCloseSession(c);

@@ -207,6 +207,10 @@ exit:
     return retVal;
 }
 
+void NetworkDisconnect(Network* n)
+{
+	n->disconnect(n);
+}
 
 static int esp_ssl_read(Network* n, unsigned char* buffer, unsigned int len, unsigned int timeout_ms)
 {
