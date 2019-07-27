@@ -144,9 +144,10 @@ static int esp_write(Network* n, unsigned char* buffer, unsigned int len, unsign
 
     vTaskSetTimeOutState(&xTimeOut); /* Record the time at which this function was entered. */
 
-    do {
-        readysock = select(n->my_socket + 1, NULL, &fdset, NULL, &timeout);
-    } while (readysock <= 0);
+
+	readysock = select(n->my_socket + 1, NULL, &fdset, NULL, &timeout);
+	if ( readysock <= 0 )
+		goto exit;
 
     if (FD_ISSET(n->my_socket, &fdset)) {
         do {
@@ -160,8 +161,9 @@ static int esp_write(Network* n, unsigned char* buffer, unsigned int len, unsign
             }
         } while (sentLen < len && xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) == pdFALSE);
     }
-
     return sentLen;
+exit:
+    return -1;
 }
 
 

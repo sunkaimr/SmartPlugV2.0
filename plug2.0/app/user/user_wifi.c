@@ -496,8 +496,6 @@ VOID WIFI_SetWifiModeTask( void *para )
 
 		for ( ; ; )
 		{
-#if 1
-			//LOG_OUT(LOGOUT_DEBUG, "uiCurStatus:%d-%d", uiCurStatus, WEB_GetWebSvcStatus());
 			if ( uiCurStatus == STATION_GOT_IP && WEB_GetWebSvcStatus() == FALSE )
 			{
 				LOG_OUT(LOGOUT_INFO, "WEB_StartWebServerTheard.");
@@ -509,7 +507,6 @@ VOID WIFI_SetWifiModeTask( void *para )
 				LOG_OUT(LOGOUT_INFO, "WEB_StopWebServerTheard.");
 				WEB_StopWebServerTheard();
 			}
-#endif
 			vTaskDelay( 1000/portTICK_RATE_MS );
 		}
 	}

@@ -102,7 +102,6 @@ reConnect:
     	vTaskDelay(1000 / portTICK_RATE_MS);
 	}
 
-
     connectData.keepAliveInterval = 30;
     connectData.MQTTVersion = 3;
     connectData.clientID.cstring = MQTT_GetMqttClientID(szClientID, sizeof(szClientID));
@@ -153,6 +152,12 @@ reConnect:
 			break;
 		}
 
+	    if ( keepalive(&client) != SUCCESS)
+	    {
+	        LOG_OUT(LOGOUT_INFO, "keepalive failed");
+	        break;
+	    }
+
 		uiRelayStatus = PLUG_GetRelayStatus();
 		if ( uiRelayStatus != uiLastRelayStatus )
 		{
@@ -174,13 +179,8 @@ reConnect:
 		}
 		vTaskDelay(1000 / portTICK_RATE_MS);
 	}
-	LOG_OUT(LOGOUT_DEBUG, "");
-	vTaskDelay(2000 / portTICK_RATE_MS);
-    LOG_OUT(LOGOUT_DEBUG, "");
-	LOG_OUT(LOGOUT_DEBUG, "NetworkConnect disconnect:%d", MQTTDisconnect(&client));
-	LOG_OUT(LOGOUT_DEBUG, "");
-	network.disconnect(&network);
-	LOG_OUT(LOGOUT_DEBUG, "");
+    MQTTDisconnect( &client );
+	NetworkDisconnect( &network );
 	goto reConnect;
 
 end:
