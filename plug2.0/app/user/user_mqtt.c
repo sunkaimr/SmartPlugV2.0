@@ -84,6 +84,7 @@ static CHAR* MQTT_GetMqttPassWord( CHAR* pcPassWord, UINT uiLen )
 
 static void MQTT_RecvMessage(MessageData* data)
 {
+	//LOG_OUT(LOGOUT_INFO, "MQTTRecv, topic:%s",  data->topicName->cstring);
 	MQTT_ParsePowerSwitchData( data->message->payload);
 }
 
@@ -101,7 +102,8 @@ static void MQTT_MqttClientTask(void* pvParameters)
     CHAR szUserName[50];
     CHAR szPassWord[50];
     CHAR payload[256];
-    CHAR szTopic[256];
+    CHAR szSubscribeTopic[80];
+    CHAR szPublishTopic[80];
     UINT uiRelayStatus = TRUE;
     UINT uiLastRelayStatus = FALSE;
     MQTTMessage message;
@@ -112,18 +114,20 @@ static void MQTT_MqttClientTask(void* pvParameters)
     if ( NULL == pcSendBuf )
 	{
 		LOG_OUT(LOGOUT_ERROR, "malloc pcSendBuf failed.");
-		goto end;
+		goto exit;
     }
 
     pcRecvBuf = ( CHAR* )malloc( MQTT_RECVSIZE );
     if ( NULL == pcRecvBuf )
 	{
 		LOG_OUT(LOGOUT_ERROR, "malloc pcRecvBuf failed.");
-		goto end;
+		goto exit;
     }
 
     NetworkInit(&network);
     MQTTClientInit(&client, &network, 3000, pcSendBuf, MQTT_SENDSIZE, pcRecvBuf, MQTT_RECVSIZE);
+
+
 
 reConnect:
 
@@ -186,16 +190,16 @@ reConnect:
 	LOG_OUT(LOGOUT_DEBUG, "MQTTStartTask success");
 #endif
 
-	snprintf( szTopic, sizeof(szTopic), "/sys/%s/%s/thing/service/property/set",
+	snprintf( szSubscribeTopic, sizeof(szSubscribeTopic), "/sys/%s/%s/thing/service/property/set",
 			  PLUG_GetMqttProductKey(),
 			  PLUG_GetMqttDevName());
-	uiRet = MQTTSubscribe(&client, szTopic, QOS0, MQTT_RecvMessage);
+	uiRet = MQTTSubscribe(&client, szSubscribeTopic, QOS0, MQTT_RecvMessage);
 	if ( uiRet != OK )
 	{
-		LOG_OUT(LOGOUT_ERROR, "MQTTSubscribe %s failed, uiRet:%d", szTopic, uiRet);
+		LOG_OUT(LOGOUT_ERROR, "MQTTSubscribe %s failed, uiRet:%d", szSubscribeTopic, uiRet);
 		goto end;
 	}
-	LOG_OUT(LOGOUT_INFO, "MQTTSubscribe %s success", szTopic);
+	LOG_OUT(LOGOUT_INFO, "MQTTSubscribe %s success", szSubscribeTopic);
 
 	for (;;)
 	{
@@ -219,16 +223,16 @@ reConnect:
 			message.payloadlen = PLUG_MarshalJsonPowerSwitch(payload, sizeof(payload));
 			message.payload = payload;
 
-			snprintf( szTopic, sizeof(szTopic), "/sys/%s/%s/thing/event/property/post",
+			snprintf( szPublishTopic, sizeof(szPublishTopic), "/sys/%s/%s/thing/event/property/post",
 					  PLUG_GetMqttProductKey(),
 					  PLUG_GetMqttDevName());
-			uiRet = MQTTPublish(&client, szTopic, &message);
+			uiRet = MQTTPublish(&client, szPublishTopic, &message);
 			if ( uiRet != OK )
 			{
-				LOG_OUT(LOGOUT_ERROR, "MQTTPublish %s failed, uiRet:%d", szTopic, uiRet);
+				LOG_OUT(LOGOUT_ERROR, "MQTTPublish %s failed, uiRet:%d", szPublishTopic, uiRet);
 				break;
 			}
-			LOG_OUT(LOGOUT_INFO, "MQTTPublish %s success", szTopic);
+			LOG_OUT(LOGOUT_INFO, "MQTTPublish %s success", szPublishTopic);
 
 			uiLastRelayStatus = uiRelayStatus;
 		}
