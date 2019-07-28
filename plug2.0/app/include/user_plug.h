@@ -14,6 +14,10 @@
 #define PLUG_WIFI_SSID_LEN 		32
 #define PLUG_WIFI_PASSWD_LEN 	64
 
+#define PLUG_MQTT_PRODUCTKEY_LEN 	20
+#define PLUG_MQTT_DEVNAME_LEN 		32
+#define PLUG_MQTT_DEVSECRET_LEN 	64
+
 #define PLUG_TIMER_MAX    		10
 #define PLUG_DELAY_MAX    		10
 
@@ -104,8 +108,12 @@ typedef struct tagPLUG_SYSSET							/*  系统模块    */
 	BOOL 	bSmartConfigFlag;							/*  smart config是否配置    */
 	UINT8 	ucWifiMode;									/* esp8266工作模式  1:station 2:ap */
 	CHAR 	szPlugName[PLUG_NAME_MAX_LEN+1];			/* hostname  */
-	CHAR    szWifiSSID[PLUG_WIFI_SSID_LEN+1];
-	CHAR    szWifiPasswd[PLUG_WIFI_PASSWD_LEN+1];
+	CHAR    szWifiSSID[PLUG_WIFI_SSID_LEN+1];			/* wifi名称 */
+	CHAR    szWifiPasswd[PLUG_WIFI_PASSWD_LEN+1];		/* wifi密码 */
+	CHAR    szMqttProductKey[PLUG_MQTT_PRODUCTKEY_LEN+1];	/* 对接阿里云 mqtt的product key */
+	CHAR    szMqttDevName[PLUG_MQTT_DEVNAME_LEN+1];			/* 对接阿里云 mqtt的设备名称 */
+	CHAR    szMqttDevSecret[PLUG_MQTT_DEVSECRET_LEN+1];		/* 对接阿里云 mqtt的Device Secret */
+
 }PLUG_SYSSET_S;
 
 typedef enum

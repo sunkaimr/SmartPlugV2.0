@@ -316,11 +316,11 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
 
 		if ( HTTP_IS_SEND_FINISH( pstCtx ) )
 		{
-			LOG_OUT(LOGOUT_INFO, "fd:%d, [Response] Code:%s Method:%s URL:%s",
+			LOG_OUT(LOGOUT_INFO, "fd:%d, [Response] Method:%s URL:%s Code:%s",
 					pstCtx->iClientFd,
-					szHttpCodeMap[pstCtx->stResp.eHttpCode],
 					szHttpMethodStr[pstCtx->stReq.eMethod],
-					pstCtx->stReq.szURL);
+					pstCtx->stReq.szURL,
+					szHttpCodeMap[pstCtx->stResp.eHttpCode]);
 			HTTP_RequestInit( pstCtx );
 		}
 	}

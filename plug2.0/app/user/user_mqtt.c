@@ -3,39 +3,82 @@
 #include "user_common.h"
 #include "mqtt/MQTTClient.h"
 
+#include "ssl/ssl_crypto.h"
 
+#define MQTT_PORT    	1883
 
-#define MQTT_BROKER  "a1OzgtZp5Ep.iot-as-mqtt.cn-shanghai.aliyuncs.com"
-#define MQTT_PORT    1883
-
-#define MQTT_SENDSIZE 256
-#define MQTT_RECVSIZE 256
+#define MQTT_SENDSIZE 	256
+#define MQTT_RECVSIZE 	256
 
 
 UINT MQTT_ParsePowerSwitchData( CHAR* pData );
 UINT PLUG_MarshalJsonPowerSwitch( CHAR* pcBuf, UINT uiBufLen );
 
+
 static CHAR* MQTT_GetMqttAddress( CHAR* pcAddr, UINT uiLen )
 {
-	snprintf( pcAddr, uiLen, "%s.iot-as-mqtt.cn-shanghai.aliyuncs.com", "a1OzgtZp5Ep");
+	if ( pcAddr == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pcAddr is NULL");
+	    return NULL;
+	}
+
+	snprintf( pcAddr, uiLen, "%s.iot-as-mqtt.cn-shanghai.aliyuncs.com", PLUG_GetMqttProductKey());
 	return pcAddr;
 }
 
 static CHAR* MQTT_GetMqttClientID( CHAR* pcClientId, UINT uiLen )
 {
-	snprintf( pcClientId, uiLen, "%s|securemode=3,signmethod=hmacsha1|", "test001");
+	CHAR ucMac[20];
+
+	if ( pcClientId == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pcClientId is NULL");
+	    return NULL;
+	}
+
+	snprintf( pcClientId, uiLen, "%s|securemode=3,signmethod=hmacmd5|", WIFI_GetMacAddr(ucMac, sizeof(ucMac)));
 	return pcClientId;
 }
 
 static CHAR* MQTT_GetMqttUserName( CHAR* pcUserName, UINT uiLen )
 {
-	snprintf( pcUserName, uiLen, "test001&a1OzgtZp5Ep");
+	snprintf( pcUserName, uiLen, "%s&%s", PLUG_GetMqttDevName(), PLUG_GetMqttProductKey());
 	return pcUserName;
 }
 
 static CHAR* MQTT_GetMqttPassWord( CHAR* pcPassWord, UINT uiLen )
 {
-	snprintf( pcPassWord, uiLen, "B7DC8EF1D3D88AC9698F0420D79AB0833C1136A2");
+	UINT8 i = 0;
+	UINT8 uiPos = 0;
+	CHAR digest[16] = {0};
+	CHAR message[100];
+	CHAR ucMac[20];
+
+	if ( pcPassWord == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pcPassWord is NULL");
+	    return NULL;
+	}
+
+	if ( uiLen < 33 )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pcPassWord size not enough");
+	    return NULL;
+	}
+
+	snprintf(message, sizeof(message), "clientId%sdeviceName%sproductKey%s",
+			 WIFI_GetMacAddr(ucMac, sizeof(ucMac)),
+			 PLUG_GetMqttDevName(),
+			 PLUG_GetMqttProductKey());
+
+	ssl_hmac_md5( message, strlen(message), (UINT8*)PLUG_GetMqttDevSecret(), PLUG_GetMqttDevSecretLenth(), digest);
+
+	for ( i = 0; i < 16; i++ )
+	{
+		uiPos += snprintf( (pcPassWord + uiPos), uiLen, "%02X", digest[i]);
+	}
+
 	return pcPassWord;
 }
 
@@ -48,6 +91,7 @@ static void MQTT_MqttClientTask(void* pvParameters)
 {
 	MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 	UINT uiRet = 0;
+	UINT uiRetry = 0;
     MQTTClient client;
     Network network;
     CHAR *pcSendBuf = NULL;
@@ -57,10 +101,10 @@ static void MQTT_MqttClientTask(void* pvParameters)
     CHAR szUserName[50];
     CHAR szPassWord[50];
     CHAR payload[256];
+    CHAR szTopic[256];
     UINT uiRelayStatus = TRUE;
     UINT uiLastRelayStatus = FALSE;
     MQTTMessage message;
-    static UINT8 MqttTaskRunningFlag = FALSE;
 
     LOG_OUT(LOGOUT_INFO, "mqtt client start");
 
@@ -109,6 +153,11 @@ reConnect:
     connectData.password.cstring = MQTT_GetMqttPassWord(szPassWord, sizeof(szPassWord));
     connectData.cleansession = TRUE;
 
+    //LOG_OUT(LOGOUT_DEBUG, "clientID:%s", connectData.clientID.cstring);
+    //LOG_OUT(LOGOUT_DEBUG, "username:%s", connectData.username.cstring);
+    //LOG_OUT(LOGOUT_DEBUG, "password:%s", connectData.password.cstring);
+
+    uiRetry = 0;
 	while ( 1 )
 	{
 		uiRet = MQTTConnect(&client, &connectData);
@@ -117,10 +166,15 @@ reConnect:
 	    	LOG_OUT(LOGOUT_DEBUG, "MQTTConnect success");
 	    	break;
 	    }
-	    LOG_OUT(LOGOUT_ERROR, "MQTTConnect failed, uiRet:%d, client.isconnected:%d", uiRet, client.isconnected);
+
+    	LOG_OUT(LOGOUT_DEBUG, "MQTTConnect failed, uiRet:%d, retry %d times", uiRet, uiRetry);
+    	if ( uiRetry++ >= 5 )
+    	{
+    		LOG_OUT(LOGOUT_ERROR, "MQTTConnect failed, uiRet:%d, retry %d times", uiRet, uiRetry);
+    		goto exit;
+    	}
     	vTaskDelay(1000 / portTICK_RATE_MS);
 	}
-
 
 #ifdef MQTT_TASK
 	uiRet = MQTTStartTask(&client);
@@ -132,17 +186,16 @@ reConnect:
 	LOG_OUT(LOGOUT_DEBUG, "MQTTStartTask success");
 #endif
 
-	while ( 1 )
+	snprintf( szTopic, sizeof(szTopic), "/sys/%s/%s/thing/service/property/set",
+			  PLUG_GetMqttProductKey(),
+			  PLUG_GetMqttDevName());
+	uiRet = MQTTSubscribe(&client, szTopic, QOS0, MQTT_RecvMessage);
+	if ( uiRet != OK )
 	{
-	    uiRet = MQTTSubscribe(&client, "/sys/a1OzgtZp5Ep/test001/thing/service/property/set", QOS0, MQTT_RecvMessage);
-	    if ( uiRet == OK )
-	    {
-	    	LOG_OUT(LOGOUT_DEBUG, "MQTTSubscribe success");
-	    	break;
-	    }
-	    LOG_OUT(LOGOUT_ERROR, "MQTTSubscribe failed, uiRet:%d", uiRet);
-    	vTaskDelay(1000 / portTICK_RATE_MS);
+		LOG_OUT(LOGOUT_ERROR, "MQTTSubscribe %s failed, uiRet:%d", szTopic, uiRet);
+		goto end;
 	}
+	LOG_OUT(LOGOUT_INFO, "MQTTSubscribe %s success", szTopic);
 
 	for (;;)
 	{
@@ -166,24 +219,28 @@ reConnect:
 			message.payloadlen = PLUG_MarshalJsonPowerSwitch(payload, sizeof(payload));
 			message.payload = payload;
 
-			LOG_OUT(LOGOUT_DEBUG, "ready to MQTTPublish");
-			uiRet = MQTTPublish(&client, "/sys/a1OzgtZp5Ep/test001/thing/event/property/post", &message);
+			snprintf( szTopic, sizeof(szTopic), "/sys/%s/%s/thing/event/property/post",
+					  PLUG_GetMqttProductKey(),
+					  PLUG_GetMqttDevName());
+			uiRet = MQTTPublish(&client, szTopic, &message);
 			if ( uiRet != OK )
 			{
-				LOG_OUT(LOGOUT_ERROR, "MQTTPublish failed, uiRet:%d", uiRet);
+				LOG_OUT(LOGOUT_ERROR, "MQTTPublish %s failed, uiRet:%d", szTopic, uiRet);
 				break;
 			}
-			LOG_OUT(LOGOUT_DEBUG, "MQTTPublish success");
+			LOG_OUT(LOGOUT_INFO, "MQTTPublish %s success", szTopic);
 
 			uiLastRelayStatus = uiRelayStatus;
 		}
 		vTaskDelay(1000 / portTICK_RATE_MS);
 	}
+
+end:
     MQTTDisconnect( &client );
 	NetworkDisconnect( &network );
 	goto reConnect;
 
-end:
+exit:
     LOG_OUT(LOGOUT_INFO, "MQTT_MqttClientTask stop");
     FREE_MEM( pcSendBuf );
     FREE_MEM( pcRecvBuf );

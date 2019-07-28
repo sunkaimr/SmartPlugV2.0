@@ -62,7 +62,7 @@ void WIFI_StartWifiModeTheard( void );
 
 UINT WIFI_ScanWifiSsid( VOID );
 WIFI_INFO_S WIFI_GetIpInfo();
-//BOOL WIFI_GetMacAddr(CHAR *pcMac, UINT uiLen);
+CHAR* WIFI_GetMacAddr( CHAR *pcMac, UINT uiLen );
 
 
 WIFI_SCAN_S *g_pstWifiScanHead;

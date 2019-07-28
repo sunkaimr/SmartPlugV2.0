@@ -599,29 +599,20 @@ VOID WIFI_StartWifiLinkStatusTheard( void )
 }
 
 
-
 WIFI_INFO_S WIFI_GetIpInfo()
 {
 	PLUG_SYSSET_S *pstSystemData = NULL;
 	struct ip_info stStationInfo;
 	WIFI_INFO_S stWifiInfo = {0, 0, 0};
+	UINT8 uiMode = 0;
 
 	pstSystemData = PLUG_GetSystemSetData();
-	if ( pstSystemData->ucWifiMode == WIFI_MODE_SOFTAP )
+	uiMode = ( pstSystemData->ucWifiMode == WIFI_MODE_SOFTAP )? SOFTAP_IF : STATION_IF;
+
+	if ( TRUE != wifi_get_ip_info( uiMode,  &stStationInfo  ))
 	{
-		if ( TRUE != wifi_get_ip_info( SOFTAP_IF, &stStationInfo ))
-		{
-		    LOG_OUT(LOGOUT_ERROR, "WIFI_GetIpInfo, get device ip on ap mode failed.");
-		    return stWifiInfo;
-		}
-	}
-	else
-	{
-		if ( TRUE != wifi_get_ip_info( STATION_IF, &stStationInfo ))
-		{
-			LOG_OUT(LOGOUT_ERROR, "WIFI_GetIpInfo, get device ip on station mode failed.");
-			return stWifiInfo;
-		}
+		LOG_OUT(LOGOUT_ERROR, "get device ip failed");
+		return stWifiInfo;
 	}
 
 	stWifiInfo.uiIp 	 = stStationInfo.ip.addr;
@@ -631,44 +622,27 @@ WIFI_INFO_S WIFI_GetIpInfo()
 	return stWifiInfo;
 }
 
-
-BOOL WIFI_GetMacAddr(CHAR *pcMac, UINT uiLen)
+CHAR* WIFI_GetMacAddr( CHAR *pcMac, UINT uiLen )
 {
 	PLUG_SYSSET_S *pstSystemData = NULL;
 	UINT8 ucMac[6] = {0};
-
-	if ( pcMac == NULL )
-	{
-		LOG_OUT(LOGOUT_ERROR, "WIFI_GetMacAddr, pcMac is NULL.");
-		goto err;
-	}
+	UINT8 uiMode = 0;
 
 	pstSystemData = PLUG_GetSystemSetData();
-	if ( pstSystemData->ucWifiMode == WIFI_MODE_SOFTAP )
+
+	uiMode = ( pstSystemData->ucWifiMode == WIFI_MODE_SOFTAP )? SOFTAP_IF : STATION_IF;
+
+	if ( TRUE != wifi_get_macaddr( uiMode, ucMac ))
 	{
-		if ( TRUE != wifi_get_macaddr( SOFTAP_IF, ucMac))
-		{
-		    LOG_OUT(LOGOUT_ERROR, "WIFI_GetMacAddr, get device mac address on ap mode failed.");
-		    goto err;
-		}
-	}
-	else
-	{
-		if ( TRUE != wifi_get_macaddr( STATION_IF, ucMac))
-		{
-		    LOG_OUT(LOGOUT_ERROR, "WIFI_GetMacAddr, get device mac address on station mode failed.");
-		    goto err;
-		}
+		LOG_OUT(LOGOUT_ERROR, "get device mac failed");
+		return NULL;
 	}
 
-	snprintf(pcMac, uiLen, "%02X-%02X-%02X-%02X-%02X-%02X", ucMac[0], ucMac[1], ucMac[2], ucMac[3], ucMac[4], ucMac[5]);
-	return TRUE;
+	snprintf( pcMac, uiLen, "%02X%02X%02X%02X%02X%02X",
+			ucMac[0], ucMac[1], ucMac[2], ucMac[3], ucMac[4], ucMac[5]);
 
-err:
-	snprintf(pcMac, uiLen, "00-00-00-00-00-00");
-	return FALSE;
+	return pcMac;
 }
-
 
 UINT WIFI_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen )
 {

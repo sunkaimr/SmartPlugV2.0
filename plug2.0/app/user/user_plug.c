@@ -208,6 +208,9 @@ VOID PLUG_SystemSetDataDeInit( VOID )
 	strncpy(g_stPLUG_SystemSet.szPlugName, PLUG_NAME, PLUG_NAME_MAX_LEN);
 	memset(g_stPLUG_SystemSet.szWifiSSID, 0, PLUG_WIFI_SSID_LEN);
 	memset(g_stPLUG_SystemSet.szWifiPasswd, 0, PLUG_WIFI_PASSWD_LEN);
+	memset(g_stPLUG_SystemSet.szMqttProductKey, 0, PLUG_MQTT_PRODUCTKEY_LEN);
+	memset(g_stPLUG_SystemSet.szMqttDevName, 0, PLUG_MQTT_DEVNAME_LEN);
+	memset(g_stPLUG_SystemSet.szMqttDevSecret, 0, PLUG_MQTT_DEVSECRET_LEN);
 }
 
 
@@ -266,6 +269,77 @@ UINT PLUG_GetWifiPasswdLenth( VOID )
 	return  uiLen > PLUG_WIFI_PASSWD_LEN ? PLUG_WIFI_PASSWD_LEN : uiLen;
 }
 
+CHAR* PLUG_GetMqttProductKey( VOID )
+{
+	return g_stPLUG_SystemSet.szMqttProductKey;
+}
+
+CHAR* PLUG_GetMqttDevName( VOID )
+{
+	return g_stPLUG_SystemSet.szMqttDevName;
+}
+
+CHAR* PLUG_GetMqttDevSecret( VOID )
+{
+	return g_stPLUG_SystemSet.szMqttDevSecret;
+}
+
+UINT PLUG_GetMqttDevSecretLenth( VOID )
+{
+	UINT uiLen = strlen(g_stPLUG_SystemSet.szMqttDevSecret);;
+	return  uiLen > PLUG_WIFI_PASSWD_LEN ? PLUG_WIFI_PASSWD_LEN : uiLen;
+}
+
+VOID PLUG_SetMqttProductKey( CHAR* pcProductKey )
+{
+	UINT uiLen = 0;
+
+	if ( pcProductKey == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pcProductKey is NULL");
+	    return;
+	}
+
+	uiLen =  strlen(pcProductKey);
+	uiLen =  uiLen > PLUG_MQTT_PRODUCTKEY_LEN ? PLUG_MQTT_PRODUCTKEY_LEN : uiLen;
+	memcpy(g_stPLUG_SystemSet.szMqttProductKey, pcProductKey, uiLen);
+	g_stPLUG_SystemSet.szMqttProductKey[uiLen] = 0;
+	CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
+}
+
+VOID PLUG_SetMqttDevName( CHAR* pcDevName )
+{
+	UINT uiLen = 0;
+
+	if ( pcDevName == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pcDevName is NULL");
+	    return;
+	}
+
+	uiLen =  strlen(pcDevName);
+	uiLen =  uiLen > PLUG_MQTT_DEVNAME_LEN ? PLUG_MQTT_DEVNAME_LEN : uiLen;
+	memcpy(g_stPLUG_SystemSet.szMqttDevName, pcDevName, uiLen);
+	g_stPLUG_SystemSet.szMqttDevName[uiLen] = 0;
+	CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
+}
+
+VOID PLUG_SetMqttDevSecret( CHAR* DevSecret )
+{
+	UINT uiLen = 0;
+
+	if ( DevSecret == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "DevSecret is NULL");
+	    return;
+	}
+
+	uiLen =  strlen(DevSecret);
+	uiLen =  uiLen > PLUG_MQTT_DEVSECRET_LEN ? PLUG_MQTT_DEVSECRET_LEN : uiLen;
+	memcpy(g_stPLUG_SystemSet.szMqttDevSecret, DevSecret, uiLen);
+	g_stPLUG_SystemSet.szMqttDevSecret[uiLen] = 0;
+	CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
+}
 
 VOID PLUG_SetWifiPasswd( CHAR* pcWifiPasswd )
 {
@@ -273,7 +347,7 @@ VOID PLUG_SetWifiPasswd( CHAR* pcWifiPasswd )
 
 	if ( pcWifiPasswd == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "pcWifiSsid is NULL.");
+	    LOG_OUT(LOGOUT_ERROR, "pcWifiSsid is NULL");
 	    return;
 	}
 
@@ -301,7 +375,7 @@ VOID PLUG_SetPlugName( CHAR* pcPlugName )
 
 	if ( pcPlugName == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "pcPlugName is NULL.");
+	    LOG_OUT(LOGOUT_ERROR, "pcPlugName is NULL");
 	    return;
 	}
 
@@ -525,6 +599,9 @@ UINT PLUG_MarshalJsonSystemSet( CHAR* pcBuf, UINT uiBufLen )
 	cJSON_AddStringToObject( pJson, "PlugName", 		g_stPLUG_SystemSet.szPlugName);
 	cJSON_AddStringToObject( pJson, "WifiSSID", 		g_stPLUG_SystemSet.szWifiSSID);
 	cJSON_AddStringToObject( pJson, "WifiPasswd", 		g_stPLUG_SystemSet.szWifiPasswd);
+	cJSON_AddStringToObject( pJson, "MqttProductKey", 	g_stPLUG_SystemSet.szMqttProductKey);
+	cJSON_AddStringToObject( pJson, "MqttDevName", 		g_stPLUG_SystemSet.szMqttDevName);
+	cJSON_AddStringToObject( pJson, "MqttDevSecret", 	g_stPLUG_SystemSet.szMqttDevSecret);
 
 	stWifiInfo = WIFI_GetIpInfo();
 	snprintf(szBuf, sizeof(szBuf), "%d.%d.%d.%d", stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
@@ -1315,14 +1392,35 @@ UINT PLUG_ParseSystemData( CHAR* pData )
 	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "WifiPasswd");
 	if (pJsonIteam && pJsonIteam->type == cJSON_String)
 	{
-		strncpy(stSys.szWifiPasswd, pJsonIteam->valuestring, PLUG_NAME_MAX_LEN);
+		strncpy(stSys.szWifiPasswd, pJsonIteam->valuestring, PLUG_WIFI_PASSWD_LEN);
 		stSys.szWifiPasswd[PLUG_WIFI_PASSWD_LEN] = 0;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "MqttProductKey");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(stSys.szMqttProductKey, pJsonIteam->valuestring, PLUG_MQTT_PRODUCTKEY_LEN);
+		stSys.szMqttProductKey[PLUG_MQTT_PRODUCTKEY_LEN] = 0;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "MqttDevName");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(stSys.szMqttDevName, pJsonIteam->valuestring, PLUG_MQTT_DEVNAME_LEN);
+		stSys.szMqttDevName[PLUG_MQTT_DEVNAME_LEN] = 0;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "MqttDevSecret");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(stSys.szMqttDevSecret, pJsonIteam->valuestring, PLUG_MQTT_DEVSECRET_LEN);
+		stSys.szMqttDevSecret[PLUG_MQTT_DEVSECRET_LEN] = 0;
 	}
 
 	uiRet = PLUG_SetSystemSetData( &stSys);
 	if ( uiRet != OK )
 	{
-		LOG_OUT(LOGOUT_ERROR, "PLUG_ParseSystemData, PLUG_SetSystemSetData failed.");
+		LOG_OUT(LOGOUT_ERROR, "PLUG_SetSystemSetData failed");
 		goto error;
 	}
 
