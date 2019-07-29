@@ -241,7 +241,7 @@ function binFileChange() {
 function modeChange(){
 	if( $("#modeSelect").val() == 1 ){
 		if (SysData.WifiMode == 2){
-            $("#wifiCustomCloss").removeClass("hidden");
+            $("#wifiCustomClass").removeClass("hidden");
             $("#wifiPasswdClass").removeClass("hidden");
         }else{
             $("#wifiClass").removeClass("hidden");
@@ -250,7 +250,19 @@ function modeChange(){
 	}else{
 		$("#wifiClass").addClass("hidden");
 		$("#wifiPasswdClass").addClass("hidden");
-        $("#wifiCustomCloss").addClass("hidden");
+        $("#wifiCustomClass").addClass("hidden");
+	}
+
+	if ($("#modeSelect").val() == 2){
+		$("#PlatformSelectClass").addClass("hidden");
+		$("#ProductKeyClass").addClass("hidden");
+		$("#DeviceNameClass").addClass("hidden");
+		$("#DeviceSecretClass").addClass("hidden");
+	}else{
+		$("#PlatformSelectClass").removeClass("hidden");
+		$("#ProductKeyClass").removeClass("hidden");
+		$("#DeviceNameClass").removeClass("hidden");
+		$("#DeviceSecretClass").removeClass("hidden");
 	}
 }
 
@@ -613,7 +625,9 @@ function SetClick(){
 			$("#wifiList").append(opt);
             document.getElementById("wifiCustom").value=data.WifiSSID;
 			document.getElementById("wifiPasswd").value=data.WifiPasswd;
-
+			document.getElementById("ProductKey").value=data.MqttProductKey;
+			document.getElementById("DeviceName").value=data.MqttDevName;
+			document.getElementById("DeviceSecret").value=data.MqttDevSecret;
 			modeChange();
 
 		}else{
@@ -786,8 +800,14 @@ function setCommitClick(){
 		data.WifiPasswd=document.getElementById("wifiPasswd").value;
 		data.SmartConfigFlag=true;
 	}else if ( document.getElementById("modeSelect").value == 3 ){
-		data.WifiMode= 1;
+		data.WifiMode = 1;
 		data.SmartConfigFlag = false;
+	}
+
+	if ( data.WifiMode == 1 ){
+		data.MqttProductKey = document.getElementById("ProductKey").value;
+		data.MqttDevName = document.getElementById("DeviceName").value;
+		data.MqttDevSecret = document.getElementById("DeviceSecret").value;
 	}
 	$.ajax({
 		type: "POST",
