@@ -492,8 +492,8 @@ VOID WIFI_SetWifiModeTask( void *para )
 			LOG_OUT(LOGOUT_INFO, "Get time from internet successed.");
 		}
 
-		MQTT_StartMqttTheard();
-
+		//MQTT_StartMqttTheard();
+		BIGIOT_StartBigiotTheard();
 		for ( ; ; )
 		{
 			if ( uiCurStatus == STATION_GOT_IP && WEB_GetWebSvcStatus() == FALSE )

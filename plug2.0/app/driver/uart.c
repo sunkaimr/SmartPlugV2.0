@@ -384,7 +384,7 @@ uart0_rx_intr_handler(void *para)
                 buf_idx++;
             }
 
-    		if( Uart_RecvBuf[ Uart_RecvCnt -1 ] == '\n' && Uart_RecvBuf[ Uart_RecvCnt - 2 ] == '\r' )// 接收完成
+    		if( Uart_RecvCnt > 1 && Uart_RecvBuf[ Uart_RecvCnt - 1 ] == '\n' && Uart_RecvBuf[ Uart_RecvCnt - 2 ] == '\r' )// 接收完成
     		{
                 WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR);
                 WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_TOUT_INT_CLR);
