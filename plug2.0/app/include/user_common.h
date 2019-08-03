@@ -30,6 +30,7 @@
 #include "user_infrare.h"
 #include "user_flash.h"
 #include "user_upgrade.h"
+#include "user_bigiot.h"
 
 
 

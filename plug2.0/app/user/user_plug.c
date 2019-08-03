@@ -465,11 +465,11 @@ VOID PLUG_SetRelayOn( UINT uiSaveFlag )
 	if ( uiSaveFlag )
 	{
 	    CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
-		LOG_OUT(LOGOUT_INFO, "RELAY_ON,SAVEED");
+		LOG_OUT(LOGOUT_INFO, "RelayOn, saved");
 	}
 	else
 	{
-		LOG_OUT(LOGOUT_INFO, "RELAY_ON");
+		LOG_OUT(LOGOUT_INFO, "RelayOn");
 	}
 }
 
@@ -480,11 +480,11 @@ VOID PLUG_SetRelayOff( UINT uiSaveFlag )
 	if ( uiSaveFlag )
 	{
 	    CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
-		LOG_OUT(LOGOUT_INFO, "RELAY_OFF,SAVEED");
+		LOG_OUT(LOGOUT_INFO, "RelayOff, saved");
 	}
 	else
 	{
-		LOG_OUT(LOGOUT_INFO, "RELAY_OFF");
+		LOG_OUT(LOGOUT_INFO, "RelayOff");
 	}
 }
 

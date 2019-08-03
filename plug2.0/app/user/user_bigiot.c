@@ -19,9 +19,6 @@
 #define BIGIOT_PORT    		((int)8181)
 #define BIGIOT_TIMEOUT 		3
 
-#define BIGIOT_DEVICEID 	"12348"
-#define BIGIOT_APIKEY 		"100f7fdfc"
-
 #define BIGIOT_CONNECT_OK	"WELCOME TO BIGIOT"
 #define BIGIOT_LOGINT_OK	"checkinok"
 #define BIGIOT_ON			"play"
@@ -30,41 +27,6 @@
 #define MQTT_SENDSIZE 		256
 #define MQTT_RECVSIZE 		256
 
-#define BIGIOT_NONE       4
-#define BIGIOT_ERROR      3
-#define BIGIOT_INFO       2
-#define BIGIOT_DEBUG      1
-
-#define BIGIOT_LOG(lev, arg...) LOG_OUT(lev, ##arg)
-
-typedef struct tagBigiot
-{
-    char* pcHostName;
-    int port;
-    char* pcDeviceId;
-    char* pcApiKey;
-
-    int socket;
-    int iTimeOut;
-
-    xTaskHandle xKeepLiveHandle;
-    int iIsLived;
-    int iBeatInterval;
-
-    int  (*Read)(struct tagBigiot*, unsigned char*, unsigned int, unsigned int);
-    int  (*Write)(struct tagBigiot*, const unsigned char*, unsigned int, unsigned int);
-    int (*Connect)(struct tagBigiot*);
-    void (*Disconnect)(struct tagBigiot*);
-
-}BIGIOT_Ctx_S;
-
-
-BIGIOT_Ctx_S* Bigiot_New( char* pcHostName, int iPort, char* pcDevId, char* pcApiKey );
-void BIGIOT_Destroy( BIGIOT_Ctx_S **ppstCtx );
-int Bigiot_Login( BIGIOT_Ctx_S *pstCtx );
-int Bigiot_Logout( BIGIOT_Ctx_S *pstCtx );
-int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx );
-int Bigiot_KeepLive( BIGIOT_Ctx_S *pstCtx );
 
 static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDevId, char* pcApiKey);
 static int Connect(BIGIOT_Ctx_S* pstCtx);
@@ -147,7 +109,7 @@ retry:
 
 exit:
 	BIGIOT_LOG(BIGIOT_INFO, "BIGIOT_BigiotTask stop");
-	vTaskDelay( 10000/portTICK_RATE_MS );
+	vTaskDelay( 1000/portTICK_RATE_MS );
 	BIGIOT_Destroy( &pstCli );
 	goto retry;
 
@@ -269,9 +231,14 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
 	}
 
 	iRet = pstCtx->Read( pstCtx, szMess, sizeof(szMess), pstCtx->iTimeOut );
-	if ( iRet <= 0 )
+	if ( iRet < 0 )
 	{
     	return 3;
+	}
+	else if ( iRet == 0 )
+	{
+		Bigiot_Logout(pstCtx);
+		return 4;
 	}
 
 	pcMethod = BigiotParseString(szMess, "M", szValue, sizeof(szValue));
@@ -282,10 +249,10 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
 			return 0;
 		}
 		BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_Login failed, unknown method:%s", pcMethod);
-		return 4;
+		return 5;
 	}
 
-	return 5;
+	return 6;
 }
 
 
@@ -312,13 +279,13 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
 			pcContent = BigiotParseString(szMess, "C", szValue, sizeof(szValue));
 			if ( 0 != pcContent && 0 == strcmp(pcContent, BIGIOT_ON) )
 			{
+				BIGIOT_LOG(BIGIOT_INFO, "Conent: %s", pcContent);
 				PLUG_SetRelayByStatus( 1, 1 );
-				BIGIOT_LOG(BIGIOT_INFO, "Power on");
 			}
 			else if ( 0 != pcContent && 0 == strcmp(pcContent, BIGIOT_OFF) )
 			{
+				BIGIOT_LOG(BIGIOT_INFO, "Conent: %s", pcContent);
 				PLUG_SetRelayByStatus( 0, 1 );
-				BIGIOT_LOG(BIGIOT_INFO, "Power off");
 			}
 			else if ( 0 != pcContent )
 			{
