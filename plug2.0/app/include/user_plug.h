@@ -18,6 +18,9 @@
 #define PLUG_MQTT_DEVNAME_LEN 		32
 #define PLUG_MQTT_DEVSECRET_LEN 	64
 
+#define PLUG_BIGIOT_DEVID_LEN 		64
+#define PLUG_BIGIOT_APIKEY_LEN 		20
+
 #define PLUG_TIMER_MAX    		10
 #define PLUG_DELAY_MAX    		10
 
@@ -102,6 +105,15 @@ typedef struct tagPLUG_DELAY							/*  延时模块    */
 }PLUG_DELAY_S;
 
 
+typedef enum
+{
+	PLATFORM_NONE		= 0,		/* 不对接 */
+	PLATFORM_ALIYUN		= 1,		/* 对接阿里云 */
+	PLATFORM_BIGIOT		= 2,		/* 对接贝壳物联 */
+
+	PLATFORM_BUFF
+}PLATFORM_E;
+
 typedef struct tagPLUG_SYSSET							/*  系统模块    */
 {
 	BOOL 	bRelayStatus;								/*  继电器状态    */
@@ -110,9 +122,15 @@ typedef struct tagPLUG_SYSSET							/*  系统模块    */
 	CHAR 	szPlugName[PLUG_NAME_MAX_LEN+1];			/* hostname  */
 	CHAR    szWifiSSID[PLUG_WIFI_SSID_LEN+1];			/* wifi名称 */
 	CHAR    szWifiPasswd[PLUG_WIFI_PASSWD_LEN+1];		/* wifi密码 */
+
+	UINT8 	ucCloudPlatform;								/* 对接的物联网平台  1:对接阿里云 2:对接贝壳物联 */
+
 	CHAR    szMqttProductKey[PLUG_MQTT_PRODUCTKEY_LEN+1];	/* 对接阿里云 mqtt的product key */
 	CHAR    szMqttDevName[PLUG_MQTT_DEVNAME_LEN+1];			/* 对接阿里云 mqtt的设备名称 */
 	CHAR    szMqttDevSecret[PLUG_MQTT_DEVSECRET_LEN+1];		/* 对接阿里云 mqtt的Device Secret */
+
+	CHAR    szBigiotDevId[PLUG_BIGIOT_DEVID_LEN+1];			/* 对接贝壳物联设备id */
+	CHAR    szBigiotApiKey[PLUG_BIGIOT_APIKEY_LEN+1];		/* 对接贝壳物联api key */
 
 }PLUG_SYSSET_S;
 
@@ -153,6 +171,20 @@ UINT PLUG_GetWifiPasswdLenth( VOID );
 CHAR* PLUG_GetPlugName( VOID );
 VOID PLUG_SetPlugName( CHAR* pcPlugName );
 UINT PLUG_GetPlugNameLenth( VOID );
+
+UINT8 PLUG_GetCloudPlatform( VOID );
+VOID PLUG_SetCloudPlatform( UINT8 ucCloudPlatform );
+CHAR* PLUG_GetMqttProductKey( VOID );
+CHAR* PLUG_GetMqttDevName( VOID );
+CHAR* PLUG_GetMqttDevSecret( VOID );
+CHAR* PLUG_GetBigiotDevId( VOID );
+CHAR* PLUG_GetBigiotApiKey( VOID );
+VOID PLUG_SetBigiotDevId( CHAR* pcDevId );
+VOID PLUG_SetBigiotApiKey( CHAR* pcKey );
+UINT PLUG_GetMqttDevSecretLenth( VOID );
+VOID PLUG_SetMqttProductKey( CHAR* pcProductKey );
+VOID PLUG_SetMqttDevName( CHAR* pcDevName );
+VOID PLUG_SetMqttDevSecret( CHAR* DevSecret );
 
 VOID PLUG_SetRelayReversal( UINT uiSaveFlag );
 VOID PLUG_SetRelayOff( UINT uiSaveFlag );

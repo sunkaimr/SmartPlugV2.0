@@ -169,9 +169,57 @@ UINT CONFIG_SysSetDataCheck( PLUG_SYSSET_S *pstData )
 		return FAIL;
 	}
 
+	if ( pstData->ucCloudPlatform >= PLATFORM_BUFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "ucCloudPlatform:%d.", pstData->ucCloudPlatform);
+		return FAIL;
+	}
+
 	if ( pstData->szPlugName[0] == 0 || pstData->szPlugName[0] == 0xFF )
 	{
 	    LOG_OUT(LOGOUT_ERROR, "szPlugName is NULL");
+		return FAIL;
+	}
+
+	if ( pstData->szWifiSSID[0] == 0xFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "szWifiSSID is 0xFF");
+		return FAIL;
+	}
+
+	if ( pstData->szWifiPasswd[0] == 0xFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "szWifiPasswd is 0xFF");
+		return FAIL;
+	}
+
+	if ( pstData->szMqttProductKey[0] == 0xFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "szMqttProductKey is 0xFF");
+		return FAIL;
+	}
+
+	if ( pstData->szMqttDevName[0] == 0xFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "szMqttDevName is 0xFF");
+		return FAIL;
+	}
+
+	if ( pstData->szMqttDevSecret[0] == 0xFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "szMqttDevSecret is 0xFF");
+		return FAIL;
+	}
+
+	if ( pstData->szBigiotDevId[0] == 0xFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "szBigiotDevId is 0xFF");
+		return FAIL;
+	}
+
+	if ( pstData->szBigiotApiKey[0] == 0xFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "szBigiotApiKey is 0xFF");
 		return FAIL;
 	}
 

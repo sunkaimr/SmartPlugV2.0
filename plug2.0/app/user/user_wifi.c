@@ -450,6 +450,7 @@ UINT WIFI_SetWifiModeSmartConfig( VOID )
 VOID WIFI_SetWifiModeTask( void *para )
 {
 	WIFI_MODE_E eWifiMode = 0;
+	UINT8 ucCloudPlatform = 0;
 	UINT uiRet = 0;
 	PLUG_DATE_S pstDate = {2018, 1, 1, 0, 12, 0, 0 };
 
@@ -492,8 +493,22 @@ VOID WIFI_SetWifiModeTask( void *para )
 			LOG_OUT(LOGOUT_INFO, "Get time from internet successed.");
 		}
 
-		//MQTT_StartMqttTheard();
-		BIGIOT_StartBigiotTheard();
+		ucCloudPlatform = PLUG_GetCloudPlatform();
+		switch ( ucCloudPlatform )
+		{
+			case PLATFORM_ALIYUN :
+				MQTT_StartMqttTheard();
+				break;
+
+			case PLATFORM_BIGIOT :
+				BIGIOT_StartBigiotTheard();
+				break;
+
+			default:
+				LOG_OUT(LOGOUT_INFO, "Do not connect to any cloud platform");
+				break;
+		}
+
 		for ( ; ; )
 		{
 			if ( uiCurStatus == STATION_GOT_IP && WEB_GetWebSvcStatus() == FALSE )

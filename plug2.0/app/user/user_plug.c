@@ -204,13 +204,19 @@ VOID PLUG_SystemSetDataDeInit( VOID )
 	g_stPLUG_SystemSet.bRelayStatus = 0;
 	g_stPLUG_SystemSet.ucWifiMode = WIFI_MODE_STATION;
 	g_stPLUG_SystemSet.bSmartConfigFlag = FALSE;
-	//g_stPLUG_SystemSet.ucWifiMode = WIFI_MODE_SOFTAP;
+	g_stPLUG_SystemSet.ucCloudPlatform = PLATFORM_NONE;
+
 	strncpy(g_stPLUG_SystemSet.szPlugName, PLUG_NAME, PLUG_NAME_MAX_LEN);
 	memset(g_stPLUG_SystemSet.szWifiSSID, 0, PLUG_WIFI_SSID_LEN);
 	memset(g_stPLUG_SystemSet.szWifiPasswd, 0, PLUG_WIFI_PASSWD_LEN);
+
 	memset(g_stPLUG_SystemSet.szMqttProductKey, 0, PLUG_MQTT_PRODUCTKEY_LEN);
 	memset(g_stPLUG_SystemSet.szMqttDevName, 0, PLUG_MQTT_DEVNAME_LEN);
 	memset(g_stPLUG_SystemSet.szMqttDevSecret, 0, PLUG_MQTT_DEVSECRET_LEN);
+
+	memset(g_stPLUG_SystemSet.szBigiotDevId, 0, PLUG_BIGIOT_DEVID_LEN);
+	memset(g_stPLUG_SystemSet.szBigiotApiKey, 0, PLUG_BIGIOT_APIKEY_LEN);
+
 }
 
 
@@ -269,6 +275,22 @@ UINT PLUG_GetWifiPasswdLenth( VOID )
 	return  uiLen > PLUG_WIFI_PASSWD_LEN ? PLUG_WIFI_PASSWD_LEN : uiLen;
 }
 
+UINT8 PLUG_GetCloudPlatform( VOID )
+{
+	return g_stPLUG_SystemSet.ucCloudPlatform;
+}
+
+VOID PLUG_SetCloudPlatform( UINT8 ucCloudPlatform )
+{
+	if ( ucCloudPlatform >= PLATFORM_BUFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "ucCloudPlatform error, ucCloudPlatform:%d", ucCloudPlatform);
+	    return;
+	}
+	g_stPLUG_SystemSet.ucCloudPlatform = ucCloudPlatform;
+	CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
+}
+
 CHAR* PLUG_GetMqttProductKey( VOID )
 {
 	return g_stPLUG_SystemSet.szMqttProductKey;
@@ -282,6 +304,50 @@ CHAR* PLUG_GetMqttDevName( VOID )
 CHAR* PLUG_GetMqttDevSecret( VOID )
 {
 	return g_stPLUG_SystemSet.szMqttDevSecret;
+}
+
+CHAR* PLUG_GetBigiotDevId( VOID )
+{
+	return g_stPLUG_SystemSet.szBigiotDevId;
+}
+
+CHAR* PLUG_GetBigiotApiKey( VOID )
+{
+	return g_stPLUG_SystemSet.szBigiotApiKey;
+}
+
+VOID PLUG_SetBigiotDevId( CHAR* pcDevId )
+{
+	UINT uiLen = 0;
+
+	if ( pcDevId == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pcDevId is NULL");
+	    return;
+	}
+
+	uiLen =  strlen(pcDevId);
+	uiLen =  uiLen > PLUG_BIGIOT_DEVID_LEN ? PLUG_BIGIOT_DEVID_LEN : uiLen;
+	memcpy(g_stPLUG_SystemSet.szBigiotDevId, pcDevId, uiLen);
+	g_stPLUG_SystemSet.szBigiotDevId[uiLen] = 0;
+	CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
+}
+
+VOID PLUG_SetBigiotApiKey( CHAR* pcKey )
+{
+	UINT uiLen = 0;
+
+	if ( pcKey == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pcKey is NULL");
+	    return;
+	}
+
+	uiLen =  strlen(pcKey);
+	uiLen =  uiLen > PLUG_BIGIOT_APIKEY_LEN ? PLUG_BIGIOT_APIKEY_LEN : uiLen;
+	memcpy(g_stPLUG_SystemSet.szBigiotApiKey, pcKey, uiLen);
+	g_stPLUG_SystemSet.szBigiotApiKey[uiLen] = 0;
+	CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
 }
 
 UINT PLUG_GetMqttDevSecretLenth( VOID )
@@ -599,9 +665,15 @@ UINT PLUG_MarshalJsonSystemSet( CHAR* pcBuf, UINT uiBufLen )
 	cJSON_AddStringToObject( pJson, "PlugName", 		g_stPLUG_SystemSet.szPlugName);
 	cJSON_AddStringToObject( pJson, "WifiSSID", 		g_stPLUG_SystemSet.szWifiSSID);
 	cJSON_AddStringToObject( pJson, "WifiPasswd", 		g_stPLUG_SystemSet.szWifiPasswd);
+
+	cJSON_AddNumberToObject( pJson, "CloudPlatform", 	g_stPLUG_SystemSet.ucCloudPlatform);
+
 	cJSON_AddStringToObject( pJson, "MqttProductKey", 	g_stPLUG_SystemSet.szMqttProductKey);
 	cJSON_AddStringToObject( pJson, "MqttDevName", 		g_stPLUG_SystemSet.szMqttDevName);
 	cJSON_AddStringToObject( pJson, "MqttDevSecret", 	g_stPLUG_SystemSet.szMqttDevSecret);
+
+	cJSON_AddStringToObject( pJson, "BigiotDevId", 		g_stPLUG_SystemSet.szBigiotDevId);
+	cJSON_AddStringToObject( pJson, "BigiotApiKey", 	g_stPLUG_SystemSet.szBigiotApiKey);
 
 	stWifiInfo = WIFI_GetIpInfo();
 	snprintf(szBuf, sizeof(szBuf), "%d.%d.%d.%d", stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
@@ -1396,6 +1468,12 @@ UINT PLUG_ParseSystemData( CHAR* pData )
 		stSys.szWifiPasswd[PLUG_WIFI_PASSWD_LEN] = 0;
 	}
 
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "CloudPlatform");
+	if (pJsonIteam && pJsonIteam->type == cJSON_Number)
+	{
+		stSys.ucCloudPlatform = pJsonIteam->valueint;
+	}
+
 	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "MqttProductKey");
 	if (pJsonIteam && pJsonIteam->type == cJSON_String)
 	{
@@ -1415,6 +1493,20 @@ UINT PLUG_ParseSystemData( CHAR* pData )
 	{
 		strncpy(stSys.szMqttDevSecret, pJsonIteam->valuestring, PLUG_MQTT_DEVSECRET_LEN);
 		stSys.szMqttDevSecret[PLUG_MQTT_DEVSECRET_LEN] = 0;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "BigiotDevId");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(stSys.szBigiotDevId, pJsonIteam->valuestring, PLUG_BIGIOT_DEVID_LEN);
+		stSys.szBigiotDevId[PLUG_BIGIOT_DEVID_LEN] = 0;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "BigiotApiKey");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(stSys.szBigiotApiKey, pJsonIteam->valuestring, PLUG_BIGIOT_APIKEY_LEN);
+		stSys.szBigiotApiKey[PLUG_BIGIOT_APIKEY_LEN] = 0;
 	}
 
 	uiRet = PLUG_SetSystemSetData( &stSys);
