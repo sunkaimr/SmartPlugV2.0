@@ -26,6 +26,7 @@ $(document).ready(function () {
 	$("#reboot").click(rebootClick);
 	$("#reset").click(resetClick);
 	$("#modeSelect").change(modeChange);
+    $("#PlatformSelect").change(PlatformSelectChange);
 	$("#file").change(binFileChange);
 	$("#information").click(getInfomation);
 	$("#rebootModalButton").click(reboot);
@@ -252,18 +253,45 @@ function modeChange(){
 		$("#wifiPasswdClass").addClass("hidden");
         $("#wifiCustomClass").addClass("hidden");
 	}
+    PlatformSelectChange();
+}
 
-	if ($("#modeSelect").val() == 2){
-		$("#PlatformSelectClass").addClass("hidden");
-		$("#ProductKeyClass").addClass("hidden");
-		$("#DeviceNameClass").addClass("hidden");
-		$("#DeviceSecretClass").addClass("hidden");
-	}else{
-		$("#PlatformSelectClass").removeClass("hidden");
-		$("#ProductKeyClass").removeClass("hidden");
-		$("#DeviceNameClass").removeClass("hidden");
-		$("#DeviceSecretClass").removeClass("hidden");
-	}
+function PlatformSelectChange(){
+
+    if ($("#modeSelect").val() == 2){
+        $("#PlatformSelectClass").addClass("hidden");
+        $("#ProductKeyClass").addClass("hidden");
+        $("#DeviceNameClass").addClass("hidden");
+        $("#DeviceSecretClass").addClass("hidden");
+        $("#BigiotDeviceIdClass").addClass("hidden");
+        $("#BigiotApiKeyClass").addClass("hidden");
+    }else{
+        $("#PlatformSelectClass").removeClass("hidden");
+
+        if( $("#PlatformSelect").val() == 1 ) {
+            $("#ProductKeyClass").removeClass("hidden");
+            $("#DeviceNameClass").removeClass("hidden");
+            $("#DeviceSecretClass").removeClass("hidden");
+
+            $("#BigiotDeviceIdClass").addClass("hidden");
+            $("#BigiotApiKeyClass").addClass("hidden");
+        }else if (  $("#PlatformSelect").val() == 2 ){
+            $("#ProductKeyClass").addClass("hidden");
+            $("#DeviceNameClass").addClass("hidden");
+            $("#DeviceSecretClass").addClass("hidden");
+
+            $("#BigiotDeviceIdClass").removeClass("hidden");
+            $("#BigiotApiKeyClass").removeClass("hidden");
+        }else{
+            $("#ProductKeyClass").addClass("hidden");
+            $("#DeviceNameClass").addClass("hidden");
+            $("#DeviceSecretClass").addClass("hidden");
+
+            $("#BigiotDeviceIdClass").addClass("hidden");
+            $("#BigiotApiKeyClass").addClass("hidden");
+        }
+
+    }
 }
 
 function SetFormat( s ){
@@ -616,18 +644,26 @@ function SetClick(){
 	$.get("/system",function(data, status){
 		if (status == "success"){
             SysData = data;
-			document.getElementById("plugName").value=data.PlugName;
+
 			var options=document.getElementById("modeSelect").options;
 			options[data.WifiMode].selected = true;
+
 			$("#wifiList").empty();
 			var opt = $("<option>").val(1).text(data.WifiSSID);
 			opt.selected = true;
 			$("#wifiList").append(opt);
+
+            var options=document.getElementById("PlatformSelect").options;
+            options[data.CloudPlatform].selected = true;
+
+            document.getElementById("plugName").value=data.PlugName;
             document.getElementById("wifiCustom").value=data.WifiSSID;
 			document.getElementById("wifiPasswd").value=data.WifiPasswd;
 			document.getElementById("ProductKey").value=data.MqttProductKey;
 			document.getElementById("DeviceName").value=data.MqttDevName;
 			document.getElementById("DeviceSecret").value=data.MqttDevSecret;
+            document.getElementById("BigiotDeviceId").value=data.BigiotDevId;
+            document.getElementById("BigiotApiKey").value=data.BigiotApiKey;
 			modeChange();
 
 		}else{
@@ -805,9 +841,16 @@ function setCommitClick(){
 	}
 
 	if ( data.WifiMode == 1 ){
-		data.MqttProductKey = document.getElementById("ProductKey").value;
-		data.MqttDevName = document.getElementById("DeviceName").value;
-		data.MqttDevSecret = document.getElementById("DeviceSecret").value;
+        data.CloudPlatform = parseInt(document.getElementById("PlatformSelect").value);
+        if ( data.CloudPlatform == 1 ){
+            data.MqttProductKey = document.getElementById("ProductKey").value;
+            data.MqttDevName = document.getElementById("DeviceName").value;
+            data.MqttDevSecret = document.getElementById("DeviceSecret").value;
+        }else if ( data.CloudPlatform == 2 ){
+            data.BigiotDevId = document.getElementById("BigiotDeviceId").value;
+            data.BigiotApiKey = document.getElementById("BigiotApiKey").value;
+        }
+
 	}
 	$.ajax({
 		type: "POST",

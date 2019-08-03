@@ -185,33 +185,47 @@
 					<label class="col-sm-1 control-label">平台 :</label>
 					<div class="col-sm-3 ">
 						<select id="PlatformSelect" class="form-control">
-							<option value=0 disabled selected hidden>请选择云平台...</option>
+							<option value=0 selected>不对接任何平台</option>
 							<option value=1>阿里云</option>
 							<option value=2>贝壳物联</option>
 						</select>
 					</div>
-					<span class="help-block col-sm-6"></span>
+					<span class="help-block col-sm-6">选择对接云平台实现远程控制</span>
 				</div>
 				<div id="ProductKeyClass" class="form-group hidden">
 					<label class="col-sm-1 control-label">产品 :</label>
 					<div class="col-sm-3 ">
-						<input id="ProductKey" class="form-control" type="text" placeholder="ProductKey">
+						<input id="ProductKey" class="form-control" type="text" placeholder="Product Key">
 					</div>
 					<span class="help-block col-sm-5">阿里云ProductKey</span>
 				</div>
 				<div id="DeviceNameClass" class="form-group hidden">
 					<label class="col-sm-1 control-label">设备 :</label>
 					<div class="col-sm-3 ">
-						<input id="DeviceName" class="form-control" type="text" placeholder="DeviceName">
+						<input id="DeviceName" class="form-control" type="text" placeholder="Device Name">
 					</div>
 					<span class="help-block col-sm-5">阿里云DeviceName</span>
 				</div>
 				<div id="DeviceSecretClass" class="form-group hidden">
 					<label class="col-sm-1 control-label">密钥 :</label>
 					<div class="col-sm-3 ">
-						<input id="DeviceSecret" class="form-control" type="password" placeholder="DeviceSecret">
+						<input id="DeviceSecret" class="form-control" type="password" placeholder="Device Secret">
 					</div>
 					<span class="help-block col-sm-5">阿里云DeviceSecret</span>
+				</div>
+				<div id="BigiotDeviceIdClass" class="form-group hidden">
+					<label class="col-sm-1 control-label">设备 :</label>
+					<div class="col-sm-3 ">
+						<input id="BigiotDeviceId" class="form-control" type="text" placeholder="Device Id">
+					</div>
+					<span class="help-block col-sm-5">贝壳物联设备ID</span>
+				</div>
+				<div id="BigiotApiKeyClass" class="form-group hidden">
+					<label class="col-sm-1 control-label">ApiKey :</label>
+					<div class="col-sm-3 ">
+						<input id="BigiotApiKey" class="form-control" type="text" placeholder="API Key">
+					</div>
+					<span class="help-block col-sm-5">贝壳物联API Key</span>
 				</div>
 				<div class="form-group">
 					<label class="col-sm-1 control-label"></label>
