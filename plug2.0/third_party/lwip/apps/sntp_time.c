@@ -270,7 +270,7 @@ static char *sntp_asctime(sntp_tm *tim_p)
 u32_t sntp_get_current_timestamp(void)
 {
 	if(sntp_time_realtime == 0){
-		printf("please start sntp first !\n");
+		//printf("please start sntp first !\n");
 		return 0;
 	} else {
 		return sntp_time_realtime;

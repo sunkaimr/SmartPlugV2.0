@@ -850,35 +850,51 @@ VOID PLUG_SetTimeSyncFlag( PLUG_TIME_SYNC_E ucFlag )
 	g_PLUG_TimeSyncFlag = ucFlag;
 }
 
+static VOID SyncTimeTask( VOID* para )
+{
+	INT iRetry = 0;
+	UINT uiRet = 0;
+
+	LOG_OUT(LOGOUT_INFO, "SyncTimeTask start");
+
+	sntp_stop();
+	sntp_setservername(0, "ntp1.aliyun.com");
+	sntp_setservername(1, "0.cn.pool.ntp.org");
+	sntp_setservername(2, "time.windows.com");
+	sntp_init();
+
+	for( iRetry = 0; iRetry < 100; iRetry++ )
+	{
+		uiRet = sntp_get_current_timestamp();
+		if ( uiRet )
+		{
+			PLUG_SetTimeSyncFlag(TIME_SYNC_NET);
+			LOG_OUT(LOGOUT_INFO, "Get time from internet successed.");
+			break;
+		}
+		LOG_OUT(LOGOUT_INFO, "Get time from internet failed, retry %d.", iRetry);
+		vTaskDelay( 3000/portTICK_RATE_MS );
+	}
+
+	LOG_OUT(LOGOUT_INFO, "SyncTimeTask stop");
+
+	sntp_stop();
+	vTaskDelete(NULL);
+}
+
 INT32 PLUG_GetTimeFromInternet()
 {
-	CHAR szSntpServer[3][20] = {"ntp1.aliyun.com", "0.cn.pool.ntp.org", "time.windows.com"};
-	UINT32 uiRet = 0;
-	INT iRetry = 3;
-	UINT uiLoopi = 0;
-
-	for ( uiLoopi = 0; uiLoopi < 3; uiLoopi++)
+	if ( pdPASS != xTaskCreate( SyncTimeTask,
+								"SyncTimeTask",
+								configMINIMAL_STACK_SIZE * 2,
+								0,
+								uxTaskPriorityGet(NULL),
+								0))
 	{
-		sntp_stop();
-		sntp_setservername(0, szSntpServer[uiLoopi]);
-		sntp_init();
-		LOG_OUT(LOGOUT_DEBUG, "Set sntp server: %s", szSntpServer[uiLoopi]);
-
-		vTaskDelay( 100/portTICK_RATE_MS );
-
-		iRetry = 2;
-		while( iRetry-- )
-		{
-			uiRet = sntp_get_current_timestamp();
-			if ( uiRet )
-			{
-				PLUG_SetTimeSyncFlag(TIME_SYNC_NET);
-				return OK;
-			}
-			vTaskDelay( 100/portTICK_RATE_MS );
-		}
+		return FAIL;
 	}
-	return FAIL;
+
+	return OK;
 }
 
 

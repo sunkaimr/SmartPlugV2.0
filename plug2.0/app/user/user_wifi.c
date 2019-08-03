@@ -488,10 +488,7 @@ VOID WIFI_SetWifiModeTask( void *para )
 									pstDate.iYear, pstDate.iMonth, pstDate.iDay,
 									pstDate.iHour, pstDate.iMinute, pstDate.iSecond);
 		}
-		else
-		{
-			LOG_OUT(LOGOUT_INFO, "Get time from internet successed.");
-		}
+
 
 		ucCloudPlatform = PLUG_GetCloudPlatform();
 		switch ( ucCloudPlatform )

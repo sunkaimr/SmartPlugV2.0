@@ -44,7 +44,7 @@
 
 /** The maximum number of SNTP servers that can be set */
 #ifndef SNTP_MAX_SERVERS
-#define SNTP_MAX_SERVERS           1
+#define SNTP_MAX_SERVERS           3
 #endif
 
 /** Set this to 1 to implement the callback function called by dhcp when
