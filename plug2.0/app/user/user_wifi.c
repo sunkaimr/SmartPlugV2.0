@@ -725,6 +725,8 @@ UINT WIFI_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen)
 
 	pJson = cJSON_CreateObject();
 
+	cJSON_AddStringToObject( pJson, "GitCommit", GIT_COMMIT_SHA1);
+
 	snprintf(szBuf, sizeof(szBuf),  "%s %s", __DATE__, __TIME__);
 	cJSON_AddStringToObject( pJson, "BuildDate", 	szBuf);
 
