@@ -99,15 +99,15 @@ $(document).ready(function () {
 
 			var numStr=$('#timerModalHead').text().trim().split(/\s+/);
 			jsonData.Num = parseInt(numStr[numStr.length-1]);
-			jsonData.Name = document.getElementById("timeName").value;
-			jsonData.Enable = document.getElementById("timeEnable").checked;
-			jsonData.OnEnable = document.getElementById("onTimeEnable").checked;
-			jsonData.OffEnable = document.getElementById("offTimeEnable").checked;
-			jsonData.Cascode = document.getElementById("timerCascodeEnable").checked;
-			jsonData.CascodeNum = parseInt(document.getElementById("timerCascodeNum").value);
+			jsonData.Name = $("#timeName").val();
+			jsonData.Enable = $("#timeEnable").is(':checked');
+			jsonData.OnEnable = $("#onTimeEnable").is(':checked');
+			jsonData.OffEnable = $("#offTimeEnable").is(':checked');
+			jsonData.Cascode = $("#timerCascodeEnable").is(':checked');
+			jsonData.CascodeNum = parseInt($("#timerCascodeNum").val());
 			jsonData.Week = stringConversionWeek();
-			jsonData.OnTime = document.getElementById("onTime").value;
-			jsonData.OffTime = document.getElementById("offTime").value;
+			jsonData.OnTime = $("#onTime").val();
+			jsonData.OffTime = $("#offTime").val();
 			jsonDataAry.push(jsonData);
 
 			$.ajax({
@@ -116,12 +116,13 @@ $(document).ready(function () {
 				contentType: "application/json",
 				data:JSON.stringify(jsonDataAry),
 				success: function () {
+                    TimerClick();
 					//alert("成功");
 				}
 			});
 			$("#timerSubmitModal").modal("toggle")
-			document.getElementById("timerSubmitBtn").disabled=false;
-			TimerClick();
+			$("#timerSubmitBtn").attr('disabled', false);
+
 		});
 	});
 
@@ -202,15 +203,15 @@ $(document).ready(function () {
 
 			var numStr=$('#delayModalHead').text().trim().split(/\s+/);
 			jsonData.Num = parseInt(numStr[numStr.length-1]);
-			jsonData.Name = document.getElementById("delayName").value;
-			jsonData.Enable = document.getElementById("delayEnable").checked;
-			jsonData.OnEnable = document.getElementById("onIntervalEnable").checked;
-			jsonData.OffEnable = document.getElementById("onIntervalEnable").checked;
-			jsonData.Cascode = document.getElementById("delayCascodeEnable").checked;
-			jsonData.CascodeNum = parseInt(document.getElementById("delayCascodeNum").value);
-			jsonData.CycleTimes = parseInt(document.getElementById("cycleTimes").value);
-			jsonData.OnInterval = document.getElementById("onInterval").value;
-			jsonData.OffInterval = document.getElementById("offInterval").value;
+			jsonData.Name = $("#delayName").val();
+			jsonData.Enable = $("#delayEnable").is(':checked');
+			jsonData.OnEnable = $("#onIntervalEnable").is(':checked');
+			jsonData.OffEnable = $("#onIntervalEnable").is(':checked');
+			jsonData.Cascode = $("#delayCascodeEnable").is(':checked');
+			jsonData.CascodeNum = parseInt($("#delayCascodeNum").val());
+			jsonData.CycleTimes = parseInt($("#cycleTimes").val());
+			jsonData.OnInterval = $("#onInterval").val();
+			jsonData.OffInterval = $("#offInterval").val();
 			jsonDataAry.push(jsonData);
 
 			$.ajax({
@@ -219,15 +220,15 @@ $(document).ready(function () {
 				contentType: "application/json",
 				data:JSON.stringify(jsonDataAry),
 				success: function () {
+                    DelayClick();
 					//alert("成功");
 				},
 				error: function (jqXHR, textStatus, errorThrown) {
 					ShowInfo(jqXHR.responseText);
 				}
 			});
-			DelayClick();
+
 			$("#delaySubmitModal").modal("toggle")
-			document.getElementById("delaySubmitBtn").disabled=false;
 		});
 	});
 
@@ -381,8 +382,9 @@ function getDevName(){
 function getInfomation(){
 	$.get("/info",function(data, status){
 		if (status == "success"){
+            GitCommit = "GitCommit ："+ data.GitCommit;
 			BuildDate = "编译时间 ："+ data.BuildDate;
-			SDKVersion = "固件版本 ：" + data.SDKVersion;
+			SDKVersion = "SDK版本 ：" + data.SDKVersion;
 			FlashMap = "Flash大小 ：" + data.FlashMap;
 			UserBin = "当前固件 ： " + data.UserBin;
 			var day = parseInt(data.RunTime/(24*3600));
@@ -392,6 +394,7 @@ function getInfomation(){
 			RunTime = "运行时间 ：" + day+ " 天 "+ hour +" 时 "+ min +" 分 "+ sec +" 秒 ";
 			$("#aboutBody").empty();
 			$("#aboutBody").append("<li>"+RunTime+"</li>");
+            $("#aboutBody").append("<li>"+GitCommit+"</li>");
 			$("#aboutBody").append("<li>"+BuildDate+"</li>");
 			$("#aboutBody").append("<li>"+SDKVersion+"</li>");
 			$("#aboutBody").append("<li>"+UserBin+"</li>");
@@ -504,14 +507,13 @@ function weekConversionString( week ) {
 function stringConversionWeek() {
 	var week = 0;
 
-	if( document.getElementById("week1").checked==true ){week=week|(1<<0)}
-	if( document.getElementById("week2").checked==true ){week=week|(1<<1)}
-	if( document.getElementById("week3").checked==true ){week=week|(1<<2)}
-	if( document.getElementById("week4").checked==true ){week=week|(1<<3)}
-	if( document.getElementById("week5").checked==true ){week=week|(1<<4)}
-	if( document.getElementById("week6").checked==true ){week=week|(1<<5)}
-	if( document.getElementById("week7").checked==true ){week=week|(1<<6)}
-
+	if( $("#week1").is(':checked') ){week=week|(1<<0)}
+	if( $("#week2").is(':checked') ){week=week|(1<<1)}
+	if( $("#week3").is(':checked') ){week=week|(1<<2)}
+	if( $("#week4").is(':checked') ){week=week|(1<<3)}
+	if( $("#week5").is(':checked') ){week=week|(1<<4)}
+	if( $("#week6").is(':checked') ){week=week|(1<<5)}
+	if( $("#week7").is(':checked') ){week=week|(1<<6)}
 	return week;
 }
 
@@ -645,25 +647,23 @@ function SetClick(){
 		if (status == "success"){
             SysData = data;
 
-			var options=document.getElementById("modeSelect").options;
-			options[data.WifiMode].selected = true;
+            $("#modeSelect").val(data.WifiMode);
 
-			$("#wifiList").empty();
+            $("#wifiList").empty();
 			var opt = $("<option>").val(1).text(data.WifiSSID);
 			opt.selected = true;
 			$("#wifiList").append(opt);
 
-            var options=document.getElementById("PlatformSelect").options;
-            options[data.CloudPlatform].selected = true;
+            $("#PlatformSelect").val(data.CloudPlatform);
 
-            document.getElementById("plugName").value=data.PlugName;
-            document.getElementById("wifiCustom").value=data.WifiSSID;
-			document.getElementById("wifiPasswd").value=data.WifiPasswd;
-			document.getElementById("ProductKey").value=data.MqttProductKey;
-			document.getElementById("DeviceName").value=data.MqttDevName;
-			document.getElementById("DeviceSecret").value=data.MqttDevSecret;
-            document.getElementById("BigiotDeviceId").value=data.BigiotDevId;
-            document.getElementById("BigiotApiKey").value=data.BigiotApiKey;
+            $("#plugName").val(data.PlugName)
+            $("#wifiCustom").val(data.WifiSSID);
+			$("#wifiPasswd").val(data.WifiPasswd);
+			$("#ProductKey").val(data.MqttProductKey);
+			$("#DeviceName").val(data.MqttDevName);
+			$("#DeviceSecret").val(data.MqttDevSecret);
+            $("#BigiotDeviceId").val(data.BigiotDevId);
+            $("#BigiotApiKey").val(data.BigiotApiKey);
 			modeChange();
 
 		}else{
@@ -754,24 +754,24 @@ function tabTimerSubmit(){
 	$.get(url, function(data, status){
 		if (status == "success"){
 			$('#timerModalHead').text("定时 " + data[0].Num);
-			document.getElementById("timeName").value=data[0].Name;
-			document.getElementById("timeEnable").checked=data[0].Enable;
-			document.getElementById("onTime").value=data[0].OnTime;
-			document.getElementById("onTimeEnable").checked = data[0].OnEnable;
-			document.getElementById("offTimeEnable").checked = data[0].OffEnable;
-			document.getElementById("offTime").value=data[0].OffTime;
-			document.getElementById("timerCascodeNum").value=data[0].CascodeNum;
-			document.getElementById("timerCascodeEnable").checked =data[0].Cascode;
+			$("#timeName").val(data[0].Name);
+            $('#timeEnable').attr('checked', data[0].Enable);
+			$("#onTime").val(data[0].OnTime);
+			$("#onTimeEnable").attr('checked', data[0].OnEnable);
+			$("#offTimeEnable").attr('checked', data[0].OffEnable);
+			$("#offTime").val(data[0].OffTime);
+			$("#timerCascodeNum").val(data[0].CascodeNum);
+			$("#timerCascodeEnable").attr('checked',data[0].Cascode);
 			var week= parseInt(data[0].Week);
 			for ( var i = 0; i < 7; i++ ){
 				switch(i){
-					case 0: if (week&(1<<i)){document.getElementById("week1").checked=true;}else{document.getElementById("week1").checked=false;}break;
-					case 1: if (week&(1<<i)){document.getElementById("week2").checked=true;}else{document.getElementById("week2").checked=false;}break;
-					case 2: if (week&(1<<i)){document.getElementById("week3").checked=true;}else{document.getElementById("week3").checked=false;}break;
-					case 3: if (week&(1<<i)){document.getElementById("week4").checked=true;}else{document.getElementById("week4").checked=false;}break;
-					case 4: if (week&(1<<i)){document.getElementById("week5").checked=true;}else{document.getElementById("week5").checked=false;}break;
-					case 5: if (week&(1<<i)){document.getElementById("week6").checked=true;}else{document.getElementById("week6").checked=false;}break;
-					case 6: if (week&(1<<i)){document.getElementById("week7").checked=true;}else{document.getElementById("week7").checked=false;}break;
+					case 0: $("#week1").attr('checked',week&(1<<i));break;
+					case 1: $("#week2").attr('checked',week&(1<<i));break;
+					case 2: $("#week3").attr('checked',week&(1<<i));break;
+					case 3: $("#week4").attr('checked',week&(1<<i));break;
+					case 4: $("#week5").attr('checked',week&(1<<i));break;
+					case 5: $("#week6").attr('checked',week&(1<<i));break;
+					case 6: $("#week7").attr('checked',week&(1<<i));break;
 				}
 			}
 		}else{
@@ -787,15 +787,15 @@ function tabDelaySubmit(){
 	$.get(url, function(data, status){
 		if (status == "success"){
 			$('#delayModalHead').text("延时 " + data[0].Num);
-			document.getElementById("delayName").value=data[0].Name;
-			document.getElementById("delayEnable").checked=data[0].Enable;
-			document.getElementById("onInterval").value=data[0].OnInterval;
-			document.getElementById("onIntervalEnable").checked = data[0].OnEnable;
-			document.getElementById("offIntervalEnable").checked = data[0].OffEnable;
-			document.getElementById("offInterval").value=data[0].OffInterval;
-			document.getElementById("delayCascodeNum").value=data[0].CascodeNum;
-			document.getElementById("delayCascodeEnable").checked =data[0].Cascode;
-			document.getElementById("cycleTimes").value =data[0].CycleTimes;
+			$("#delayName").val(data[0].Name);
+			$("#delayEnable").attr('checked', data[0].Enable);
+			$("#onInterval").val(data[0].OnInterval);
+			$("#onIntervalEnable").attr('checked', data[0].OnEnable);
+			$("#offIntervalEnable").attr('checked', data[0].OffEnable);
+			$("#offInterval").val(data[0].OffInterval);
+			$("#delayCascodeNum").val(data[0].CascodeNum);
+			$("#delayCascodeEnable").attr('checked', data[0].Cascode);
+			$("#cycleTimes").val(data[0].CycleTimes);
 		}else{
 			alert("Data: " + data + "\nStatus: " + status);
 		}});
@@ -814,7 +814,7 @@ function ShowInfo( info ){
 
 function setCommitClick(){
 	var data = {};
-	data.PlugName=document.getElementById("plugName").value;
+	data.PlugName=$("#plugName").val();
 	if (data.PlugName.length > 32 ){
 		ShowInfo("名称超过长度限制");
 		return;
@@ -822,33 +822,33 @@ function setCommitClick(){
 
 	$("#devName").text("智能插座 （" + data.PlugName + "）");
 	$("#title").text(data.PlugName);
-	if ( document.getElementById("modeSelect").value == 2 ){
+	if ( $("#modeSelect").val() == 2 ){
 		data.WifiMode= 2;
-	}else if ( document.getElementById("modeSelect").value == 1 ){
+	}else if ( $("#modeSelect").val() == 1 ){
 		data.WifiMode= 1;
 
         if (SysData.WifiMode == 2) {
-            data.WifiSSID=document.getElementById("wifiCustom").value;
+            data.WifiSSID=$("#wifiCustom").val();
         }else{
             data.WifiSSID=$("#wifiList option:selected").text();
         }
 
-		data.WifiPasswd=document.getElementById("wifiPasswd").value;
+		data.WifiPasswd=$("#wifiPasswd").val();
 		data.SmartConfigFlag=true;
-	}else if ( document.getElementById("modeSelect").value == 3 ){
+	}else if ( $("#modeSelect").val() == 3 ){
 		data.WifiMode = 1;
 		data.SmartConfigFlag = false;
 	}
 
 	if ( data.WifiMode == 1 ){
-        data.CloudPlatform = parseInt(document.getElementById("PlatformSelect").value);
+        data.CloudPlatform = parseInt($("#PlatformSelect").val());
         if ( data.CloudPlatform == 1 ){
-            data.MqttProductKey = document.getElementById("ProductKey").value;
-            data.MqttDevName = document.getElementById("DeviceName").value;
-            data.MqttDevSecret = document.getElementById("DeviceSecret").value;
+            data.MqttProductKey = $("#ProductKey").val();
+            data.MqttDevName = $("#DeviceName").val();
+            data.MqttDevSecret = $("#DeviceSecret").val();
         }else if ( data.CloudPlatform == 2 ){
-            data.BigiotDevId = document.getElementById("BigiotDeviceId").value;
-            data.BigiotApiKey = document.getElementById("BigiotApiKey").value;
+            data.BigiotDevId = $("#BigiotDeviceId").val();
+            data.BigiotApiKey = $("#BigiotApiKey").val();
         }
 
 	}
@@ -869,7 +869,7 @@ function setCommitClick(){
 
 function scanWifiClick(){
 	$("#wifiList").empty();
-	document.getElementById("wifiPasswd").value = "";
+	$("#wifiPasswd").val("");
 	var opt = $("<option>").val(1).text("正在扫描...");
 	opt.selected = true;
 	$("#wifiList").append(opt);
