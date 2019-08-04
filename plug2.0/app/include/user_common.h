@@ -32,6 +32,8 @@
 #include "user_upgrade.h"
 #include "user_bigiot.h"
 
-
+#ifndef GIT_COMMIT_SHA1
+	#define GIT_COMMIT_SHA1 "NULL"
+#endif
 
 #endif /* APP_INCLUDE_USER_COMMON_H_ */

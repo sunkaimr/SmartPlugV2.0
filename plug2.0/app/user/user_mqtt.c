@@ -127,8 +127,6 @@ static void MQTT_MqttClientTask(void* pvParameters)
     NetworkInit(&network);
     MQTTClientInit(&client, &network, 3000, pcSendBuf, MQTT_SENDSIZE, pcRecvBuf, MQTT_RECVSIZE);
 
-
-
 reConnect:
 
 	//等待wifi连接就绪

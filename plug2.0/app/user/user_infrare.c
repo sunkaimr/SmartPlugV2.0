@@ -8,64 +8,12 @@
 #include "esp_common.h"
 #include "user_common.h"
 
-#define INFRA_GPIO_NUM			15
+#define INFRA_GPIO_NUM			GPIO_Pin_14
 
 UINT32 uiInfreadValue = 0;
 
 
-
-VOID INFRA_InfrareHandle( VOID );
-
-/*
-VOID INFRA_InfrareInit( VOID )
-{
-	GPIO_ConfigTypeDef stGpioConf;
-
-	LOG_OUT(LOGOUT_INFO, "");vTaskDelay( 100/portTICK_RATE_MS );
-
-	_xt_isr_mask(1 << ETS_GPIO_INUM);
-	LOG_OUT(LOGOUT_INFO, "");vTaskDelay( 100/portTICK_RATE_MS );
-
-	stGpioConf.GPIO_IntrType 	= GPIO_PIN_INTR_NEGEDGE;
-	stGpioConf.GPIO_Mode 		= GPIO_Mode_Input;
-	stGpioConf.GPIO_Pullup 		= GPIO_PullUp_EN;
-	stGpioConf.GPIO_Pin 		= GPIO_ID_PIN(INFRA_GPIO_NUM);
-
-	gpio_config( &stGpioConf );
-	LOG_OUT(LOGOUT_INFO, "");vTaskDelay( 100/portTICK_RATE_MS );
-
-	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, TRUE);
-	LOG_OUT(LOGOUT_INFO, "");vTaskDelay( 100/portTICK_RATE_MS );
-
-	gpio_intr_handler_register(INFRA_InfrareHandle, NULL);
-	LOG_OUT(LOGOUT_INFO, "");vTaskDelay( 100/portTICK_RATE_MS );
-
-	_xt_isr_unmask(1 << ETS_GPIO_INUM);
-	printf("INFRA_InfrareInit\r\n");
-}
-*/
-
-
-VOID INFRA_InfrareInit( VOID )
-{
-
-    GPIO_ConfigTypeDef pGPIOConfig;
-    printf("111\r\n");
-    gpio_intr_handler_register(INFRA_InfrareHandle, NULL);
-    printf("222\r\n");
-	pGPIOConfig.GPIO_IntrType = GPIO_PIN_INTR_NEGEDGE;
-	pGPIOConfig.GPIO_Pullup = GPIO_PullUp_EN;
-	pGPIOConfig.GPIO_Mode = GPIO_Mode_Input;
-	pGPIOConfig.GPIO_Pin = GPIO_ID_PIN(INFRA_GPIO_NUM);
-	gpio_config(&pGPIOConfig);
-	printf("33\r\n");
-    //enable gpio iterrupt
-    _xt_isr_unmask(1<<ETS_GPIO_INUM);
-    printf("444\r\n");
-}
-
-
-VOID INFRA_InfrareHandle( VOID )
+VOID INFRA_InfrareHandle( VOID* Para )
 {
 	static UINT32 infreadValue = 0;	/* 解码的红外值 */
 	static UINT32 uiCurTime = 0;
@@ -76,9 +24,6 @@ VOID INFRA_InfrareHandle( VOID )
 
 	//GPIO_INPUT_GET( GPIO_ID_PIN(INFRA_GPIO_NUM) );
 	_xt_isr_mask(1 << ETS_GPIO_INUM);
-	GPIO_REG_WRITE( GPIO_STATUS_W1TC_ADDRESS, TRUE );
-
-	printf("INFRA_InfrareHandle\r\n");
 
 	uiCurTime = system_get_time();
 
@@ -135,13 +80,36 @@ VOID INFRA_InfrareHandle( VOID )
             {
                 Step = 0;
                 uiInfreadValue = infreadValue;
+                LOG_OUT(LOGOUT_INFO, "uiInfreadValue:%x", uiInfreadValue);
             }
             break;
         default:
             break;
     }
 
+    GPIO_REG_WRITE( GPIO_STATUS_W1TC_ADDRESS, INFRA_GPIO_NUM );
     _xt_isr_unmask(1 << ETS_GPIO_INUM);
+
+}
+
+
+void INFRA_InfrareInit(void)
+{
+	GPIO_ConfigTypeDef gpio_in_cfg;
+
+	gpio_in_cfg.GPIO_IntrType 	= GPIO_PIN_INTR_NEGEDGE;
+	gpio_in_cfg.GPIO_Mode 		= GPIO_Mode_Input;
+	gpio_in_cfg.GPIO_Pullup 	= GPIO_PullUp_EN;
+	gpio_in_cfg.GPIO_Pin 		= INFRA_GPIO_NUM;
+	gpio_config(&gpio_in_cfg);
+
+	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, INFRA_GPIO_NUM);
+
+	gpio_intr_handler_register(INFRA_InfrareHandle, NULL);
+
+	_xt_isr_unmask(1 << ETS_GPIO_INUM);
+
+	LOG_OUT(LOGOUT_INFO, "INFRA_InfrareInit success");
 }
 
 
