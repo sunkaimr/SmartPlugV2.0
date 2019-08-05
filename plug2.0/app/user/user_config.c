@@ -148,6 +148,39 @@ UINT CONFIG_DelayDataCheck( PLUG_DELAY_S *pstData )
 	return iRet;
 }
 
+
+UINT CONFIG_InfraedDataCheck( INFRAED_VALUE_S *pstData )
+{
+	UINT iRet = OK;
+
+	if ( NULL == pstData )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "CONFIG_InfraedDataCheck. pstData = 0x%p.", pstData);
+	    iRet = FAIL;
+	}
+
+	if (pstData->uiNum == 0 || pstData->uiNum > INFRAED_MAX )
+	{
+		LOG_OUT(LOGOUT_ERROR, "CONFIG_InfraedDataCheck. uiNum:%d.", pstData->uiNum);
+		iRet = FAIL;
+	}
+
+	if ( TRUE != pstData->bEnable && FALSE!= pstData->bEnable )
+	{
+		LOG_OUT(LOGOUT_ERROR, "CONFIG_InfraedDataCheck. bEnable:%d.", pstData->bEnable);
+		iRet = FAIL;
+	}
+
+	if ( 0 == pstData->szName[0] || 0xFF == pstData->szName[0])
+	{
+		LOG_OUT(LOGOUT_ERROR, "CONFIG_InfraedDataCheck. szName:%s.", pstData->szName);
+		iRet = FAIL;
+	}
+
+	return iRet;
+}
+
+
 UINT CONFIG_SysSetDataCheck( PLUG_SYSSET_S *pstData )
 {
 	if ( NULL == pstData )
@@ -325,7 +358,7 @@ UINT CONFIG_ReadConfig( PLUG_MOUDLE_E uiMoudle )
 		}
 		else
 		{
-			for ( uiLoop = 0; uiLoop < PLUG_TIMER_MAX; uiLoop++ )
+			for ( uiLoop = 0; uiLoop < PLUG_DELAY_MAX; uiLoop++ )
 			{
 				uiRet = CONFIG_DelayDataCheck( PLUG_GetDelayData(uiLoop) );
 				if ( OK != uiRet )
@@ -334,6 +367,33 @@ UINT CONFIG_ReadConfig( PLUG_MOUDLE_E uiMoudle )
 					PLUG_DelayDataDeInit();
 					CONFIG_SaveConfig(PLUG_MOUDLE_DELAY);
 					LOG_OUT(LOGOUT_ERROR, "DelayDataCheck failed, Loaded Default Config.");
+					break;
+				}
+			}
+		}
+	}
+
+
+	if ( uiMoudle & PLUG_MOUDLE_INFRAED )
+	{
+	    LOG_OUT(LOGOUT_INFO, "Read infraed data...");
+	    uiRet = FlASH_Read((UINT32)FLASH_INGRAED_ADDR, (CHAR*)INFRAED_GetInfraedData(0), INFRAED_GetInfraedDataSize());
+		if ( OK != uiRet )
+		{
+		    LOG_OUT(LOGOUT_ERROR, "FlASH_Read infraed data failed.");
+			uiRet |= FAIL;
+		}
+		else
+		{
+			for ( uiLoop = 0; uiLoop < PLUG_TIMER_MAX; uiLoop++ )
+			{
+				uiRet = CONFIG_InfraedDataCheck( INFRAED_GetInfraedData(uiLoop) );
+				if ( OK != uiRet )
+				{
+					/* ¶ÁÈ¡ÅäÖÃÊ§°Ü,Ê¹ÓÃÄ¬ÈÏÅäÖÃ */
+					INFRARED_InfraredDataDeInit();
+					CONFIG_SaveConfig(PLUG_MOUDLE_INFRAED);
+					LOG_OUT(LOGOUT_ERROR, "InfraedDataCheck failed, Loaded Default Config.");
 					break;
 				}
 			}
@@ -403,6 +463,16 @@ UINT CONFIG_SaveConfig( PLUG_MOUDLE_E uiMoudle )
 		if ( OK != uiRet )
 		{
 			LOG_OUT(LOGOUT_ERROR, "FlASH_Write delay data failed.");
+			uiRet |= FAIL;
+		}
+	}
+
+	if ( uiMoudle & PLUG_MOUDLE_INFRAED )
+	{
+		uiRet = FlASH_Write(FLASH_INGRAED_ADDR, (CHAR*)INFRAED_GetInfraedData(0), INFRAED_GetInfraedDataSize());
+		if ( OK != uiRet )
+		{
+			LOG_OUT(LOGOUT_ERROR, "FlASH_Write infraed data failed.");
 			uiRet |= FAIL;
 		}
 	}

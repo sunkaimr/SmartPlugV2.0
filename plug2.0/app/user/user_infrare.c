@@ -12,6 +12,8 @@
 
 UINT32 uiInfreadValue = 0;
 
+INFRAED_SET_S g_stINFRAED_Set = { FALSE, FALSE, 0};
+INFRAED_VALUE_S g_astINFRAED_Value[INFRAED_MAX];
 
 VOID INFRA_InfrareHandle( VOID* Para )
 {
@@ -79,8 +81,9 @@ VOID INFRA_InfrareHandle( VOID* Para )
             if ( 32 <= BitCount )
             {
                 Step = 0;
-                uiInfreadValue = infreadValue;
-                LOG_OUT(LOGOUT_INFO, "uiInfreadValue:%x", uiInfreadValue);
+                g_stINFRAED_Set.uiValue = infreadValue;
+                g_stINFRAED_Set.bIsRefresh = TRUE;
+                LOG_OUT(LOGOUT_INFO, "uiInfreadValue:%X", infreadValue);
             }
             break;
         default:
@@ -95,13 +98,13 @@ VOID INFRA_InfrareHandle( VOID* Para )
 
 void INFRA_InfrareInit(void)
 {
-	GPIO_ConfigTypeDef gpio_in_cfg;
+	GPIO_ConfigTypeDef stGpioCfg;
 
-	gpio_in_cfg.GPIO_IntrType 	= GPIO_PIN_INTR_NEGEDGE;
-	gpio_in_cfg.GPIO_Mode 		= GPIO_Mode_Input;
-	gpio_in_cfg.GPIO_Pullup 	= GPIO_PullUp_EN;
-	gpio_in_cfg.GPIO_Pin 		= INFRA_GPIO_NUM;
-	gpio_config(&gpio_in_cfg);
+	stGpioCfg.GPIO_IntrType = GPIO_PIN_INTR_NEGEDGE;
+	stGpioCfg.GPIO_Mode 	= GPIO_Mode_Input;
+	stGpioCfg.GPIO_Pullup 	= GPIO_PullUp_EN;
+	stGpioCfg.GPIO_Pin 		= INFRA_GPIO_NUM;
+	gpio_config( &stGpioCfg );
 
 	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, INFRA_GPIO_NUM);
 
@@ -112,9 +115,150 @@ void INFRA_InfrareInit(void)
 	LOG_OUT(LOGOUT_INFO, "INFRA_InfrareInit success");
 }
 
+VOID INFRAED_JudgeInfraed( VOID )
+{
+	UINT uiLoopi = 0;
+	INFRAED_VALUE_S *pstInfraed = NULL;
+
+	/* 获取到新的红外键值 */
+	if ( g_stINFRAED_Set.bIsRefresh && !g_stINFRAED_Set.bIsSetting )
+	{
+		g_stINFRAED_Set.bIsRefresh = FALSE;
+
+		pstInfraed = g_astINFRAED_Value;
+		/* 逐个比较键值看与设定的键值是否匹配 */
+		for ( uiLoopi = 0 ; uiLoopi < INFRAED_MAX ; uiLoopi++, pstInfraed++ )
+		{
+			/* 如果on和off值一样则继电器交替动作 */
+			if ( g_stINFRAED_Set.uiValue == pstInfraed->uiOnValue &&
+				pstInfraed->uiOnValue == pstInfraed->uiOffValue)
+			{
+				PLUG_SetRelayReversal( TRUE );
+				break;
+			}
+			/* on操作 */
+			else if ( g_stINFRAED_Set.uiValue == pstInfraed->uiOnValue )
+			{
+				PLUG_SetRelayOn( TRUE );
+				break;
+			}
+			/* off操作 */
+			else if ( g_stINFRAED_Set.uiValue == pstInfraed->uiOnValue )
+			{
+				PLUG_SetRelayOff( TRUE );
+				break;
+			}
+		}
+	}
+}
+
+UINT INFRAED_SetInfraed( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
+{
+	INFRAED_VALUE_S* pstData = NULL;
+	UINT uiCount = 0;
+	UINT uiRet = 0;
+
+	if ( ucNum > INFRAED_MAX )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "Invalid infraed num: %d", ucNum);
+		return FAIL;
+	}
+	g_stINFRAED_Set.bIsSetting = TRUE;
+
+	while ( !g_stINFRAED_Set.bIsRefresh || uiCount < uiTimeOut_s*10 )
+	{
+		uiCount++;
+		vTaskDelay( 100/portTICK_RATE_MS );
+	}
+
+	if ( g_stINFRAED_Set.bIsRefresh )
+	{
+		pstData = INFRAED_GetInfraedData( ucNum-1 );
+
+		if ( ucSwitch )
+		{
+			pstData->uiOnValue = g_stINFRAED_Set.uiValue;
+		}
+		else
+		{
+			pstData->uiOffValue = g_stINFRAED_Set.uiValue;
+		}
+
+		g_stINFRAED_Set.bIsRefresh = FALSE;
+		g_stINFRAED_Set.bIsSetting = FALSE;
+
+		uiRet = INFRARED_SaveInfraredData(pstData);
+		if ( uiRet != OK )
+		{
+			LOG_OUT(LOGOUT_ERROR, "SaveInfraredData failed");
+			return FAIL;
+		}
+
+		return OK;
+	}
+
+	LOG_OUT(LOGOUT_ERROR, "Set infrared timeout %sS", uiTimeOut_s);
+
+	g_stINFRAED_Set.bIsSetting = FALSE;
+	return FAIL;
+}
+
+VOID INFRARED_InfraredDataDeInit( VOID )
+{
+	UINT uiLoopi = 0;
+	INFRAED_VALUE_S *pstData = NULL;
+	CHAR szName[PLUG_NAME_MAX_LEN] = "";
+
+	for ( uiLoopi = 0; uiLoopi < INFRAED_MAX; uiLoopi++ )
+	{
+		pstData = &g_astINFRAED_Value[uiLoopi];
+
+		pstData->uiNum		= uiLoopi+1;
+		pstData->bEnable	= FALSE;
+		pstData->uiOnValue	= 0;
+		pstData->uiOffValue = 0;
+
+		snprintf(szName, sizeof(szName), "infrared %d", uiLoopi+1);
+		strcpy(pstData->szName, szName);
+	}
+}
 
 
+INFRAED_VALUE_S* INFRAED_GetInfraedData( UINT8 ucNum )
+{
+	if ( ucNum >= INFRAED_MAX )
+	{
+		return &g_astINFRAED_Value[0];
+	}
+	return &g_astINFRAED_Value[ucNum];
+}
 
+UINT32 INFRAED_GetInfraedDataSize()
+{
+	return sizeof(g_astINFRAED_Value);
+}
+
+UINT INFRARED_SaveInfraredData( INFRAED_VALUE_S* pstData )
+{
+	UINT uiRet = OK;
+
+	if ( NULL == pstData )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pstData = 0x%p", pstData);
+		return FAIL;
+	}
+
+	uiRet = CONFIG_InfraedDataCheck( pstData );
+	if ( uiRet != OK )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pstData check failed.");
+		return FAIL;
+	}
+
+	memcpy(INFRAED_GetInfraedData(pstData->uiNum - 1), pstData, sizeof(INFRAED_VALUE_S));
+	CONFIG_SaveConfig(PLUG_MOUDLE_INFRAED);
+	return OK;
+}
 
 
 

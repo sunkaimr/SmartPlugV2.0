@@ -401,6 +401,7 @@ uart0_rx_intr_handler(void *para)
     				printf("===> help <===\r\n" );
     				printf("get timer\r\n" );
     				printf("get delay\r\n" );
+    				printf("get infrared\r\n" );
     				printf("get sys\r\n" );
     				printf("get date\r\n" );
     				//printf("get wifi\r\n" );
@@ -431,6 +432,11 @@ uart0_rx_intr_handler(void *para)
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get delay\r\n") )
     			{
     				PLUG_MarshalJsonDelay(Uart_SendBuf, UART_SENDMAXCNT, PLUG_DELAY_ALL);
+					printf(Uart_SendBuf);
+    			}
+    			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get infrared\r\n") )
+    			{
+    				PLUG_MarshalJsonInfrared(Uart_SendBuf, UART_SENDMAXCNT, INFRAED_ALL);
 					printf(Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get html header\r\n") )

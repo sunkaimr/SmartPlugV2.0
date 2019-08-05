@@ -790,6 +790,98 @@ succ:
 	return OK;
 }
 
+
+UINT HTTP_GetInfraredData( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+	CHAR szInfraed[HTTP_URL_MAX_LEN];
+	UINT uiNum = 0;
+
+	if ( NULL == pstCtx )
+	{
+		LOG_OUT( LOGOUT_ERROR, "pstCtx:%p", pstCtx);
+		return FAIL;
+	}
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_3K);
+
+    if ( OK != HTTP_GetRouterPara(pstCtx, "infraed", szInfraed))
+    {
+    	LOG_OUT(LOGOUT_ERROR, "get infraed failed.");
+    	goto err;
+    }
+    else
+    {
+        if ( strcmp(szInfraed, "all") == 0 )
+        {
+        	uiNum = INFRAED_ALL;
+        }
+        else
+        {
+        	uiNum = atoi(szInfraed);
+        }
+    }
+
+    if ( uiNum == 0 || uiNum > PLUG_DELAY_ALL )
+    {
+    	LOG_OUT(LOGOUT_ERROR, "unknow uiNum:%d", uiNum);
+    	pstCtx->stResp.eHttpCode = HTTP_CODE_BadRequest;
+    	goto err;
+    }
+
+    goto succ;
+
+err:
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SetResponseBody(pstCtx, HTML_BadRequest);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
+
+succ:
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	pstCtx->stResp.uiPos += PLUG_MarshalJsonInfrared(
+			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+			uiNum);
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
+}
+
 UINT HTTP_GetSystemData( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
@@ -1132,6 +1224,54 @@ UINT HTTP_PostDelayData( HTTP_CTX *pstCtx )
 	}
 	return OK;
 }
+
+
+UINT HTTP_PostInfraredData( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if (pstCtx->stReq.uiRecvCurLen < pstCtx->stReq.uiRecvTotalLen)
+	{
+		return OK;
+	}
+
+	if ( OK != PLUG_ParseInfraredData(pstCtx->stReq.pcResqBody) )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse daley data failed", pstCtx->iClientFd );
+		return HTTP_InternalServerError( pstCtx );
+	}
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+
+		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+	}
+	return OK;
+}
+
 
 UINT HTTP_PostSystemData( HTTP_CTX *pstCtx )
 {

@@ -650,6 +650,48 @@ UINT PLUG_MarshalJsonDelay( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum)
 	return strlen(pcBuf);
 }
 
+
+UINT PLUG_MarshalJsonInfrared( CHAR* pcBuf, UINT uiBufLen, UINT uiNum )
+{
+	INFRAED_VALUE_S *pstData = NULL;
+	UINT uiLoopi = 0;
+	CHAR *pJsonStr = NULL;
+	cJSON  *pJsonArry, *pJsonsub, *pJsonInt;
+	CHAR szBuf[10];
+
+	pstData = INFRAED_GetInfraedData(0);
+	pJsonArry = cJSON_CreateArray();
+	for ( uiLoopi = 0 ; uiLoopi < INFRAED_MAX; uiLoopi++, pstData++ )
+	{
+		if (uiNum != pstData->uiNum && uiNum != INFRAED_ALL)
+		{
+			continue;
+		}
+
+		pJsonsub=cJSON_CreateObject();
+
+		cJSON_AddNumberToObject( pJsonsub, 	"Num", 				pstData->uiNum);
+		cJSON_AddStringToObject( pJsonsub,	"Name", 			pstData->szName);
+		cJSON_AddBoolToObject( pJsonsub, 	"Enable", 			pstData->bEnable);
+
+		snprintf(szBuf, sizeof(szBuf), "%X", pstData->uiOnValue);
+		cJSON_AddStringToObject( pJsonsub, 	"OnValue", 			szBuf);
+
+		snprintf(szBuf, sizeof(szBuf), "%X", pstData->uiOffValue);
+		cJSON_AddStringToObject( pJsonsub, 	"OffValue", 		szBuf);
+
+		cJSON_AddItemToArray(pJsonArry, pJsonsub);
+	}
+
+    pJsonStr = cJSON_PrintUnformatted(pJsonArry);
+    strncpy(pcBuf, pJsonStr, uiBufLen);
+    cJSON_Delete(pJsonArry);
+    FREE_MEM(pJsonStr);
+
+	return strlen(pcBuf);
+}
+
+
 UINT PLUG_MarshalJsonSystemSet( CHAR* pcBuf, UINT uiBufLen )
 {
 	cJSON  *pJson = NULL;
@@ -1412,6 +1454,67 @@ error:
 }
 
 
+UINT PLUG_ParseInfraredData( CHAR* pData )
+{
+	cJSON *pJsonRoot = NULL;
+	cJSON *pJsonIteam = NULL;
+	UINT8 ucNum = INFRAED_ALL;
+	UINT8 ucSwitch = 0xFF;
+	UINT uiRet = 0;
+
+
+	if ( pData == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pData is NULL.");
+	    return FAIL;
+	}
+
+	pJsonRoot = cJSON_Parse( pData );
+	if ( pJsonRoot == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pData);
+	    uiRet = FAIL;
+	    goto exit;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "Num");
+	if (pJsonIteam && pJsonIteam->type == cJSON_Number)
+	{
+		ucNum = pJsonIteam->valueint;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "Switch");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		if ( strcmp(pJsonIteam->valuestring, "On") == 0 )
+		{
+			ucSwitch = TRUE;
+		}
+		else if ( strcmp(pJsonIteam->valuestring, "Off") == 0 )
+		{
+			ucSwitch = FALSE;
+		}
+		else
+		{
+			LOG_OUT(LOGOUT_ERROR, "unknown Switch:%s", pJsonIteam->valuestring);
+			uiRet = FAIL;
+			goto exit;
+		}
+	}
+
+	uiRet = INFRAED_SetInfraed(ucNum, ucSwitch, 3);
+	if ( uiRet != OK )
+	{
+		LOG_OUT(LOGOUT_ERROR, "INFRAED_SetInfraed failed");
+		goto exit;
+	}
+
+exit:
+	cJSON_Delete(pJsonRoot);
+	return uiRet;
+}
+
+
 UINT PLUG_ParseSystemData( CHAR* pData )
 {
 	cJSON *pJsonRoot = NULL;
@@ -1920,6 +2023,7 @@ VOID PLUG_TimerHandle( VOID *pPara )
 		PLUG_JudgeTimer();
 		PLUG_JudgeDelay();
 	}
+	INFRAED_JudgeInfraed();
 }
 
 VOID PLUG_StartJudgeTimeHanderTimer( VOID )
