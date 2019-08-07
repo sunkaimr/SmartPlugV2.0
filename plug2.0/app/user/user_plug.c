@@ -516,11 +516,11 @@ VOID PLUG_SetRelayReversal( UINT uiSaveFlag )
 	if ( uiSaveFlag )
 	{
 		CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
-		LOG_OUT(LOGOUT_INFO, "%s,SAVEED", g_stPLUG_SystemSet.bRelayStatus ? "RELAY_ON":"RELAY_OFF");
+		LOG_OUT(LOGOUT_INFO, "%s, saved", g_stPLUG_SystemSet.bRelayStatus ? "RelayOn":"RelayOff");
 	}
 	else
 	{
-		LOG_OUT(LOGOUT_INFO, "%s", g_stPLUG_SystemSet.bRelayStatus ? "RELAY_ON":"RELAY_OFF");
+		LOG_OUT(LOGOUT_INFO, "%s", g_stPLUG_SystemSet.bRelayStatus ? "RelayOn":"RelayOff");
 	}
 }
 
@@ -905,7 +905,7 @@ static VOID SyncTimeTask( VOID* para )
 	sntp_setservername(2, "time.windows.com");
 	sntp_init();
 
-	for( iRetry = 0; iRetry < 100; iRetry++ )
+	for( iRetry = 1; iRetry < 100; iRetry++ )
 	{
 		uiRet = sntp_get_current_timestamp();
 		if ( uiRet )
@@ -914,7 +914,7 @@ static VOID SyncTimeTask( VOID* para )
 			LOG_OUT(LOGOUT_INFO, "Get time from internet successed.");
 			break;
 		}
-		LOG_OUT(LOGOUT_INFO, "Get time from internet failed, retry %d.", iRetry);
+		LOG_OUT(LOGOUT_DEBUG, "Get time from retry %d times", iRetry);
 		vTaskDelay( 3000/portTICK_RATE_MS );
 	}
 
@@ -1502,7 +1502,7 @@ UINT PLUG_ParseInfraredData( CHAR* pData )
 		}
 	}
 
-	uiRet = INFRAED_SetInfraed(ucNum, ucSwitch, 3);
+	uiRet = INFRAED_SetInfraed(ucNum, ucSwitch, 30);
 	if ( uiRet != OK )
 	{
 		LOG_OUT(LOGOUT_ERROR, "INFRAED_SetInfraed failed");
@@ -2017,12 +2017,20 @@ VOID PLUG_StartDelayTime( PLUG_DELAY_S *pstDelay )
 
 VOID PLUG_TimerHandle( VOID *pPara )
 {
-	g_uiRunTime++;
-	if ( PLUG_GetTimeSyncFlag() != TIME_SYNC_NONE  )
+	static UINT8 uiCount = 0;
+
+	if ( uiCount++ >= 10 )
 	{
-		PLUG_JudgeTimer();
-		PLUG_JudgeDelay();
+		uiCount = 0;
+
+		g_uiRunTime++;
+		if ( PLUG_GetTimeSyncFlag() != TIME_SYNC_NONE  )
+		{
+			PLUG_JudgeTimer();
+			PLUG_JudgeDelay();
+		}
 	}
+
 	INFRAED_JudgeInfraed();
 }
 
@@ -2031,7 +2039,7 @@ VOID PLUG_StartJudgeTimeHanderTimer( VOID )
 	static xTimerHandle xJudgeTimeTimers = NULL;
 	UINT32 uiJudgeTimeTimerId = 0;
 
-	xJudgeTimeTimers = xTimerCreate("PLUG_TimerHandle", 1000/portTICK_RATE_MS, TRUE, &uiJudgeTimeTimerId, PLUG_TimerHandle);
+	xJudgeTimeTimers = xTimerCreate("PLUG_TimerHandle", 100/portTICK_RATE_MS, TRUE, &uiJudgeTimeTimerId, PLUG_TimerHandle);
 	if ( !xJudgeTimeTimers )
 	{
 		LOG_OUT(LOGOUT_ERROR, "xTimerCreate PLUG_TimerHandle failed.");

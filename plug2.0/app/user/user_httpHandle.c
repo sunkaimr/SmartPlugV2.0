@@ -1241,13 +1241,13 @@ UINT HTTP_PostInfraredData( HTTP_CTX *pstCtx )
 
 	if ( OK != PLUG_ParseInfraredData(pstCtx->stReq.pcResqBody) )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse daley data failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse Infrared data failed", pstCtx->iClientFd );
 		return HTTP_InternalServerError( pstCtx );
 	}
 
 	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
 	{
-		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+		HTTP_Malloc(pstCtx, HTTP_BUF_2K);
 
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
@@ -1256,12 +1256,11 @@ UINT HTTP_PostInfraredData( HTTP_CTX *pstCtx )
 			return FAIL;
 		}
 
-		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
-		if ( uiRet != OK )
-		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
-			return FAIL;
-		}
+		pstCtx->stResp.uiPos += PLUG_MarshalJsonInfrared(
+				pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+				pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+				INFRAED_ALL);
+
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{

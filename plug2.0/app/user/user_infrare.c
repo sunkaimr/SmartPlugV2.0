@@ -83,7 +83,7 @@ VOID INFRA_InfrareHandle( VOID* Para )
                 Step = 0;
                 g_stINFRAED_Set.uiValue = infreadValue;
                 g_stINFRAED_Set.bIsRefresh = TRUE;
-                LOG_OUT(LOGOUT_INFO, "uiInfreadValue:%X", infreadValue);
+                //LOG_OUT(LOGOUT_DEBUG, "infreadValue:%X", infreadValue);
             }
             break;
         default:
@@ -133,18 +133,21 @@ VOID INFRAED_JudgeInfraed( VOID )
 			if ( g_stINFRAED_Set.uiValue == pstInfraed->uiOnValue &&
 				pstInfraed->uiOnValue == pstInfraed->uiOffValue)
 			{
+				LOG_OUT(LOGOUT_DEBUG, "Recv infread:%X", g_stINFRAED_Set.uiValue);
 				PLUG_SetRelayReversal( TRUE );
 				break;
 			}
 			/* on²Ù×÷ */
 			else if ( g_stINFRAED_Set.uiValue == pstInfraed->uiOnValue )
 			{
+				LOG_OUT(LOGOUT_DEBUG, "Recv infread:%X", g_stINFRAED_Set.uiValue);
 				PLUG_SetRelayOn( TRUE );
 				break;
 			}
 			/* off²Ù×÷ */
-			else if ( g_stINFRAED_Set.uiValue == pstInfraed->uiOnValue )
+			else if ( g_stINFRAED_Set.uiValue == pstInfraed->uiOffValue )
 			{
+				LOG_OUT(LOGOUT_DEBUG, "Recv infread:%X", g_stINFRAED_Set.uiValue);
 				PLUG_SetRelayOff( TRUE );
 				break;
 			}
@@ -165,8 +168,10 @@ UINT INFRAED_SetInfraed( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
 	}
 	g_stINFRAED_Set.bIsSetting = TRUE;
 
-	while ( !g_stINFRAED_Set.bIsRefresh || uiCount < uiTimeOut_s*10 )
+
+	while ( !g_stINFRAED_Set.bIsRefresh && uiCount < uiTimeOut_s*10 )
 	{
+		//LOG_OUT(LOGOUT_DEBUG, "waitting for set Infraed, %d times", uiCount);
 		uiCount++;
 		vTaskDelay( 100/portTICK_RATE_MS );
 	}
@@ -186,7 +191,6 @@ UINT INFRAED_SetInfraed( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
 
 		g_stINFRAED_Set.bIsRefresh = FALSE;
 		g_stINFRAED_Set.bIsSetting = FALSE;
-
 		uiRet = INFRARED_SaveInfraredData(pstData);
 		if ( uiRet != OK )
 		{
@@ -197,7 +201,7 @@ UINT INFRAED_SetInfraed( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
 		return OK;
 	}
 
-	LOG_OUT(LOGOUT_ERROR, "Set infrared timeout %sS", uiTimeOut_s);
+	LOG_OUT(LOGOUT_ERROR, "Set infrared timeout %d S", uiTimeOut_s);
 
 	g_stINFRAED_Set.bIsSetting = FALSE;
 	return FAIL;

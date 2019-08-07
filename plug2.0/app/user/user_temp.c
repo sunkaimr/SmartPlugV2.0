@@ -1,15 +1,12 @@
 /*
  * user_temp.c
  *
- *  Created on: 2018年11月17日
+ *  Created on: 2018骞�11鏈�17鏃�
  *      Author: lenovo
  */
 
 #include "user_common.h"
 #include "esp_common.h"
-
-
-UINT uiTempAdcValue = 0;
 
 
 /*
@@ -109,25 +106,51 @@ UINT uiTempAdcValue = 0;
 
 
 
-    R      AD
-  ----- = -----
-  R热 + R   1024
+    R          AD
+  ----- = -----------
+  R热 + R   1024 * 3.3
 
 =>
-       AD * R
- R热 = --------- - R
-        1024
+      1024 * 3.3 * R
+ R热 = ---------------- - R
+             AD
 =>
- R = 1时
+R = 1K
 
-       1024
- R热  = -------  -  1
-        AD
+        1024 * 3.3
+ R热  = --------------  - 1
+            AD
 
 
  */
 
+const INT8 TempTab[] =
+{
+	-9, -8, -7, -6, -5, -4, -3, -2, -1,  0,
+	1,   2,  3,  4,  5,  6,  7,  8,  9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+	41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+	51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+	61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
+	71, 72, 73, 74, 75, 76, 77, 78, 79, 80
+};
 
+const float ResistorTab[] =
+{
+	42.11, 40.21, 38.39, 36.67, 35.03, 33.48, 32.00, 30.60, 29.27, 28.01,
+	26.82, 25.69, 24.62, 23.61, 22.65, 21.75, 20.89, 20.07, 19.29, 18.56,
+	18.48, 18.14, 17.63, 16.99, 16.27, 15.53, 14.78, 14.05, 13.35, 12.69,
+	12.06, 11.49, 10.95, 10.45, 10.00,  9.57,  9.18,  8.81,  8.47,  8.16,
+	 7.86,  7.57,  7.31,  7.05,  6.81,  6.58,  6.35,  6.14,  5.93,  5.73,
+	 5.54,  5.35,  5.17,  4.99,  4.82,  4.66,  4.50,  4.35,  4.20,  4.06,
+	 3.92,  3.79,  3.66,  3.53,  3.41,  3.29,  3.17,  3.05,  2.94,  2.82,
+	 2.77,  2.71,  2.65,  2.58,  2.50,  2.43,  2.35,  2.28,  2.20,  2.13,
+	 2.06,  2.00,  1.93,  1.87,  1.82,  1.76,  1.71,  1.67,  1.62,  1.58
+};
+
+/*
 VOID TEMP_TempCallBack( VOID )
 {
 	STATIC UINT uiLastAdc = 0;
@@ -137,17 +160,49 @@ VOID TEMP_TempCallBack( VOID )
 	{
 		uiLastAdc = system_adc_read();
 	}
-
+	portENTER_CRITICAL();
 	uiCurAdc = system_adc_read();
+	portEXIT_CRITICAL();
+
 	uiTempAdcValue = ( uiLastAdc * 0.8 +  uiCurAdc * 0.2 );
 
 	uiLastAdc = uiTempAdcValue;
 }
 
+*/
 
-float TEMP_GetTemperature( VOID )
+
+int TEMP_GetTemperature( VOID )
 {
-	return (float)(1024.0 / uiTempAdcValue - 1);
+	UINT uiTempAdcValue = 0;
+	float fResistor = 0;
+	UINT8 i = 0;
+	int iTemp = 0;
+
+	portENTER_CRITICAL();
+	uiTempAdcValue = system_adc_read();
+	portEXIT_CRITICAL();
+
+	fResistor = (float)((1024.0 * 3.3 / uiTempAdcValue ) - 1.0 );
+
+	for( i = 0; i < sizeof(ResistorTab)/sizeof(ResistorTab[0]); i++ )
+	{
+		if ( fResistor > ResistorTab[i] )
+		{
+			break;
+		}
+	}
+
+	if ( i >= sizeof(ResistorTab)/sizeof(ResistorTab[0]) )
+	{
+		iTemp = 999;
+	}
+	else
+	{
+		iTemp = TempTab[i];
+	}
+
+	return iTemp;
 }
 
 
