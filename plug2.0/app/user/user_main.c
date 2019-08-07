@@ -98,7 +98,7 @@ void user_init(void)
 			system_upgrade_userbin_check()+1);
 
 	LED_GpioInit();
-	INFRA_InfrareInit();
+	INFRA_InfraredInit();
 	CONFIG_ReadConfig(PLUG_MOUDLE_BUFF);
 
 

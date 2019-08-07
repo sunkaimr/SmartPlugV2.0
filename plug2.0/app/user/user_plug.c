@@ -653,17 +653,17 @@ UINT PLUG_MarshalJsonDelay( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum)
 
 UINT PLUG_MarshalJsonInfrared( CHAR* pcBuf, UINT uiBufLen, UINT uiNum )
 {
-	INFRAED_VALUE_S *pstData = NULL;
+	INFRARED_VALUE_S *pstData = NULL;
 	UINT uiLoopi = 0;
 	CHAR *pJsonStr = NULL;
 	cJSON  *pJsonArry, *pJsonsub, *pJsonInt;
 	CHAR szBuf[10];
 
-	pstData = INFRAED_GetInfraedData(0);
+	pstData = INFRARED_GetInfraredData(0);
 	pJsonArry = cJSON_CreateArray();
-	for ( uiLoopi = 0 ; uiLoopi < INFRAED_MAX; uiLoopi++, pstData++ )
+	for ( uiLoopi = 0 ; uiLoopi < INFRARED_MAX; uiLoopi++, pstData++ )
 	{
-		if (uiNum != pstData->uiNum && uiNum != INFRAED_ALL)
+		if (uiNum != pstData->uiNum && uiNum != INFRARED_ALL)
 		{
 			continue;
 		}
@@ -1458,7 +1458,7 @@ UINT PLUG_ParseInfraredData( CHAR* pData )
 {
 	cJSON *pJsonRoot = NULL;
 	cJSON *pJsonIteam = NULL;
-	UINT8 ucNum = INFRAED_ALL;
+	UINT8 ucNum = INFRARED_ALL;
 	UINT8 ucSwitch = 0xFF;
 	UINT uiRet = 0;
 
@@ -1502,10 +1502,10 @@ UINT PLUG_ParseInfraredData( CHAR* pData )
 		}
 	}
 
-	uiRet = INFRAED_SetInfraed(ucNum, ucSwitch, 30);
+	uiRet = infrared_SetInfrared(ucNum, ucSwitch, 30);
 	if ( uiRet != OK )
 	{
-		LOG_OUT(LOGOUT_ERROR, "INFRAED_SetInfraed failed");
+		LOG_OUT(LOGOUT_ERROR, "infrared_SetInfrared failed");
 		goto exit;
 	}
 
@@ -2031,7 +2031,7 @@ VOID PLUG_TimerHandle( VOID *pPara )
 		}
 	}
 
-	INFRAED_JudgeInfraed();
+	INFRARED_JudgeInfrared();
 }
 
 VOID PLUG_StartJudgeTimeHanderTimer( VOID )

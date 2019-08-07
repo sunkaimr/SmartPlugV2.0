@@ -53,7 +53,7 @@ typedef enum tagPLUG_MOUDLE
 	PLUG_MOUDLE_NONE			= (1<<0),	/* нч */
 	PLUG_MOUDLE_TIMER			= (1<<1), 	/* timer */
 	PLUG_MOUDLE_DELAY			= (1<<2), 	/* delay */
-	PLUG_MOUDLE_INFRAED			= (1<<3), 	/* delay */
+	PLUG_MOUDLE_infrared			= (1<<3), 	/* delay */
 	PLUG_MOUDLE_SYSSET			= (1<<4), 	/* system */
 	PLUG_MOUDLE_FILELIST		= (1<<5), 	/* file */
 

@@ -436,7 +436,7 @@ uart0_rx_intr_handler(void *para)
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get infrared\r\n") )
     			{
-    				PLUG_MarshalJsonInfrared(Uart_SendBuf, UART_SENDMAXCNT, INFRAED_ALL);
+    				PLUG_MarshalJsonInfrared(Uart_SendBuf, UART_SENDMAXCNT, INFRARED_ALL);
 					printf(Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get html header\r\n") )

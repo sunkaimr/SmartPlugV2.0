@@ -794,7 +794,7 @@ succ:
 UINT HTTP_GetInfraredData( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
-	CHAR szInfraed[HTTP_URL_MAX_LEN];
+	CHAR szinfrared[HTTP_URL_MAX_LEN];
 	UINT uiNum = 0;
 
 	if ( NULL == pstCtx )
@@ -809,20 +809,20 @@ UINT HTTP_GetInfraredData( HTTP_CTX *pstCtx )
 
 	HTTP_Malloc(pstCtx, HTTP_BUF_3K);
 
-    if ( OK != HTTP_GetRouterPara(pstCtx, "infraed", szInfraed))
+    if ( OK != HTTP_GetRouterPara(pstCtx, "infrared", szinfrared))
     {
-    	LOG_OUT(LOGOUT_ERROR, "get infraed failed.");
+    	LOG_OUT(LOGOUT_ERROR, "get infrared failed.");
     	goto err;
     }
     else
     {
-        if ( strcmp(szInfraed, "all") == 0 )
+        if ( strcmp(szinfrared, "all") == 0 )
         {
-        	uiNum = INFRAED_ALL;
+        	uiNum = INFRARED_ALL;
         }
         else
         {
-        	uiNum = atoi(szInfraed);
+        	uiNum = atoi(szinfrared);
         }
     }
 
@@ -1259,7 +1259,7 @@ UINT HTTP_PostInfraredData( HTTP_CTX *pstCtx )
 		pstCtx->stResp.uiPos += PLUG_MarshalJsonInfrared(
 				pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
 				pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
-				INFRAED_ALL);
+				INFRARED_ALL);
 
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )

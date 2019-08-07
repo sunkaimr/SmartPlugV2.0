@@ -323,7 +323,7 @@ VOID HTTP_RouterInit( VOID )
 
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/timer/:timer",	HTTP_GetTimerData,	"HTTP_GetTimerData");
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/delay/:delay",	HTTP_GetDelayData,	"HTTP_GetDelayData");
-	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/infraed/:infraed",
+	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/infrared/:infrared",
 															HTTP_GetInfraredData,"HTTP_GetInfraredData");
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/system",			HTTP_GetSystemData,	"HTTP_GetSystemData");
 
@@ -333,7 +333,7 @@ VOID HTTP_RouterInit( VOID )
 
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/timer",	   		HTTP_PostTimerData,	"HTTP_PostTimerData");
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/delay",	   		HTTP_PostDelayData,	"HTTP_PostDelayData");
-	HTTP_RouterRegiste(HTTP_METHOD_POST, "/infraed",		HTTP_PostInfraredData,	"HTTP_PostInfraredData");
+	HTTP_RouterRegiste(HTTP_METHOD_POST, "/infrared",		HTTP_PostInfraredData,	"HTTP_PostInfraredData");
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/system",	   		HTTP_PostSystemData,	"HTTP_PostSystemData");
 
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/control",	   	HTTP_PostDeviceControl,	"HTTP_PostDeviceControl");

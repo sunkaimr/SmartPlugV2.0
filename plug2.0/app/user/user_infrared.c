@@ -10,14 +10,14 @@
 
 #define INFRA_GPIO_NUM			GPIO_Pin_14
 
-UINT32 uiInfreadValue = 0;
+UINT32 uiInfraredValue = 0;
 
-INFRAED_SET_S g_stINFRAED_Set = { FALSE, FALSE, 0};
-INFRAED_VALUE_S g_astINFRAED_Value[INFRAED_MAX];
+INFRARED_SET_S g_stinfrared_Set = { FALSE, FALSE, 0};
+INFRARED_VALUE_S g_astInfrared_Value[INFRARED_MAX];
 
 VOID INFRA_InfrareHandle( VOID* Para )
 {
-	static UINT32 infreadValue = 0;	/* 解码的红外值 */
+	static UINT32 infraredValue = 0;	/* 解码的红外值 */
 	static UINT32 uiCurTime = 0;
 	static UINT32 uiLastTime = 0;
 	static UINT8  Step = 0;
@@ -57,13 +57,13 @@ VOID INFRA_InfrareHandle( VOID* Para )
             break;
         case 1 :
 			/* 开始解码 */
-			infreadValue <<= 1;
+			infraredValue <<= 1;
             BitCount ++;
             /* 数据1 用“高电平0.56ms＋低电平1.69ms=2.25ms”表示 */
             if ( 2000 < uiPluse && 2500 > uiPluse )
             {
             	/* 此位为1 */
-                infreadValue |= 0x01;
+                infraredValue |= 0x01;
             }
             /* 发射数据时0 用“0.56ms 高电平＋0.565ms 低电平=1.125ms”表示 */
             else if ( 1000 < uiPluse && 1300 > uiPluse )
@@ -81,9 +81,9 @@ VOID INFRA_InfrareHandle( VOID* Para )
             if ( 32 <= BitCount )
             {
                 Step = 0;
-                g_stINFRAED_Set.uiValue = infreadValue;
-                g_stINFRAED_Set.bIsRefresh = TRUE;
-                //LOG_OUT(LOGOUT_DEBUG, "infreadValue:%X", infreadValue);
+                g_stinfrared_Set.uiValue = infraredValue;
+                g_stinfrared_Set.bIsRefresh = TRUE;
+                //LOG_OUT(LOGOUT_DEBUG, "infraredValue:%X", infraredValue);
             }
             break;
         default:
@@ -96,7 +96,7 @@ VOID INFRA_InfrareHandle( VOID* Para )
 }
 
 
-void INFRA_InfrareInit(void)
+void INFRA_InfraredInit(void)
 {
 	GPIO_ConfigTypeDef stGpioCfg;
 
@@ -112,42 +112,42 @@ void INFRA_InfrareInit(void)
 
 	_xt_isr_unmask(1 << ETS_GPIO_INUM);
 
-	LOG_OUT(LOGOUT_INFO, "INFRA_InfrareInit success");
+	LOG_OUT(LOGOUT_INFO, "INFRA_InfraredInit success");
 }
 
-VOID INFRAED_JudgeInfraed( VOID )
+VOID INFRARED_JudgeInfrared( VOID )
 {
 	UINT uiLoopi = 0;
-	INFRAED_VALUE_S *pstInfraed = NULL;
+	INFRARED_VALUE_S *pstinfrared = NULL;
 
 	/* 获取到新的红外键值 */
-	if ( g_stINFRAED_Set.bIsRefresh && !g_stINFRAED_Set.bIsSetting )
+	if ( g_stinfrared_Set.bIsRefresh && !g_stinfrared_Set.bIsSetting )
 	{
-		g_stINFRAED_Set.bIsRefresh = FALSE;
+		g_stinfrared_Set.bIsRefresh = FALSE;
 
-		pstInfraed = g_astINFRAED_Value;
+		pstinfrared = g_astInfrared_Value;
 		/* 逐个比较键值看与设定的键值是否匹配 */
-		for ( uiLoopi = 0 ; uiLoopi < INFRAED_MAX ; uiLoopi++, pstInfraed++ )
+		for ( uiLoopi = 0 ; uiLoopi < INFRARED_MAX ; uiLoopi++, pstinfrared++ )
 		{
 			/* 如果on和off值一样则继电器交替动作 */
-			if ( g_stINFRAED_Set.uiValue == pstInfraed->uiOnValue &&
-				pstInfraed->uiOnValue == pstInfraed->uiOffValue)
+			if ( g_stinfrared_Set.uiValue == pstinfrared->uiOnValue &&
+				pstinfrared->uiOnValue == pstinfrared->uiOffValue)
 			{
-				LOG_OUT(LOGOUT_DEBUG, "Recv infread:%X", g_stINFRAED_Set.uiValue);
+				LOG_OUT(LOGOUT_DEBUG, "Recv infrared:%X", g_stinfrared_Set.uiValue);
 				PLUG_SetRelayReversal( TRUE );
 				break;
 			}
 			/* on操作 */
-			else if ( g_stINFRAED_Set.uiValue == pstInfraed->uiOnValue )
+			else if ( g_stinfrared_Set.uiValue == pstinfrared->uiOnValue )
 			{
-				LOG_OUT(LOGOUT_DEBUG, "Recv infread:%X", g_stINFRAED_Set.uiValue);
+				LOG_OUT(LOGOUT_DEBUG, "Recv infrared:%X", g_stinfrared_Set.uiValue);
 				PLUG_SetRelayOn( TRUE );
 				break;
 			}
 			/* off操作 */
-			else if ( g_stINFRAED_Set.uiValue == pstInfraed->uiOffValue )
+			else if ( g_stinfrared_Set.uiValue == pstinfrared->uiOffValue )
 			{
-				LOG_OUT(LOGOUT_DEBUG, "Recv infread:%X", g_stINFRAED_Set.uiValue);
+				LOG_OUT(LOGOUT_DEBUG, "Recv infrared:%X", g_stinfrared_Set.uiValue);
 				PLUG_SetRelayOff( TRUE );
 				break;
 			}
@@ -155,42 +155,42 @@ VOID INFRAED_JudgeInfraed( VOID )
 	}
 }
 
-UINT INFRAED_SetInfraed( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
+UINT infrared_SetInfrared( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
 {
-	INFRAED_VALUE_S* pstData = NULL;
+	INFRARED_VALUE_S* pstData = NULL;
 	UINT uiCount = 0;
 	UINT uiRet = 0;
 
-	if ( ucNum > INFRAED_MAX )
+	if ( ucNum > INFRARED_MAX )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "Invalid infraed num: %d", ucNum);
+	    LOG_OUT(LOGOUT_ERROR, "Invalid infrared num: %d", ucNum);
 		return FAIL;
 	}
-	g_stINFRAED_Set.bIsSetting = TRUE;
+	g_stinfrared_Set.bIsSetting = TRUE;
 
 
-	while ( !g_stINFRAED_Set.bIsRefresh && uiCount < uiTimeOut_s*10 )
+	while ( !g_stinfrared_Set.bIsRefresh && uiCount < uiTimeOut_s*10 )
 	{
-		//LOG_OUT(LOGOUT_DEBUG, "waitting for set Infraed, %d times", uiCount);
+		//LOG_OUT(LOGOUT_DEBUG, "waitting for set infrared, %d times", uiCount);
 		uiCount++;
 		vTaskDelay( 100/portTICK_RATE_MS );
 	}
 
-	if ( g_stINFRAED_Set.bIsRefresh )
+	if ( g_stinfrared_Set.bIsRefresh )
 	{
-		pstData = INFRAED_GetInfraedData( ucNum-1 );
+		pstData = INFRARED_GetInfraredData( ucNum-1 );
 
 		if ( ucSwitch )
 		{
-			pstData->uiOnValue = g_stINFRAED_Set.uiValue;
+			pstData->uiOnValue = g_stinfrared_Set.uiValue;
 		}
 		else
 		{
-			pstData->uiOffValue = g_stINFRAED_Set.uiValue;
+			pstData->uiOffValue = g_stinfrared_Set.uiValue;
 		}
 
-		g_stINFRAED_Set.bIsRefresh = FALSE;
-		g_stINFRAED_Set.bIsSetting = FALSE;
+		g_stinfrared_Set.bIsRefresh = FALSE;
+		g_stinfrared_Set.bIsSetting = FALSE;
 		uiRet = INFRARED_SaveInfraredData(pstData);
 		if ( uiRet != OK )
 		{
@@ -203,19 +203,19 @@ UINT INFRAED_SetInfraed( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
 
 	LOG_OUT(LOGOUT_ERROR, "Set infrared timeout %d S", uiTimeOut_s);
 
-	g_stINFRAED_Set.bIsSetting = FALSE;
+	g_stinfrared_Set.bIsSetting = FALSE;
 	return FAIL;
 }
 
 VOID INFRARED_InfraredDataDeInit( VOID )
 {
 	UINT uiLoopi = 0;
-	INFRAED_VALUE_S *pstData = NULL;
+	INFRARED_VALUE_S *pstData = NULL;
 	CHAR szName[PLUG_NAME_MAX_LEN] = "";
 
-	for ( uiLoopi = 0; uiLoopi < INFRAED_MAX; uiLoopi++ )
+	for ( uiLoopi = 0; uiLoopi < INFRARED_MAX; uiLoopi++ )
 	{
-		pstData = &g_astINFRAED_Value[uiLoopi];
+		pstData = &g_astInfrared_Value[uiLoopi];
 
 		pstData->uiNum		= uiLoopi+1;
 		pstData->bEnable	= FALSE;
@@ -228,21 +228,21 @@ VOID INFRARED_InfraredDataDeInit( VOID )
 }
 
 
-INFRAED_VALUE_S* INFRAED_GetInfraedData( UINT8 ucNum )
+INFRARED_VALUE_S* INFRARED_GetInfraredData( UINT8 ucNum )
 {
-	if ( ucNum >= INFRAED_MAX )
+	if ( ucNum >= INFRARED_MAX )
 	{
-		return &g_astINFRAED_Value[0];
+		return &g_astInfrared_Value[0];
 	}
-	return &g_astINFRAED_Value[ucNum];
+	return &g_astInfrared_Value[ucNum];
 }
 
-UINT32 INFRAED_GetInfraedDataSize()
+UINT32 INFRARED_GetInfraredDataSize()
 {
-	return sizeof(g_astINFRAED_Value);
+	return sizeof(g_astInfrared_Value);
 }
 
-UINT INFRARED_SaveInfraredData( INFRAED_VALUE_S* pstData )
+UINT INFRARED_SaveInfraredData( INFRARED_VALUE_S* pstData )
 {
 	UINT uiRet = OK;
 
@@ -252,15 +252,15 @@ UINT INFRARED_SaveInfraredData( INFRAED_VALUE_S* pstData )
 		return FAIL;
 	}
 
-	uiRet = CONFIG_InfraedDataCheck( pstData );
+	uiRet = CONFIG_infraredDataCheck( pstData );
 	if ( uiRet != OK )
 	{
 	    LOG_OUT(LOGOUT_ERROR, "pstData check failed.");
 		return FAIL;
 	}
 
-	memcpy(INFRAED_GetInfraedData(pstData->uiNum - 1), pstData, sizeof(INFRAED_VALUE_S));
-	CONFIG_SaveConfig(PLUG_MOUDLE_INFRAED);
+	memcpy(INFRARED_GetInfraredData(pstData->uiNum - 1), pstData, sizeof(INFRARED_VALUE_S));
+	CONFIG_SaveConfig(PLUG_MOUDLE_infrared);
 	return OK;
 }
 

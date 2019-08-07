@@ -27,10 +27,10 @@
 #include "user_web.h"
 #include "user_httpHandle.h"
 #include "user_temp.h"
-#include "user_infrare.h"
 #include "user_flash.h"
 #include "user_upgrade.h"
 #include "user_bigiot.h"
+#include "user_infrared.h"
 
 #ifndef GIT_COMMIT_SHA1
 	#define GIT_COMMIT_SHA1 "NULL"
