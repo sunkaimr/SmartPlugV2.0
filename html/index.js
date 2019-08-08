@@ -3,12 +3,13 @@ var LocalTime = 0;
 var relaystatus = false;
 var SysData;
 var DelayData;
+var InfraredData;
 var DelayRefreshTime="";
 
 
 $(document).ready(function () {
 
-	TimerClick();
+    InfraredClick();
 	getDate();
 	getDevName();
 	refreshRelay();
@@ -18,6 +19,7 @@ $(document).ready(function () {
 	$("#date").click(getDate);
 	$("#timer").click(TimerClick);
 	$("#delay").click(DelayClick);
+    $("#infrared").click(InfraredClick);
 	$("#set").click(SetClick);
 	$("#setCommit").click(setCommitClick);
 	$("#chooseBin").click(chooseBinClick);
@@ -127,7 +129,7 @@ $(document).ready(function () {
 	});
 
 	$(function () {
-		$('#delaySubmitForm').bootstrapValidator({
+		$('#infraredSubmitForm').bootstrapValidator({
 			message: 'This value is not valid',
 			feedbackIcons: {
 				valid: 'glyphicon glyphicon-ok',
@@ -135,8 +137,8 @@ $(document).ready(function () {
 				//validating: 'glyphicon glyphicon-refresh'
 			},
 			fields: {
-				delayName:{
-					message: 'Timer name is not valid',
+                infraredName:{
+					message: 'infrared name is not valid',
 						validators: {
 						notEmpty: {
 							message: '名称不能为空'
@@ -148,50 +150,20 @@ $(document).ready(function () {
 						}
 					}
 				},
-				onInterval: {
-					message: 'Off Time is not valid',
+                infraredOnValue: {
+					message: 'infraredOnValue is invalid',
 					validators: {
 						notEmpty: {
-							message: '开启间隔不能为空'
+							message: '开启值不能为空'
 						},
 					}
 				},
-				offInterval: {
-					message: 'Off Time is not valid',
+                infraredOffValue: {
+					message: 'infraredOffValue is invalid',
 					validators: {
 						notEmpty: {
-							message: '关闭间隔不能为空'
+							message: '关闭值不能为空'
 						},
-					}
-				},
-				timerCascodeNum: {
-					validators: {
-						notEmpty: {
-							message: '关联延时不能为空'
-						},
-						greaterThan: {
-							value: 0,
-							message: '不能小于1',
-						},
-						lessThan: {
-							value: 10,
-							message: '不能大于10'
-						}
-					}
-				},
-				cycleTimes: {
-					validators: {
-						notEmpty: {
-							message: '重复次数不能为空'
-						},
-						greaterThan: {
-							value: 0,
-							message: '不能小于0',
-						},
-						lessThan: {
-							value: 10,
-							message: '不能大于9999'
-						}
 					}
 				}
 			}
@@ -201,17 +173,12 @@ $(document).ready(function () {
 			var jsonDataAry=[];
 			var jsonData = {};
 
-			var numStr=$('#delayModalHead').text().trim().split(/\s+/);
+			var numStr=$('#infraredModalHead').text().trim().split(/\s+/);
 			jsonData.Num = parseInt(numStr[numStr.length-1]);
-			jsonData.Name = $("#delayName").val();
-			jsonData.Enable = $("#delayEnable").is(':checked');
-			jsonData.OnEnable = $("#onIntervalEnable").is(':checked');
-			jsonData.OffEnable = $("#onIntervalEnable").is(':checked');
-			jsonData.Cascode = $("#delayCascodeEnable").is(':checked');
-			jsonData.CascodeNum = parseInt($("#delayCascodeNum").val());
-			jsonData.CycleTimes = parseInt($("#cycleTimes").val());
-			jsonData.OnInterval = $("#onInterval").val();
-			jsonData.OffInterval = $("#offInterval").val();
+			jsonData.Name = $("#infraredName").val();
+			jsonData.Enable = $("#infraredEnable").is(':checked');
+            jsonData.OnValue = $("#infraredOnValue").val();
+            jsonData.OffValue = $("#infraredOffValue").val();
 			jsonDataAry.push(jsonData);
 
 			$.ajax({
@@ -220,17 +187,124 @@ $(document).ready(function () {
 				contentType: "application/json",
 				data:JSON.stringify(jsonDataAry),
 				success: function () {
-                    DelayClick();
-					//alert("成功");
+                    InfraredClick();
 				},
 				error: function (jqXHR, textStatus, errorThrown) {
 					ShowInfo(jqXHR.responseText);
 				}
 			});
 
-			$("#delaySubmitModal").modal("toggle")
+			$("#infraredSubmitModal").modal("toggle")
+            $("#infraredSubmitBtn").attr('disabled', false);
 		});
 	});
+
+    $(function () {
+        $('#delaySubmitForm').bootstrapValidator({
+            message: 'This value is not valid',
+            feedbackIcons: {
+                valid: 'glyphicon glyphicon-ok',
+                invalid: 'glyphicon glyphicon-remove',
+                //validating: 'glyphicon glyphicon-refresh'
+            },
+            fields: {
+                delayName:{
+                    message: 'Timer name is not valid',
+                    validators: {
+                        notEmpty: {
+                            message: '名称不能为空'
+                        },
+                        stringLength: {
+                            min: 1,
+                            max: 32,
+                            message: '长度必须小于32（中文占3个字符）'
+                        }
+                    }
+                },
+                onInterval: {
+                    message: 'Off Time is not valid',
+                    validators: {
+                        notEmpty: {
+                            message: '开启间隔不能为空'
+                        },
+                    }
+                },
+                offInterval: {
+                    message: 'Off Time is not valid',
+                    validators: {
+                        notEmpty: {
+                            message: '关闭间隔不能为空'
+                        },
+                    }
+                },
+                timerCascodeNum: {
+                    validators: {
+                        notEmpty: {
+                            message: '关联延时不能为空'
+                        },
+                        greaterThan: {
+                            value: 0,
+                            message: '不能小于1',
+                        },
+                        lessThan: {
+                            value: 10,
+                            message: '不能大于10'
+                        }
+                    }
+                },
+                cycleTimes: {
+                    validators: {
+                        notEmpty: {
+                            message: '重复次数不能为空'
+                        },
+                        greaterThan: {
+                            value: 0,
+                            message: '不能小于0',
+                        },
+                        lessThan: {
+                            value: 10,
+                            message: '不能大于9999'
+                        }
+                    }
+                }
+            }
+        }).on('success.form.bv', function (e) {//点击提交之后
+            e.preventDefault();
+            var $form = $(e.target);
+            var jsonDataAry=[];
+            var jsonData = {};
+
+            var numStr=$('#delayModalHead').text().trim().split(/\s+/);
+            jsonData.Num = parseInt(numStr[numStr.length-1]);
+            jsonData.Name = $("#delayName").val();
+            jsonData.Enable = $("#delayEnable").is(':checked');
+            jsonData.OnEnable = $("#onIntervalEnable").is(':checked');
+            jsonData.OffEnable = $("#onIntervalEnable").is(':checked');
+            jsonData.Cascode = $("#delayCascodeEnable").is(':checked');
+            jsonData.CascodeNum = parseInt($("#delayCascodeNum").val());
+            jsonData.CycleTimes = parseInt($("#cycleTimes").val());
+            jsonData.OnInterval = $("#onInterval").val();
+            jsonData.OffInterval = $("#offInterval").val();
+            jsonDataAry.push(jsonData);
+
+            $.ajax({
+                url: $form.attr('action'),
+                type: "POST",
+                contentType: "application/json",
+                data:JSON.stringify(jsonDataAry),
+                success: function () {
+                    DelayClick();
+                    //alert("成功");
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    ShowInfo(jqXHR.responseText);
+                }
+            });
+
+            $("#delaySubmitModal").modal("toggle")
+        });
+    });
+
 
 });
 
@@ -521,8 +595,10 @@ function TimerClick(){
 
 	$("#timer").addClass("lead");
 	$("#delay").removeClass("lead");
+    $("#infrared").removeClass("lead");
 	$("#set").removeClass("lead");
 	$("#tabDelay").addClass("hidden");
+    $("#tabInfrared").addClass("hidden");
 	$("#formSet").addClass("hidden");
     $("#delayTaskClass").addClass("hidden");
 	$("#tabTimer").removeClass("hidden");
@@ -577,10 +653,12 @@ function TimerClick(){
 function DelayClick(){
 	$("#timer").removeClass("lead");
 	$("#delay").addClass("lead");
+    $("#infrared").removeClass("lead");
 	$("#set").removeClass("lead");
 	$("#formSet").addClass("hidden");
 	$("#tabDelay").removeClass("hidden");
 	$("#tabTimer").addClass("hidden");
+    $("#tabInfrared").addClass("hidden");
 	$("#tabDelay").html("<p><centor>正在加载数据...</centor></p>");
 
 	$.get("delay/all",function(data, status){
@@ -634,13 +712,58 @@ function DelayClick(){
 	});
 }
 
+
+function InfraredClick(){
+
+    $("#timer").removeClass("lead");
+    $("#delay").removeClass("lead");
+    $("#infrared").addClass("lead");
+    $("#set").removeClass("lead");
+    $("#formSet").addClass("hidden");
+    $("#tabDelay").addClass("hidden");
+    $("#tabTimer").addClass("hidden");
+    $("#tabInfrared").removeClass("hidden");
+
+    $("#tabInfrared").html("<p><centor>正在加载数据...</centor></p>");
+
+    $.get("infrared/all",function(data, status){
+        if (status == "success"){
+            $("#tabInfrared").empty();
+            $("#tabInfrared").html("<thead><th>编号</th><th>名称</th><th>启用</th><th>开启值</th><th>关闭值</th></thead><tbody><tr></tr></tbody>");
+            InfraredData = data;
+            data = eval(data);
+            var t = document.getElementById('tabInfrared');
+            $.each(data, function (index, item) {
+                var r = t.insertRow(t.rows.length);
+                for( var i = 0; i < 6; i++){
+                    switch (i){
+                        case 0: r.insertCell(i).innerHTML=item.Num;break;
+                        case 1: r.insertCell(i).innerHTML=item.Name;break;
+                        case 2: r.insertCell(i).innerHTML=BoolConversion(item.Enable);break;
+                        case 3: r.insertCell(i).innerHTML=item.OnValue;break;
+                        case 4: r.insertCell(i).innerHTML=item.OffValue;break;
+                        case 5: r.insertCell(i).innerHTML="<a>修改</a>";break;
+                        default: break;
+                    }
+                }
+            });
+            $("#tabInfrared a").click(tabInfraredSubmit);
+
+        }else{
+            alert("Data: " + data + "\nStatus: " + status);
+        }
+    });
+}
+
 function SetClick(){
 	$("#tabTimer").addClass("hidden");
 	$("#tabDelay").addClass("hidden");
+    $("#tabInfrared").addClass("hidden");
     $("#delayTaskClass").addClass("hidden");
 	$("#formSet").removeClass("hidden");
 	$("#timer").removeClass("lead");
 	$("#delay").removeClass("lead");
+	$("#infrared").removeClass("lead");
 	$("#set").addClass("lead");
 
 	$.get("/system",function(data, status){
@@ -803,6 +926,23 @@ function tabDelaySubmit(){
 	$('#delaySubmitModal').modal("show")
 }
 
+function tabInfraredSubmit(){
+    numStr = $(this).parents("tr").find('td').eq(0).text();
+    url="infrared/"+numStr;
+    $.get(url, function(data, status){
+        if (status == "success"){
+            $('#infraredModalHead').text("红外控制 " + data[0].Num);
+            $("#infraredName").val(data[0].Name);
+            $("#infraredEnable").attr('checked', data[0].Enable);
+            $("#infraredOnValue").val(data[0].OnValue);
+            $("#infraredOffValue").val(data[0].OffValue);
+        }else{
+            alert("Data: " + data + "\nStatus: " + status);
+        }});
+
+    $('#infraredSubmitModal').modal("show")
+}
+
 function timerSubmit() {
 	$('#timerSubmitForm').bootstrapValidator();
 }
@@ -916,3 +1056,36 @@ function refreshTask() {
         DelayRefreshTime = "";
     }
 }
+
+
+function infraredOnClick(){
+    $("#infraredOnValue").val("0");
+    $("#infraredOnBtn").text("正在学习");
+    var numStr = $("#infraredModalHead").text().split(" ")[1];
+	var url = "/infrared/" + numStr + "/switch/on"
+    $.get( url, function(data, status){
+        if (status == "success"){
+            $("#infraredOnValue").val(data.Value);
+            $("#infraredOnBtn").text("重新学习");
+        }else{
+            ShowInfo("Data: " + data + "\nStatus: " + status);
+        }
+    });
+}
+
+function infraredOffClick(){
+    $("#infraredOffValue").val("0");
+    $("#infraredOffBtn").text("正在学习");
+    var numStr = $("#infraredModalHead").text().split(" ")[1];
+    var url = "/infrared/" + numStr + "/switch/off"
+    $.get( url, function(data, status){
+        if (status == "success"){
+            $("#infraredOffValue").val(data.Value);
+            $("#infraredOffBtn").text("重新学习");
+
+        }else{
+            ShowInfo("Data: " + data + "\nStatus: " + status);
+        }
+    });
+}
+
