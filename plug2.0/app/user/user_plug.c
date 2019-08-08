@@ -1458,10 +1458,11 @@ UINT PLUG_ParseInfraredData( CHAR* pData )
 {
 	cJSON *pJsonRoot = NULL;
 	cJSON *pJsonIteam = NULL;
-	UINT8 ucNum = INFRARED_ALL;
-	UINT8 ucSwitch = 0xFF;
-	UINT uiRet = 0;
-
+	cJSON *pJsonArr = NULL;
+	UINT uiRet = OK;
+	INFRARED_VALUE_S stData;
+	INT iCount = 0;
+	UINT uiLoop = 0;
 
 	if ( pData == NULL )
 	{
@@ -1477,36 +1478,60 @@ UINT PLUG_ParseInfraredData( CHAR* pData )
 	    goto exit;
 	}
 
-	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "Num");
-	if (pJsonIteam && pJsonIteam->type == cJSON_Number)
+	iCount = cJSON_GetArraySize( pJsonRoot );
+	if ( iCount <= 0)
 	{
-		ucNum = pJsonIteam->valueint;
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_GetArraySize failed, iCount:%d.", iCount);
+	    uiRet = FAIL;
+	    goto exit;
 	}
 
-	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "Switch");
-	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	for ( uiLoop = 0; uiLoop < iCount; uiLoop++ )
 	{
-		if ( strcmp(pJsonIteam->valuestring, "On") == 0 )
+		pJsonArr = cJSON_GetArrayItem(pJsonRoot, uiLoop);
+
+		stData.uiNum = INFRARED_ALL;
+		pJsonIteam = cJSON_GetObjectItem(pJsonArr, "Num");
+		if (pJsonIteam && pJsonIteam->type == cJSON_Number)
 		{
-			ucSwitch = TRUE;
+			stData.uiNum = pJsonIteam->valueint;
 		}
-		else if ( strcmp(pJsonIteam->valuestring, "Off") == 0 )
+
+		pJsonIteam = cJSON_GetObjectItem(pJsonArr, "Enable");
+		if (pJsonIteam && pJsonIteam->type == cJSON_True)
 		{
-			ucSwitch = FALSE;
+			stData.bEnable = 1;
 		}
-		else
+		else if (pJsonIteam && pJsonIteam->type == cJSON_False)
 		{
-			LOG_OUT(LOGOUT_ERROR, "unknown Switch:%s", pJsonIteam->valuestring);
+			stData.bEnable = 0;
+		}
+
+		pJsonIteam = cJSON_GetObjectItem(pJsonArr, "Name");
+		if (pJsonIteam && pJsonIteam->type == cJSON_String)
+		{
+			strncpy(stData.szName, pJsonIteam->valuestring, INFRARED_NAME_MAX_LEN);
+		}
+
+		pJsonIteam = cJSON_GetObjectItem(pJsonArr, "OnValue");
+		if (pJsonIteam && pJsonIteam->type == cJSON_String)
+		{
+			sscanf(pJsonIteam->valuestring, "%X", &stData.uiOnValue);
+		}
+
+		pJsonIteam = cJSON_GetObjectItem(pJsonArr, "OffValue");
+		if (pJsonIteam && pJsonIteam->type == cJSON_String)
+		{
+			sscanf(pJsonIteam->valuestring, "%X", &stData.uiOffValue);
+		}
+
+		uiRet = INFRARED_SaveInfraredData( &stData );
+		if ( uiRet != OK )
+		{
+			LOG_OUT(LOGOUT_ERROR, "INFRARED_SaveInfraredData failed");
 			uiRet = FAIL;
 			goto exit;
 		}
-	}
-
-	uiRet = infrared_SetInfrared(ucNum, ucSwitch, 30);
-	if ( uiRet != OK )
-	{
-		LOG_OUT(LOGOUT_ERROR, "infrared_SetInfrared failed");
-		goto exit;
 	}
 
 exit:

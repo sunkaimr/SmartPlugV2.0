@@ -47,6 +47,7 @@ UINT HTTP_GetTest( HTTP_CTX *pstCtx );
 UINT HTTP_GetTimerData( HTTP_CTX *pstCtx );
 UINT HTTP_GetDelayData( HTTP_CTX *pstCtx );
 UINT HTTP_GetInfraredData( HTTP_CTX *pstCtx );
+UINT HTTP_GetInfraredValue( HTTP_CTX *pstCtx );
 UINT HTTP_GetSystemData( HTTP_CTX *pstCtx );
 UINT HTTP_GetHtmlHeader( HTTP_CTX *pstCtx );
 UINT HTTP_PostHtmlHeader( HTTP_CTX *pstCtx );

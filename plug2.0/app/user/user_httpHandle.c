@@ -826,13 +826,6 @@ UINT HTTP_GetInfraredData( HTTP_CTX *pstCtx )
         }
     }
 
-    if ( uiNum == 0 || uiNum > PLUG_DELAY_ALL )
-    {
-    	LOG_OUT(LOGOUT_ERROR, "unknow uiNum:%d", uiNum);
-    	pstCtx->stResp.eHttpCode = HTTP_CODE_BadRequest;
-    	goto err;
-    }
-
     goto succ;
 
 err:
@@ -881,6 +874,121 @@ succ:
 
 	return OK;
 }
+
+
+UINT HTTP_GetInfraredValue( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+	CHAR szBuf[HTTP_URL_MAX_LEN];
+	UINT8 ucNum = 0;
+	UINT8 ucSwitch = 0;
+	UINT uiInfraredValue = 0;
+
+	if ( NULL == pstCtx )
+	{
+		LOG_OUT( LOGOUT_ERROR, "pstCtx:%p", pstCtx);
+		return FAIL;
+	}
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_3K);
+
+    if ( OK != HTTP_GetRouterPara(pstCtx, "infrared", szBuf))
+    {
+    	LOG_OUT(LOGOUT_ERROR, "get infrared failed.");
+    	goto err;
+    }
+    else
+    {
+    	ucNum = atoi(szBuf);
+        if ( ucNum == 0 || ucNum > INFRARED_MAX )
+        {
+        	LOG_OUT(LOGOUT_ERROR, "unknow ucNum:%d", ucNum);
+        	pstCtx->stResp.eHttpCode = HTTP_CODE_BadRequest;
+        	goto err;
+        }
+    }
+
+    if ( OK != HTTP_GetRouterPara(pstCtx, "switch", szBuf))
+    {
+    	LOG_OUT(LOGOUT_ERROR, "get switch failed.");
+    	goto err;
+    }
+    else
+    {
+        if ( strcmp(szBuf, "on") != 0 )
+        {
+        	ucSwitch = 1;
+        }
+        else if ( strcmp(szBuf, "off") != 0 )
+        {
+        	ucSwitch = 0;
+        }
+        else
+        {
+        	pstCtx->stResp.eHttpCode = HTTP_CODE_BadRequest;
+        	LOG_OUT(LOGOUT_ERROR, "unknown switch :%s.", szBuf);
+        	goto err;
+        }
+    }
+
+    uiInfraredValue = INFRARED_GetInfraredValue( ucNum, ucSwitch, 30 );
+
+    goto succ;
+
+err:
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SetResponseBody(pstCtx, HTML_InternalServerError);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
+
+succ:
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	snprintf(szBuf, sizeof(szBuf), "{\"Num\":%d, \"Value\":\"%X\"}", ucNum, uiInfraredValue);
+	uiRet = HTTP_SetResponseBody(pstCtx, szBuf);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
+}
+
 
 UINT HTTP_GetSystemData( HTTP_CTX *pstCtx )
 {
@@ -1256,10 +1364,12 @@ UINT HTTP_PostInfraredData( HTTP_CTX *pstCtx )
 			return FAIL;
 		}
 
-		pstCtx->stResp.uiPos += PLUG_MarshalJsonInfrared(
-				pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
-				pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
-				INFRARED_ALL);
+		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			return FAIL;
+		}
 
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )

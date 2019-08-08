@@ -129,6 +129,11 @@ VOID INFRARED_JudgeInfrared( VOID )
 		/* 逐个比较键值看与设定的键值是否匹配 */
 		for ( uiLoopi = 0 ; uiLoopi < INFRARED_MAX ; uiLoopi++, pstinfrared++ )
 		{
+			if ( !pstinfrared->bEnable )
+			{
+				continue;
+			}
+
 			/* 如果on和off值一样则继电器交替动作 */
 			if ( g_stinfrared_Set.uiValue == pstinfrared->uiOnValue &&
 				pstinfrared->uiOnValue == pstinfrared->uiOffValue)
@@ -155,7 +160,8 @@ VOID INFRARED_JudgeInfrared( VOID )
 	}
 }
 
-UINT infrared_SetInfrared( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
+
+UINT INFRARED_SetInfrared( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
 {
 	INFRARED_VALUE_S* pstData = NULL;
 	UINT uiCount = 0;
@@ -205,6 +211,41 @@ UINT infrared_SetInfrared( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
 
 	g_stinfrared_Set.bIsSetting = FALSE;
 	return FAIL;
+}
+
+
+UINT INFRARED_GetInfraredValue( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s )
+{
+	UINT uiCount = 0;
+	UINT uiRet = 0;
+
+	if ( ucNum > INFRARED_MAX )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "Invalid infrared num: %d", ucNum);
+		return 0;
+	}
+	g_stinfrared_Set.bIsSetting = TRUE;
+
+
+	while ( !g_stinfrared_Set.bIsRefresh && uiCount < uiTimeOut_s*10 )
+	{
+		//LOG_OUT(LOGOUT_DEBUG, "waitting for set infrared, %d times", uiCount);
+		uiCount++;
+		vTaskDelay( 100/portTICK_RATE_MS );
+	}
+
+	if ( g_stinfrared_Set.bIsRefresh )
+	{
+		g_stinfrared_Set.bIsRefresh = FALSE;
+		g_stinfrared_Set.bIsSetting = FALSE;
+
+		return g_stinfrared_Set.uiValue;
+	}
+
+	LOG_OUT(LOGOUT_ERROR, "Set infrared timeout %d S", uiTimeOut_s);
+
+	g_stinfrared_Set.bIsSetting = FALSE;
+	return 0;
 }
 
 VOID INFRARED_InfraredDataDeInit( VOID )

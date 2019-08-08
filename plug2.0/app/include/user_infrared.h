@@ -37,7 +37,7 @@ extern VOID INFRARED_JudgeInfrared( VOID );
 INFRARED_VALUE_S* INFRARED_GetInfraredData( UINT8 ucNum );
 UINT32 INFRARED_GetInfraredDataSize();
 UINT INFRARED_SaveInfraredData( INFRARED_VALUE_S* pstData );
-UINT infrared_SetInfrared( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s );
+UINT INFRARED_SetInfrared( UINT8 ucNum, UINT8 ucSwitch, UINT uiTimeOut_s );
 VOID INFRARED_InfraredDataDeInit( VOID );
 
 

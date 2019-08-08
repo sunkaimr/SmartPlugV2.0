@@ -325,6 +325,9 @@ VOID HTTP_RouterInit( VOID )
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/delay/:delay",	HTTP_GetDelayData,	"HTTP_GetDelayData");
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/infrared/:infrared",
 															HTTP_GetInfraredData,"HTTP_GetInfraredData");
+	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/infrared/:infrared/switch/:switch",
+															HTTP_GetInfraredValue,"HTTP_GetInfraredValue");
+
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/system",			HTTP_GetSystemData,	"HTTP_GetSystemData");
 
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/html/header",	HTTP_GetHtmlHeader,	"HTTP_GetHtmlHeader");
