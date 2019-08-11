@@ -112,7 +112,7 @@ void INFRA_InfraredInit(void)
 
 	_xt_isr_unmask(1 << ETS_GPIO_INUM);
 
-	LOG_OUT(LOGOUT_INFO, "INFRA_InfraredInit success");
+	//LOG_OUT(LOGOUT_INFO, "INFRA_InfraredInit success");
 }
 
 VOID INFRARED_JudgeInfrared( VOID )
@@ -301,7 +301,7 @@ UINT INFRARED_SaveInfraredData( INFRARED_VALUE_S* pstData )
 	}
 
 	memcpy(INFRARED_GetInfraredData(pstData->uiNum - 1), pstData, sizeof(INFRARED_VALUE_S));
-	CONFIG_SaveConfig(PLUG_MOUDLE_infrared);
+	CONFIG_SaveConfig(PLUG_MOUDLE_INFRARED);
 	return OK;
 }
 

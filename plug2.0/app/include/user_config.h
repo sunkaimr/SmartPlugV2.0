@@ -43,7 +43,8 @@
 #define FLASH_DELAY_ADDR  	(FLASH_TIMER_ADDR + FLASH_SIZE_4K)
 #define FLASH_INGRAED_ADDR 	(FLASH_DELAY_ADDR + FLASH_SIZE_4K)
 #define FLASH_SYSSET_ADDR  	(FLASH_INGRAED_ADDR + FLASH_SIZE_4K)
-#define FLASH_HTML_ADDR  	(FLASH_SYSSET_ADDR + FLASH_SIZE_4K)
+#define FLASH_PLATFORM_ADDR (FLASH_SYSSET_ADDR + FLASH_SIZE_4K)
+#define FLASH_HTML_ADDR  	(FLASH_PLATFORM_ADDR + FLASH_SIZE_4K)
 
 #define FLASH_USER_ADDR     (FLASH_HTML_ADDR + FLASH_SIZE_4K)
 
@@ -53,9 +54,10 @@ typedef enum tagPLUG_MOUDLE
 	PLUG_MOUDLE_NONE			= (1<<0),	/* нч */
 	PLUG_MOUDLE_TIMER			= (1<<1), 	/* timer */
 	PLUG_MOUDLE_DELAY			= (1<<2), 	/* delay */
-	PLUG_MOUDLE_infrared			= (1<<3), 	/* delay */
+	PLUG_MOUDLE_INFRARED		= (1<<3), 	/* delay */
 	PLUG_MOUDLE_SYSSET			= (1<<4), 	/* system */
-	PLUG_MOUDLE_FILELIST		= (1<<5), 	/* file */
+	PLUG_MOUDLE_PLATFORM		= (1<<5), 	/* cloudPlatform */
+	PLUG_MOUDLE_FILELIST		= (1<<6), 	/* file */
 
 	PLUG_MOUDLE_BUFF         	= 0xFF
 }PLUG_MOUDLE_E;

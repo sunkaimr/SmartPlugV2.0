@@ -20,6 +20,7 @@
 
 #define PLUG_BIGIOT_DEVID_LEN 		64
 #define PLUG_BIGIOT_APIKEY_LEN 		20
+#define PLUG_BIGIOT_IFID_LEN 		20
 
 #define PLUG_TIMER_MAX    		10
 #define PLUG_DELAY_MAX    		10
@@ -105,14 +106,6 @@ typedef struct tagPLUG_DELAY							/*  延时模块    */
 }PLUG_DELAY_S;
 
 
-typedef enum
-{
-	PLATFORM_NONE		= 0,		/* 不对接 */
-	PLATFORM_ALIYUN		= 1,		/* 对接阿里云 */
-	PLATFORM_BIGIOT		= 2,		/* 对接贝壳物联 */
-
-	PLATFORM_BUFF
-}PLATFORM_E;
 
 typedef struct tagPLUG_SYSSET							/*  系统模块    */
 {
@@ -123,16 +116,50 @@ typedef struct tagPLUG_SYSSET							/*  系统模块    */
 	CHAR    szWifiSSID[PLUG_WIFI_SSID_LEN+1];			/* wifi名称 */
 	CHAR    szWifiPasswd[PLUG_WIFI_PASSWD_LEN+1];		/* wifi密码 */
 
-	UINT8 	ucCloudPlatform;								/* 对接的物联网平台  1:对接阿里云 2:对接贝壳物联 */
-
-	CHAR    szMqttProductKey[PLUG_MQTT_PRODUCTKEY_LEN+1];	/* 对接阿里云 mqtt的product key */
-	CHAR    szMqttDevName[PLUG_MQTT_DEVNAME_LEN+1];			/* 对接阿里云 mqtt的设备名称 */
-	CHAR    szMqttDevSecret[PLUG_MQTT_DEVSECRET_LEN+1];		/* 对接阿里云 mqtt的Device Secret */
-
-	CHAR    szBigiotDevId[PLUG_BIGIOT_DEVID_LEN+1];			/* 对接贝壳物联设备id */
-	CHAR    szBigiotApiKey[PLUG_BIGIOT_APIKEY_LEN+1];		/* 对接贝壳物联api key */
-
 }PLUG_SYSSET_S;
+
+
+typedef enum
+{
+	PLATFORM_NONE		= 0,		/* 不对接 */
+	PLATFORM_ALIYUN		= 1,		/* 对接阿里云 */
+	PLATFORM_BIGIOT		= 2,		/* 对接贝壳物联 */
+
+	PLATFORM_BUFF
+}PLATFORM_E;
+
+typedef enum
+{
+	DEVTYPE_LIGHT = 0,      //灯
+	DEVTYPE_SOCKET,			//插座
+	DEVTYPE_SWITCH,			//开关
+	DEVTYPE_TV,				//电视
+	DEVTYPE_FAN,			//风扇
+	DEVTYPE_HUMI,			//加湿器
+	DEVTYPE_HEATER,			//取暖器
+	DEVTYPE_WATER,			//饮水机
+	DEVTYPE_KETTLR,			//电热水壶
+	DEVTYPE_OTHER,			//其他
+
+	DEVTYPE_BUFF
+}DEVTYPE_E;
+
+typedef struct tagPLUG_PLATFORM									/*  云平台    */
+{
+	PLATFORM_E 	ucCloudPlatform;								/* 对接的物联网平台  1:对接阿里云 2:对接贝壳物联 */
+
+	CHAR    	szMqttProductKey[PLUG_MQTT_PRODUCTKEY_LEN+1];	/* 对接阿里云 mqtt的product key */
+	CHAR    	szMqttDevName[PLUG_MQTT_DEVNAME_LEN+1];			/* 对接阿里云 mqtt的设备名称 */
+	CHAR    	szMqttDevSecret[PLUG_MQTT_DEVSECRET_LEN+1];		/* 对接阿里云 mqtt的Device Secret */
+
+	DEVTYPE_E	eDevType;										/* 对接贝壳物联设备类型 */
+	CHAR    	szBigiotDevId[PLUG_BIGIOT_DEVID_LEN+1];			/* 对接贝壳物联设备id */
+	CHAR    	szBigiotApiKey[PLUG_BIGIOT_APIKEY_LEN+1];		/* 对接贝壳物联api key */
+	CHAR		szSwitchId[PLUG_BIGIOT_IFID_LEN+1];				/* 对接贝壳物联开关状态接口ID */
+	CHAR		szTempId[PLUG_BIGIOT_IFID_LEN+1];				/* 对接贝壳物联温度接口ID */
+	CHAR		szHumidityId[PLUG_BIGIOT_IFID_LEN+1];			/* 对接贝壳物联湿度接口ID */
+
+}PLUG_PLATFORM_S;
 
 typedef enum
 {
@@ -179,6 +206,9 @@ CHAR* PLUG_GetMqttDevName( VOID );
 CHAR* PLUG_GetMqttDevSecret( VOID );
 CHAR* PLUG_GetBigiotDevId( VOID );
 CHAR* PLUG_GetBigiotApiKey( VOID );
+CHAR* PLUG_GetBigiotSwitchId( VOID );
+CHAR* PLUG_GetBigiotTempId( VOID );
+CHAR* PLUG_GetBigiotHumidityId( VOID );
 VOID PLUG_SetBigiotDevId( CHAR* pcDevId );
 VOID PLUG_SetBigiotApiKey( CHAR* pcKey );
 UINT PLUG_GetMqttDevSecretLenth( VOID );
@@ -197,6 +227,7 @@ UINT8 PLUG_GetRelayStatus( VOID );
 PLUG_TIMER_S* PLUG_GetTimerData( UINT8 ucNum );
 PLUG_DELAY_S* PLUG_GetDelayData( UINT8 ucNum );
 PLUG_SYSSET_S* PLUG_GetSystemSetData( VOID );
+PLUG_PLATFORM_S* PLUG_GetPlatFormData( VOID );
 UINT32 PLUG_GetTimerDataSize();
 UINT32 PLUG_GetDelayDataSize();
 UINT32 PLUG_GetSystemSetDataSize();
@@ -216,15 +247,14 @@ UINT PLUG_MarshalJsonDate( CHAR* pcBuf, UINT uiBufLen );
 
 INT32 PLUG_GetTimeFromInternet();
 VOID PLUG_GetDate(PLUG_DATE_S * pstDate );
-UINT PLUG_ParseDate( CHAR* pDateStr);
 VOID PLUG_SetDate(PLUG_DATE_S * pstDate );
 
+UINT PLUG_ParseDate( CHAR* pDateStr);
 UINT PLUG_ParseTimerData( CHAR* pData );
 UINT PLUG_ParseRelayStatus( CHAR* pDataStr);
 
 VOID PLUG_StartJudgeTimeHanderTimer( VOID );
 
-VOID SetDelay( VOID );
 
 UINT PLUG_GetRunTime( VOID );
 

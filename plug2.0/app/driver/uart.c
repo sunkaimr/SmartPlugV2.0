@@ -402,6 +402,7 @@ uart0_rx_intr_handler(void *para)
     				printf("get timer\r\n" );
     				printf("get delay\r\n" );
     				printf("get infrared\r\n" );
+    				printf("get platform\r\n" );
     				printf("get sys\r\n" );
     				printf("get date\r\n" );
     				//printf("get wifi\r\n" );
@@ -437,6 +438,11 @@ uart0_rx_intr_handler(void *para)
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get infrared\r\n") )
     			{
     				PLUG_MarshalJsonInfrared(Uart_SendBuf, UART_SENDMAXCNT, INFRARED_ALL);
+					printf(Uart_SendBuf);
+    			}
+    			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get platform\r\n") )
+    			{
+    				PLUG_MarshalJsonCloudPlatformSet(Uart_SendBuf, UART_SENDMAXCNT);
 					printf(Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get html header\r\n") )

@@ -202,12 +202,6 @@ UINT CONFIG_SysSetDataCheck( PLUG_SYSSET_S *pstData )
 		return FAIL;
 	}
 
-	if ( pstData->ucCloudPlatform >= PLATFORM_BUFF )
-	{
-	    LOG_OUT(LOGOUT_ERROR, "ucCloudPlatform:%d.", pstData->ucCloudPlatform);
-		return FAIL;
-	}
-
 	if ( pstData->szPlugName[0] == 0 || pstData->szPlugName[0] == 0xFF )
 	{
 	    LOG_OUT(LOGOUT_ERROR, "szPlugName is NULL");
@@ -223,6 +217,30 @@ UINT CONFIG_SysSetDataCheck( PLUG_SYSSET_S *pstData )
 	if ( pstData->szWifiPasswd[0] == 0xFF )
 	{
 	    LOG_OUT(LOGOUT_ERROR, "szWifiPasswd is 0xFF");
+		return FAIL;
+	}
+
+	return OK;
+}
+
+
+UINT CONFIG_PlatFormDataCheck( PLUG_PLATFORM_S *pstData )
+{
+	if ( NULL == pstData )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pstData = 0x%p.", pstData);
+		return FAIL;
+	}
+
+	if ( pstData->ucCloudPlatform >= PLATFORM_BUFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "ucCloudPlatform:%d.", pstData->ucCloudPlatform);
+		return FAIL;
+	}
+
+	if ( pstData->eDevType >= DEVTYPE_BUFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "eDevType:%d.", pstData->eDevType);
 		return FAIL;
 	}
 
@@ -256,6 +274,22 @@ UINT CONFIG_SysSetDataCheck( PLUG_SYSSET_S *pstData )
 		return FAIL;
 	}
 
+	if ( pstData->szSwitchId[0] == 0xFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "szSwitchId is 0xFF");
+		return FAIL;
+	}
+	if ( pstData->szTempId[0] == 0xFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "szTempId is 0xFF");
+		return FAIL;
+	}
+
+	if ( pstData->szHumidityId[0] == 0xFF )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "szHumidityId is 0xFF");
+		return FAIL;
+	}
 	return OK;
 }
 /*
@@ -374,7 +408,7 @@ UINT CONFIG_ReadConfig( PLUG_MOUDLE_E uiMoudle )
 	}
 
 
-	if ( uiMoudle & PLUG_MOUDLE_infrared )
+	if ( uiMoudle & PLUG_MOUDLE_INFRARED )
 	{
 	    LOG_OUT(LOGOUT_INFO, "Read infrared data...");
 	    uiRet = FlASH_Read((UINT32)FLASH_INGRAED_ADDR, (CHAR*)INFRARED_GetInfraredData(0), INFRARED_GetInfraredDataSize());
@@ -392,7 +426,7 @@ UINT CONFIG_ReadConfig( PLUG_MOUDLE_E uiMoudle )
 				{
 					/* ∂¡»°≈‰÷√ ß∞‹, π”√ƒ¨»œ≈‰÷√ */
 					INFRARED_InfraredDataDeInit();
-					CONFIG_SaveConfig(PLUG_MOUDLE_infrared);
+					CONFIG_SaveConfig(PLUG_MOUDLE_INFRARED);
 					LOG_OUT(LOGOUT_ERROR, "infraredDataCheck failed, Loaded Default Config.");
 					break;
 				}
@@ -417,9 +451,31 @@ UINT CONFIG_ReadConfig( PLUG_MOUDLE_E uiMoudle )
 				/* ∂¡»°≈‰÷√ ß∞‹, π”√ƒ¨»œ≈‰÷√ */
 				PLUG_SystemSetDataDeInit();
 				CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
-				LOG_OUT(LOGOUT_ERROR, "DelayDataCheck failed, Loaded Default Config.");
+				LOG_OUT(LOGOUT_ERROR, "CONFIG_SysSetDataCheck failed, Loaded Default Config.");
 				uiRet |= FAIL;
+			}
+		}
+	}
 
+	if ( uiMoudle & PLUG_MOUDLE_PLATFORM )
+	{
+	    LOG_OUT(LOGOUT_INFO, "Read platform set data...");
+	    uiRet = FlASH_Read((UINT32)FLASH_PLATFORM_ADDR, (CHAR*)PLUG_GetPlatFormData(), PLUG_GetPlatFormDataSize());
+		if ( OK != uiRet )
+		{
+		    LOG_OUT(LOGOUT_ERROR, "FlASH_Read platform data failed.");
+			uiRet |= FAIL;
+		}
+		else
+		{
+			uiRet = CONFIG_PlatFormDataCheck( PLUG_GetPlatFormData() );
+			if ( OK != uiRet )
+			{
+				/* ∂¡»°≈‰÷√ ß∞‹, π”√ƒ¨»œ≈‰÷√ */
+				PLUG_PlatformDeInit();
+				CONFIG_SaveConfig(PLUG_MOUDLE_PLATFORM);
+				LOG_OUT(LOGOUT_ERROR, "CONFIG_PlatFormDataCheck failed, Loaded Default Config.");
+				uiRet |= FAIL;
 			}
 		}
 	}
@@ -467,7 +523,7 @@ UINT CONFIG_SaveConfig( PLUG_MOUDLE_E uiMoudle )
 		}
 	}
 
-	if ( uiMoudle & PLUG_MOUDLE_infrared )
+	if ( uiMoudle & PLUG_MOUDLE_INFRARED )
 	{
 		uiRet = FlASH_Write(FLASH_INGRAED_ADDR, (CHAR*)INFRARED_GetInfraredData(0), INFRARED_GetInfraredDataSize());
 		if ( OK != uiRet )
@@ -483,6 +539,16 @@ UINT CONFIG_SaveConfig( PLUG_MOUDLE_E uiMoudle )
 		if ( OK != uiRet )
 		{
 			LOG_OUT(LOGOUT_ERROR, "FlASH_Write SystemSet data failed.");
+			uiRet |= FAIL;
+		}
+	}
+
+	if ( uiMoudle & PLUG_MOUDLE_PLATFORM )
+	{
+		uiRet = FlASH_Write(FLASH_PLATFORM_ADDR, (CHAR*)PLUG_GetPlatFormData(), PLUG_GetPlatFormDataSize());
+		if ( OK != uiRet )
+		{
+			LOG_OUT(LOGOUT_ERROR, "FlASH_Write platform data failed.");
 			uiRet |= FAIL;
 		}
 	}

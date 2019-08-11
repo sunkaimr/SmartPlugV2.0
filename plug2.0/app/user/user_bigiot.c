@@ -23,26 +23,55 @@
 #define BIGIOT_LOGINT_OK	"checkinok"
 #define BIGIOT_ON			"play"
 #define BIGIOT_OFF			"stop"
+#define BIGIOT_SAY			"say"
+#define BIGIOT_LOGIN		"login"
+#define BIGIOT_LOGOUT		"logout"
 
-#define MQTT_SENDSIZE 		256
-#define MQTT_RECVSIZE 		256
+#define BIGIOT_IF_SW		"switch"
+#define BIGIOT_IF_TEMP		"tempture"
+#define BIGIOT_IF_HUMI		"HumidityId"
 
 
-static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDevId, char* pcApiKey);
+#define BIGIOT_TIME_HEARTBEAT		40
+#define BIGIOT_TIME_SW_UPLOAD		5
+#define BIGIOT_TIME_TEMP_UPLOAD		60
+#define BIGIOT_TIME_HUMI_UPLOAD		60
+
+
+static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDevId, char* pcApiKey );
 static int Connect(BIGIOT_Ctx_S* pstCtx);
 static void Disconnect(BIGIOT_Ctx_S* pstCtx);
 static int Write( BIGIOT_Ctx_S* pstCtx, const unsigned char* buffer, unsigned int len, unsigned int timeout_s );
 static int Read(BIGIOT_Ctx_S* pstCtx, unsigned char* buffer, unsigned int len, unsigned int timeout_s);
+static int Bigiot_EventRegister( BIGIOT_Ctx_S *pstCtx, BIGIOT_Event_S* pstEvent );
+static void Bigiot_EventCallBack( BIGIOT_Ctx_S *pstCtx );
+static int Bigiot_SendMessage( BIGIOT_Ctx_S *pstCtx, char* pcIfId, char* pcValue );
+static int Bigiot_StartEventTask( BIGIOT_Ctx_S *pstCtx );
 
 static char* BigiotParseString( const char* pcData, const char* pcKey, char*pcValue, unsigned int uiLen );
 static int BigiotParseInt( const char* pcData, const char* pcKey );
 
+static int Bigiot_JudgeHeartBeat( void );
+static int Bigiot_HeartBeatCallBack( void * para );
+static int Bigiot_JudgeRelayStatus( void );
+static int Bigiot_RelayStatusCallBack( void * para );
+static int Bigiot_JudgeUploadTemp( void );
+static int Bigiot_UploadTempCallBack( void * para );
+static int Bigiot_JudgeUploadHumidity( void );
+static int Bigiot_UploadHumidityCallBack( void * para );
+
+BIGIOT_Ctx_S* pstCli = NULL;
+
+
 static void BIGIOT_BigiotTask( void* para )
 {
 	int iRet = -1;
-	BIGIOT_Ctx_S* pstCli = 0;
 	char* pcDevId = 0;
 	char* pcApiKey = 0;
+	BIGIOT_Event_S stHeartBeat = {"", "", Bigiot_JudgeHeartBeat, "Bigiot_HeartBeatCallBack", Bigiot_HeartBeatCallBack, pstCli};
+	BIGIOT_Event_S stSwitch = {BIGIOT_IF_SW, "", Bigiot_JudgeRelayStatus, "Bigiot_RelayStatusCallBack", Bigiot_RelayStatusCallBack, pstCli};
+	BIGIOT_Event_S stTemp = {BIGIOT_IF_TEMP, "", Bigiot_JudgeUploadTemp, "Bigiot_UploadTempCallBack", Bigiot_UploadTempCallBack, pstCli};
+	BIGIOT_Event_S stHumidity = {BIGIOT_IF_HUMI, "", Bigiot_JudgeUploadHumidity, "Bigiot_UploadHumidityCallBack", Bigiot_UploadHumidityCallBack, pstCli};
 
 	pcDevId = PLUG_GetBigiotDevId();
 	if ( pcDevId == 0 || pcDevId[0] == 0 || pcDevId[0] == 0xFF )
@@ -75,6 +104,54 @@ retry:
 	}
 	BIGIOT_LOG(BIGIOT_INFO, "Bigiot_New success");
 
+	stHeartBeat.cbPara = pstCli;
+	iRet = Bigiot_EventRegister( pstCli, &stHeartBeat );
+	if ( iRet )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "Register Bigiot_HeartBeatCallBack failed");
+		goto exit;
+	}
+	BIGIOT_LOG(BIGIOT_INFO, "Register Bigiot_HeartBeatCallBack success");
+
+	stSwitch.cbPara = pstCli;
+	stSwitch.pcIfId = PLUG_GetBigiotSwitchId();
+	if ( strlen(stSwitch.pcIfId) != 0 )
+	{
+		iRet = Bigiot_EventRegister( pstCli, &stSwitch );
+		if ( iRet )
+		{
+			BIGIOT_LOG(BIGIOT_ERROR, "Register Bigiot_RelayStatusCallBack failed");
+			goto exit;
+		}
+		BIGIOT_LOG(BIGIOT_INFO, "Register Bigiot_RelayStatusCallBack success");
+	}
+
+	stTemp.cbPara = pstCli;
+	stTemp.pcIfId = PLUG_GetBigiotTempId();
+	if ( strlen(stTemp.pcIfId) != 0 )
+	{
+		iRet = Bigiot_EventRegister( pstCli, &stTemp );
+		if ( iRet )
+		{
+			BIGIOT_LOG(BIGIOT_ERROR, "Register Bigiot_UploadTempCallBack failed");
+			goto exit;
+		}
+		BIGIOT_LOG(BIGIOT_INFO, "Register Bigiot_UploadTempCallBack success");
+	}
+
+	stHumidity.cbPara = pstCli;
+	stHumidity.pcIfId = PLUG_GetBigiotHumidityId();
+	if ( strlen(stHumidity.pcIfId) != 0 )
+	{
+		iRet = Bigiot_EventRegister( pstCli, &stHumidity );
+		if ( iRet )
+		{
+			BIGIOT_LOG(BIGIOT_ERROR, "Register Bigiot_UploadHumidityCallBack failed");
+			goto exit;
+		}
+		BIGIOT_LOG(BIGIOT_INFO, "Register Bigiot_UploadHumidityCallBack success");
+	}
+
 	for (;;)
 	{
 		iRet = Bigiot_Login( pstCli );
@@ -85,25 +162,23 @@ retry:
 		}
 		BIGIOT_LOG(BIGIOT_INFO, "Bigiot_Login success");
 
-		iRet = Bigiot_KeepLive( pstCli );
+		iRet = Bigiot_StartEventTask( pstCli );
 		if ( iRet )
 		{
-			BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_KeepLive failed");
+			BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_StartEventTask failed");
 			goto exit;
 		}
-		BIGIOT_LOG(BIGIOT_INFO, "Bigiot_KeepLive success");
+		BIGIOT_LOG(BIGIOT_INFO, "Bigiot_StartEventTask success");
 
 		for ( ;; )
 		{
-			if ( Bigiot_Cycle( pstCli ) )
-			{
-				break;
-			}
+			Bigiot_Cycle( pstCli );
 
-			if ( !pstCli->iIsLived )
+			if ( !pstCli->iAlived )
 			{
-				break;
+				goto exit;
 			}
+			vTaskDelay( 1000/portTICK_RATE_MS );
 		}
 	}
 
@@ -159,41 +234,22 @@ void BIGIOT_Destroy( BIGIOT_Ctx_S **ppstCtx )
 
 }
 
-static void BigiotHeat( void* para )
+static void Bigiot_EventHanderTask( void* para )
 {
-	int iRet = 0;
-	const char* pcMess = "{\"M\":\"beat\"}\n";
 	BIGIOT_Ctx_S *pstCtx = para;
-	int iFailedCnt = 0;
 
 	for ( ;; )
 	{
-		iRet = pstCtx->Write( pstCtx, pcMess, strlen(pcMess), pstCtx->iTimeOut );
-		if ( iRet != strlen(pcMess) )
-		{
-			iFailedCnt++;
-			if ( iFailedCnt >= 2 )
-			{
-		    	BIGIOT_LOG(BIGIOT_ERROR, "BigiotHeat failed");
-		    	pstCtx->iIsLived = 0;
-			}
-			continue;
-		}
+		Bigiot_EventCallBack( pstCtx );
 
-		BIGIOT_LOG(BIGIOT_DEBUG, "BigiotHeat success");
-		pstCtx->iIsLived = 1;
-		iFailedCnt = 0;
-
-		vTaskDelay( pstCtx->iBeatInterval * 1000 / portTICK_RATE_MS );
+		vTaskDelay( 1000 / portTICK_RATE_MS );
 	}
-
-	return;
 }
 
-int Bigiot_KeepLive( BIGIOT_Ctx_S *pstCtx )
+static int Bigiot_StartEventTask( BIGIOT_Ctx_S *pstCtx )
 {
-	if ( pdPASS != xTaskCreate( BigiotHeat,
-								"BigiotHeat",
+	if ( pdPASS != xTaskCreate( Bigiot_EventHanderTask,
+								"Bigiot_EventHanderTask",
 								configMINIMAL_STACK_SIZE * 5,
 								(void*)pstCtx,
 								uxTaskPriorityGet(NULL),
@@ -210,6 +266,7 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
 	char szMess[100] = { 0 };
 	char szValue[100] = { 0 };
 	char* pcMethod = 0;
+	char* pcContent = 0;
 	int iLen = 0;
 	int iRet = 0;
 
@@ -242,16 +299,16 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
 	}
 
 	pcMethod = BigiotParseString(szMess, "M", szValue, sizeof(szValue));
-	if ( 0 != pcMethod )
+	if ( 0 != pcMethod && 0 == strcmp(pcMethod, BIGIOT_LOGINT_OK) )
 	{
-		if ( 0 == strcmp(pcMethod, BIGIOT_LOGINT_OK) )
+		pcContent = BigiotParseString(szMess, "NAME", szValue, sizeof(szValue));
+		if ( 0 != pcContent )
 		{
-			return 0;
+			strncpy( pstCtx->szDevName, pcContent, BIGIOT_DEVNAME_LEN );
 		}
-		BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_Login failed, unknown method:%s", pcMethod);
-		return 5;
+		return 0;
 	}
-
+	BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_Login failed, unknown method:%s", pcMethod);
 	return 6;
 }
 
@@ -274,31 +331,128 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
 	if ( iRet > 0 )
 	{
 		pcMethod = BigiotParseString(szMess, "M", szValue, sizeof(szValue));
-		if ( 0 != pcMethod && 0 == strcmp(pcMethod, "say") )
+		if ( 0 != pcMethod && 0 == strcmp(pcMethod, BIGIOT_SAY) )
 		{
 			pcContent = BigiotParseString(szMess, "C", szValue, sizeof(szValue));
-			if ( 0 != pcContent && 0 == strcmp(pcContent, BIGIOT_ON) )
+			if ( 0 != pcContent )
 			{
-				BIGIOT_LOG(BIGIOT_INFO, "Conent: %s", pcContent);
-				PLUG_SetRelayByStatus( 1, 1 );
-			}
-			else if ( 0 != pcContent && 0 == strcmp(pcContent, BIGIOT_OFF) )
-			{
-				BIGIOT_LOG(BIGIOT_INFO, "Conent: %s", pcContent);
-				PLUG_SetRelayByStatus( 0, 1 );
-			}
-			else if ( 0 != pcContent )
-			{
-				BIGIOT_LOG(BIGIOT_INFO, "recv content:%s", pcContent);
+				if ( 0 == strcmp(pcContent, BIGIOT_ON) )
+				{
+					BIGIOT_LOG(BIGIOT_INFO, "Conent: %s", pcContent);
+					PLUG_SetRelayByStatus( 1, 1 );
+				}
+				else if ( 0 == strcmp(pcContent, BIGIOT_OFF) )
+				{
+					BIGIOT_LOG(BIGIOT_INFO, "Conent: %s", pcContent);
+					PLUG_SetRelayByStatus( 0, 1 );
+				}
+				else
+				{
+					BIGIOT_LOG(BIGIOT_INFO, "recv content:%s", pcContent);
+				}
 			}
 			else
 			{
 				BIGIOT_LOG(BIGIOT_ERROR, "BigiotParseString failed, szMess:%s", szMess);
 			}
 		}
+		else if ( 0 != pcMethod && 0 == strcmp(pcMethod, BIGIOT_LOGIN) )
+		{
+			pcContent = BigiotParseString(szMess, "NAME", szValue, sizeof(szValue));
+			if ( 0 != pcContent )
+			{
+				BIGIOT_LOG(BIGIOT_INFO, "%s has login", pcContent);
+
+				//有用户登陆马上上报开关状态
+				Bigiot_RelayStatusCallBack( pstCtx );
+			}
+		}
+		else if ( 0 != pcMethod && 0 == strcmp(pcMethod, BIGIOT_LOGOUT) )
+		{
+			pcContent = BigiotParseString(szMess, "NAME", szValue, sizeof(szValue));
+			if ( 0 != pcContent )
+			{
+				BIGIOT_LOG(BIGIOT_INFO, "%s has logout", pcContent);
+			}
+		}
 	}
 
 	return 0;
+}
+
+int Bigiot_EventRegister( BIGIOT_Ctx_S *pstCtx, BIGIOT_Event_S* pstEvent )
+{
+	UINT i = 0;
+
+	if ( pstCtx == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstCtx is NULL");
+		return 1;
+	}
+
+	for ( i = 0; i < BIGIOT_EVENT_NUM; i++ )
+	{
+		if ( pstCtx->astEvent[i].tf == 0 )
+		{
+			pstCtx->astEvent[i].pcIfName 	= pstEvent->pcIfName;
+			pstCtx->astEvent[i].pcIfId		= pstEvent->pcIfId;
+			pstCtx->astEvent[i].tf 			= pstEvent->tf;
+			pstCtx->astEvent[i].cbName 		= pstEvent->cbName;
+			pstCtx->astEvent[i].cb 			= pstEvent->cb;
+			pstCtx->astEvent[i].cbPara 		= pstEvent->cbPara;
+
+			return 0;
+		}
+	}
+
+	if ( i >= BIGIOT_EVENT_NUM )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "Event is %d and full", BIGIOT_EVENT_NUM);
+		return 1;
+	}
+
+	return 1;
+}
+
+void Bigiot_EventCallBack( BIGIOT_Ctx_S *pstCtx )
+{
+	int i = 0;
+	int iRet = 0;
+
+	for ( i = 0; i < BIGIOT_EVENT_NUM; i++ )
+	{
+		if ( pstCtx->astEvent[i].tf != NULL && pstCtx->astEvent[i].cb != NULL )
+		{
+			if ( pstCtx->astEvent[i].tf() )
+			{
+				iRet = pstCtx->astEvent[i].cb( pstCtx->astEvent[i].cbPara );
+				if ( iRet )
+				{
+					BIGIOT_LOG(BIGIOT_ERROR, "EventCallBack %s failed", pstCtx->astEvent[i].cbName);
+				}
+			}
+		}
+	}
+}
+
+int Bigiot_GetBigioStatus( void )
+{
+	if ( pstCli == NULL )
+	{
+		return 0;
+	}
+
+	return pstCli->iAlived;
+}
+
+char* Bigiot_GetBigioDeviceName( void )
+{
+	if ( pstCli == NULL )
+	{
+		return 0;
+	}
+
+	return pstCli->szDevName;
 }
 
 static char* BigiotParseString( const char* pcData, const char* pcKey, char*pcValue, unsigned int uiLen )
@@ -390,7 +544,247 @@ int Bigiot_Logout( BIGIOT_Ctx_S *pstCtx )
 	return 0;
 }
 
-static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDevId, char* pcApiKey)
+static int Bigiot_SendMessage( BIGIOT_Ctx_S *pstCtx, char* pcIfId, char* pcValue )
+{
+	char szMsg[100] = { 0 };
+	int iLen = 0;
+	int iRet = 0;
+
+	iLen = snprintf(szMsg, sizeof(szMsg), "{\"M\":\"update\",\"ID\":\"%s\",\"V\":{\"%s\":\"%s\"}}\n",
+					pstCtx->pcDeviceId, pcIfId, pcValue);
+
+	//BIGIOT_LOG(BIGIOT_INFO, "msg: %s.", szMsg);
+	iRet = pstCtx->Write( pstCtx, szMsg, iLen, pstCtx->iTimeOut );
+	if ( iRet != iLen )
+	{
+    	BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_SendMessage failed, msg:%s.", szMsg);
+    	return 1;
+	}
+
+	return 0;
+}
+
+static int Bigiot_JudgeHeartBeat( void )
+{
+	//心跳间隔为40s
+	static 	sntp_time_t LastTime = 0;
+	sntp_time_t NowTime;
+
+	NowTime = sntp_get_current_timestamp();
+	if ( NowTime > ( LastTime + BIGIOT_TIME_HEARTBEAT ) )
+	{
+		LastTime = NowTime;
+		return 1;
+	}
+	return 0;
+}
+
+static int Bigiot_HeartBeatCallBack( void * para )
+{
+	BIGIOT_Ctx_S *pstCtx = para;
+	const char* pcMsg = "{\"M\":\"beat\"}\n";
+	static int iFailedCnt = 0;
+	int iRet = 0;
+
+	if ( pstCtx == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstCtx is NULL");
+		return 1;
+	}
+
+	iRet = pstCtx->Write( pstCtx, pcMsg, strlen(pcMsg), pstCtx->iTimeOut );
+	if ( iRet != strlen(pcMsg) )
+	{
+		iFailedCnt++;
+		if ( iFailedCnt >= 2 )
+		{
+			BIGIOT_LOG(BIGIOT_ERROR, "HeartBeat send failed");
+			pstCtx->iAlived = 0;
+			iFailedCnt = 0;
+			return 1;
+		}
+	}
+
+	BIGIOT_LOG(BIGIOT_DEBUG, "send heartbeat");
+	pstCtx->iAlived = 1;
+	iFailedCnt = 0;
+
+	return 0;
+}
+
+
+static int Bigiot_JudgeRelayStatus( void )
+{
+	static 	sntp_time_t LastTime = 0;
+	sntp_time_t NowTime;
+    unsigned int uiRelayStatus = 0;
+    static unsigned int uiLastRelayStatus = 0;
+
+	NowTime = sntp_get_current_timestamp();
+	if ( NowTime > ( LastTime + BIGIOT_TIME_SW_UPLOAD ) )
+	{
+		uiRelayStatus = PLUG_GetRelayStatus();
+		if ( uiRelayStatus != uiLastRelayStatus )
+		{
+			uiLastRelayStatus = uiRelayStatus;
+
+			LastTime = NowTime;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static int Bigiot_RelayStatusCallBack( void * para )
+{
+	BIGIOT_Ctx_S *pstCtx = para;
+	unsigned int uiRelayStatus = 0;
+	int iRet = 0;
+	int i = 0;
+
+	if ( pstCtx == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstCtx is NULL");
+		return 1;
+	}
+
+	for ( i = 0; i < BIGIOT_EVENT_NUM; i++ )
+	{
+		if ( pstCtx->astEvent[i].pcIfName != NULL &&
+			 strcmp(pstCtx->astEvent[i].pcIfName, BIGIOT_IF_SW) == 0 )
+		{
+			break;
+		}
+	}
+
+	if ( i >= BIGIOT_EVENT_NUM )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "unknown interface: %s.", pstCtx->astEvent[i].pcIfName);
+		return 1;
+	}
+
+	uiRelayStatus = PLUG_GetRelayStatus();
+	iRet = Bigiot_SendMessage( pstCtx, pstCtx->astEvent[i].pcIfId, (uiRelayStatus ? "1" : "0" ));
+	if ( iRet )
+	{
+    	BIGIOT_LOG(BIGIOT_ERROR, "%s send failed", pstCtx->astEvent[i].pcIfName);
+    	return 1;
+	}
+	BIGIOT_LOG(BIGIOT_INFO, "send %s data: %s", pstCtx->astEvent[i].pcIfName, (uiRelayStatus ? "1" : "0" ));
+	return 0;
+}
+
+static int Bigiot_JudgeUploadTemp( void )
+{
+	static 	sntp_time_t LastTime = 0;
+	sntp_time_t NowTime;
+
+	NowTime = sntp_get_current_timestamp();
+	if ( NowTime > ( LastTime + BIGIOT_TIME_TEMP_UPLOAD ) )
+	{
+		LastTime = NowTime;
+		return 1;
+	}
+	return 0;
+}
+
+static int Bigiot_UploadTempCallBack( void * para )
+{
+	BIGIOT_Ctx_S *pstCtx = para;
+	char szBuf[20] = {0};
+	int iTemp = 0;
+	int iRet = 0;
+	int i = 0;
+
+	if ( pstCtx == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstCtx is NULL");
+		return 1;
+	}
+
+	for ( i = 0; i < BIGIOT_EVENT_NUM; i++ )
+	{
+		if ( pstCtx->astEvent[i].pcIfName != NULL &&
+			 strcmp(pstCtx->astEvent[i].pcIfName, BIGIOT_IF_TEMP) == 0 )
+		{
+			break;
+		}
+	}
+
+	if ( i >= BIGIOT_EVENT_NUM )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "unknown interface: %s.", pstCtx->astEvent[i].pcIfName);
+		return 1;
+	}
+
+	iTemp = TEMP_GetTemperature();
+	snprintf(szBuf, sizeof(szBuf), "%d", iTemp);
+
+	iRet = Bigiot_SendMessage( pstCtx, pstCtx->astEvent[i].pcIfId, szBuf );
+	if ( iRet )
+	{
+    	BIGIOT_LOG(BIGIOT_ERROR, "%s send failed", pstCtx->astEvent[i].pcIfName);
+    	return 1;
+	}
+	BIGIOT_LOG(BIGIOT_INFO, "send %s data: %s", pstCtx->astEvent[i].pcIfName, szBuf);
+	return 0;
+}
+
+
+static int Bigiot_JudgeUploadHumidity( void )
+{
+	static 	sntp_time_t LastTime = 0;
+	sntp_time_t NowTime;
+
+	NowTime = sntp_get_current_timestamp();
+	if ( NowTime > ( LastTime + BIGIOT_TIME_HUMI_UPLOAD ) )
+	{
+		LastTime = NowTime;
+		return 1;
+	}
+	return 0;
+}
+
+static int Bigiot_UploadHumidityCallBack( void * para )
+{
+	BIGIOT_Ctx_S *pstCtx = para;
+	unsigned int uiRelayStatus = 0;
+	int iRet = 0;
+	int i = 0;
+
+	if ( pstCtx == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstCtx is NULL");
+		return 1;
+	}
+
+	for ( i = 0; i < BIGIOT_EVENT_NUM; i++ )
+	{
+		if ( pstCtx->astEvent[i].pcIfName != NULL &&
+			 strcmp(pstCtx->astEvent[i].pcIfName, BIGIOT_IF_HUMI) == 0 )
+		{
+			break;
+		}
+	}
+
+	if ( i >= BIGIOT_EVENT_NUM )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "unknown interface: %s.", pstCtx->astEvent[i].pcIfName);
+		return 1;
+	}
+
+	iRet = Bigiot_SendMessage( pstCtx, pstCtx->astEvent[i].pcIfId, "50");
+	if ( iRet )
+	{
+    	BIGIOT_LOG(BIGIOT_ERROR, "%s send failed", pstCtx->astEvent[i].pcIfName);
+    	return 1;
+	}
+	//BIGIOT_LOG(BIGIOT_DEBUG, "Bigiot_UploadHumidityCallBack success");
+	return 0;
+}
+
+
+static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDevId, char* pcApiKey )
 {
 	pstCtx->socket			= -1;
 	pstCtx->pcHostName 		= pcHostName;
@@ -399,14 +793,16 @@ static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDev
 	pstCtx->pcApiKey		= pcApiKey;
 
 	pstCtx->xKeepLiveHandle = 0;
-	pstCtx->iBeatInterval   = 30;
-	pstCtx->iIsLived		= 0;
+	pstCtx->iAlived		= 0;
 
 	pstCtx->iTimeOut 		= BIGIOT_TIMEOUT;
 	pstCtx->Read 			= Read;
 	pstCtx->Write 			= Write;
 	pstCtx->Connect 		= Connect;
 	pstCtx->Disconnect 		= Disconnect;
+
+	memset( pstCtx->szDevName, 0, BIGIOT_DEVNAME_LEN );
+	memset( pstCtx->astEvent, 0, sizeof(pstCtx->astEvent) );
 }
 
 static int Connect(BIGIOT_Ctx_S* pstCtx)

@@ -14,6 +14,13 @@
 UINT MQTT_ParsePowerSwitchData( CHAR* pData );
 UINT PLUG_MarshalJsonPowerSwitch( CHAR* pcBuf, UINT uiBufLen );
 
+static UINT uiConnectStatus = 0;
+
+
+UINT MQTT_GetConnectStatus( CHAR* pcAddr, UINT uiLen )
+{
+	return uiConnectStatus;
+}
 
 static CHAR* MQTT_GetMqttAddress( CHAR* pcAddr, UINT uiLen )
 {
@@ -210,8 +217,14 @@ reConnect:
 	    if ( keepalive(&client) != SUCCESS)
 	    {
 	        LOG_OUT(LOGOUT_INFO, "keepalive failed");
+	        uiConnectStatus = 0;
 	        break;
 	    }
+	    else
+	    {
+	    	 uiConnectStatus = 1;
+	    }
+
 
 		uiRelayStatus = PLUG_GetRelayStatus();
 		if ( uiRelayStatus != uiLastRelayStatus )

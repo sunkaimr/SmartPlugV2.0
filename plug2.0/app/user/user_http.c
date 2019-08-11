@@ -327,8 +327,8 @@ VOID HTTP_RouterInit( VOID )
 															HTTP_GetInfraredData,"HTTP_GetInfraredData");
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/infrared/:infrared/switch/:switch",
 															HTTP_GetInfraredValue,"HTTP_GetInfraredValue");
-
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/system",			HTTP_GetSystemData,	"HTTP_GetSystemData");
+	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/cloudplatform",	HTTP_GetCloudPlatformData,	"HTTP_GetCloudPlatformData");
 
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/html/header",	HTTP_GetHtmlHeader,	"HTTP_GetHtmlHeader");
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/html/header",	HTTP_PostHtmlHeader,"HTTP_PostHtmlHeader");
@@ -338,6 +338,7 @@ VOID HTTP_RouterInit( VOID )
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/delay",	   		HTTP_PostDelayData,	"HTTP_PostDelayData");
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/infrared",		HTTP_PostInfraredData,	"HTTP_PostInfraredData");
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/system",	   		HTTP_PostSystemData,	"HTTP_PostSystemData");
+	HTTP_RouterRegiste(HTTP_METHOD_POST, "/cloudplatform",	HTTP_PostCloudPlatformData,	"HTTP_PostCloudPlatformData");
 
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/control",	   	HTTP_PostDeviceControl,	"HTTP_PostDeviceControl");
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/scanwifi",	   	HTTP_GetScanWifi,		"HTTP_GetScanWifi");

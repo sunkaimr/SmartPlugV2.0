@@ -1020,6 +1020,37 @@ UINT HTTP_GetSystemData( HTTP_CTX *pstCtx )
 	return OK;
 }
 
+
+UINT HTTP_GetCloudPlatformData( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+    pstCtx->stResp.uiPos += PLUG_MarshalJsonCloudPlatformSet(
+    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	return OK;
+}
+
 UINT HTTP_GetHtmlHeader( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
@@ -1398,6 +1429,53 @@ UINT HTTP_PostSystemData( HTTP_CTX *pstCtx )
 	if ( OK != PLUG_ParseSystemData(pstCtx->stReq.pcResqBody) )
 	{
 		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse system data failed", pstCtx->iClientFd );
+		return HTTP_InternalServerError( pstCtx );
+	}
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+
+		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			return FAIL;
+		}
+	}
+	return OK;
+}
+
+
+UINT HTTP_PostCloudPlatformData( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Created;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if (pstCtx->stReq.uiRecvCurLen < pstCtx->stReq.uiRecvTotalLen)
+	{
+		return OK;
+	}
+
+	if ( OK != PLUG_ParseCloudPlatformData(pstCtx->stReq.pcResqBody) )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse Platform data failed", pstCtx->iClientFd );
 		return HTTP_InternalServerError( pstCtx );
 	}
 
