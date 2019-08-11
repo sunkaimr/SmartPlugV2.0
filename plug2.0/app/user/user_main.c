@@ -85,8 +85,7 @@ uint32 user_rf_cal_sector_set(void)
 *******************************************************************************/
 void user_init(void)
 {
-	vTaskDelay(3000/portTICK_RATE_MS );
-
+	//vTaskDelay(3000/portTICK_RATE_MS );
 	uart_init_new();
 	LOG_LogInit();
 	LOG_SetLogLevel( LOGOUT_INFO );
@@ -100,8 +99,6 @@ void user_init(void)
 	LED_GpioInit();
 	INFRA_InfraredInit();
 	CONFIG_ReadConfig(PLUG_MOUDLE_BUFF);
-
-
 
 	KEY_StartKeyHanderTimer();
 	PLUG_StartJudgeTimeHanderTimer();
