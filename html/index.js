@@ -9,7 +9,7 @@ var DelayRefreshTime="";
 
 $(document).ready(function () {
 
-    InfraredClick();
+    TimerClick();
 	getDate();
 	getDevName();
 	refreshRelay();
@@ -20,9 +20,11 @@ $(document).ready(function () {
 	$("#timer").click(TimerClick);
 	$("#delay").click(DelayClick);
     $("#infrared").click(InfraredClick);
+    $("#cloudPlatform").click(CloudPlatformClick);
 	$("#set").click(SetClick);
 	$("#setCommit").click(setCommitClick);
-	$("#chooseBin").click(chooseBinClick);
+	$("#cloudPlatformCommit").click(cloudPlatformCommitClick);
+	$("#binFile").click(chooseBinClick);
 	$("#scanWifi").click(scanWifiClick);
 	$("#upload").click(uploadClick);
 	$("#reboot").click(rebootClick);
@@ -317,56 +319,35 @@ function binFileChange() {
 function modeChange(){
 	if( $("#modeSelect").val() == 1 ){
 		if (SysData.WifiMode == 2){
-            $("#wifiCustomClass").removeClass("hidden");
-            $("#wifiPasswdClass").removeClass("hidden");
+            $("#wifiCustomClass, #wifiPasswdClass").removeClass("hidden");
         }else{
-            $("#wifiClass").removeClass("hidden");
-            $("#wifiPasswdClass").removeClass("hidden");
+            $("#wifiClass, #wifiPasswdClass").removeClass("hidden");
         }
 	}else{
-		$("#wifiClass").addClass("hidden");
-		$("#wifiPasswdClass").addClass("hidden");
-        $("#wifiCustomClass").addClass("hidden");
+		$("#wifiClass, #wifiPasswdClass, #wifiCustomClass").addClass("hidden");
 	}
-    PlatformSelectChange();
 }
 
 function PlatformSelectChange(){
 
-    if ($("#modeSelect").val() == 2){
-        $("#PlatformSelectClass").addClass("hidden");
-        $("#ProductKeyClass").addClass("hidden");
-        $("#DeviceNameClass").addClass("hidden");
-        $("#DeviceSecretClass").addClass("hidden");
-        $("#BigiotDeviceIdClass").addClass("hidden");
-        $("#BigiotApiKeyClass").addClass("hidden");
-    }else{
-        $("#PlatformSelectClass").removeClass("hidden");
+	$("#PlatformSelectClass").removeClass("hidden");
 
-        if( $("#PlatformSelect").val() == 1 ) {
-            $("#ProductKeyClass").removeClass("hidden");
-            $("#DeviceNameClass").removeClass("hidden");
-            $("#DeviceSecretClass").removeClass("hidden");
+	if( $("#PlatformSelect").val() == 1 ) {
 
-            $("#BigiotDeviceIdClass").addClass("hidden");
-            $("#BigiotApiKeyClass").addClass("hidden");
-        }else if (  $("#PlatformSelect").val() == 2 ){
-            $("#ProductKeyClass").addClass("hidden");
-            $("#DeviceNameClass").addClass("hidden");
-            $("#DeviceSecretClass").addClass("hidden");
+		$("#ProductKeyClass, #DeviceNameClass, #DeviceSecretClass").removeClass("hidden");
 
-            $("#BigiotDeviceIdClass").removeClass("hidden");
-            $("#BigiotApiKeyClass").removeClass("hidden");
-        }else{
-            $("#ProductKeyClass").addClass("hidden");
-            $("#DeviceNameClass").addClass("hidden");
-            $("#DeviceSecretClass").addClass("hidden");
+		$("#BigiotDeviceIdClass, #BigiotApiKeyClass, #BigiotDeviceTypeClass, #BigiotDeviceNameClass").addClass("hidden");
+		$("#BigiotDeviceTypeClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfumidityClass").addClass("hidden");
+	}else if (  $("#PlatformSelect").val() == 2 ){
 
-            $("#BigiotDeviceIdClass").addClass("hidden");
-            $("#BigiotApiKeyClass").addClass("hidden");
-        }
-
-    }
+		$("#ProductKeyClass, #DeviceNameClass, #DeviceSecretClass").addClass("hidden");
+        $("#BigiotDeviceNameClass, #BigiotApiKeyClass, #BigiotDeviceTypeClass").removeClass("hidden");
+        $("#BigiotDeviceIdClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfumidityClass").removeClass("hidden");
+	}else{
+        $("#ProductKeyClass, #DeviceNameClass, #DeviceSecretClass").addClass("hidden");
+        $("#BigiotDeviceNameClass, #BigiotApiKeyClass, #BigiotDeviceTypeClass").addClass("hidden");
+        $("#BigiotDeviceIdClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfumidityClass").addClass("hidden");
+	}
 }
 
 function SetFormat( s ){
@@ -593,14 +574,11 @@ function stringConversionWeek() {
 
 function TimerClick(){
 
-	$("#timer").addClass("lead");
-	$("#delay").removeClass("lead");
-    $("#infrared").removeClass("lead");
-	$("#set").removeClass("lead");
-	$("#tabDelay").addClass("hidden");
-    $("#tabInfrared").addClass("hidden");
-	$("#formSet").addClass("hidden");
-    $("#delayTaskClass").addClass("hidden");
+	$("#delay, #infrared, #cloudPlatform, #set").removeClass("lead");
+    $("#timer").addClass("lead");
+
+	$("#tabDelay, #tabInfrared, #formSet, #formCloudPlatform, #delayTaskClass").addClass("hidden");
+
 	$("#tabTimer").removeClass("hidden");
 	$("#tabTimer").html("<p>正在加载数据...</p>");
 
@@ -651,14 +629,11 @@ function TimerClick(){
 }
 
 function DelayClick(){
-	$("#timer").removeClass("lead");
+	$("#timer, #infrared, #cloudPlatform, #set").removeClass("lead");
 	$("#delay").addClass("lead");
-    $("#infrared").removeClass("lead");
-	$("#set").removeClass("lead");
-	$("#formSet").addClass("hidden");
+
+	$("#formSet, #tabTimer, #formCloudPlatform, #tabInfrared").addClass("hidden");
 	$("#tabDelay").removeClass("hidden");
-	$("#tabTimer").addClass("hidden");
-    $("#tabInfrared").addClass("hidden");
 	$("#tabDelay").html("<p><centor>正在加载数据...</centor></p>");
 
 	$.get("delay/all",function(data, status){
@@ -715,13 +690,10 @@ function DelayClick(){
 
 function InfraredClick(){
 
-    $("#timer").removeClass("lead");
-    $("#delay").removeClass("lead");
+    $("#timer, #delay, #cloudPlatform, #set").removeClass("lead");
     $("#infrared").addClass("lead");
-    $("#set").removeClass("lead");
-    $("#formSet").addClass("hidden");
-    $("#tabDelay").addClass("hidden");
-    $("#tabTimer").addClass("hidden");
+
+    $("#formSet, #tabDelay, #formCloudPlatform, #tabTimer").addClass("hidden");
     $("#tabInfrared").removeClass("hidden");
 
     $("#tabInfrared").html("<p><centor>正在加载数据...</centor></p>");
@@ -755,16 +727,55 @@ function InfraredClick(){
     });
 }
 
+
+function CloudPlatformClick(){
+
+    $("#timer, #delay, #infrared, #set").removeClass("lead");
+    $("#cloudPlatform").addClass("lead");
+
+    $("#formSet, #tabDelay, #tabTimer, #tabInfrared").addClass("hidden");
+	$("#formCloudPlatform").removeClass("hidden");
+
+    $.get("/cloudplatform",function(data, status){
+        if (status == "success"){
+            $("#PlatformSelect").val(data.CloudPlatform);
+            $("#ProductKey").val(data.MqttProductKey);
+            $("#DeviceName").val(data.MqttDevName);
+            $("#DeviceSecret").val(data.MqttDevSecret);
+            $("#BigiotDeviceName").val(data.BigiotDevName);
+            $("#BigiotDeviceId").val(data.BigiotDevId);
+            $("#BigiotApiKey").val(data.BigiotApiKey);
+            $("#BigiotIfSwitchStatus").val(data.SwitchId)
+            $("#BigiotIfTemp").val(data.TempId)
+            $("#BigiotIfHumidity").val(data.HumidityId)
+            $("#BigiotDeviceTypeSelect").val(data.DevType);
+
+            var str = "";
+            if ( data.ConnectSta == "connected" ){
+                str = "已连接至" + $("#PlatformSelect option:selected").text()+"平台";
+			}else if ( data.ConnectSta == "disconnect" ){
+                str = "连接" + $("#PlatformSelect option:selected").text() + "失败";
+			}else{
+                str = "连接状态未知";
+			}
+            $("#connectSta").text(str);
+
+            PlatformSelectChange();
+        }else{
+            alert("Data: " + data + "\nStatus: " + status);
+        }
+    });
+
+}
+
+
 function SetClick(){
-	$("#tabTimer").addClass("hidden");
-	$("#tabDelay").addClass("hidden");
-    $("#tabInfrared").addClass("hidden");
-    $("#delayTaskClass").addClass("hidden");
+    $("#timer, #delay, #infrared, #cloudPlatform").removeClass("lead");
+    $("#set").addClass("lead");
+
+	$("#tabTimer, #tabDelay, #tabInfrared, #delayTaskClass, #formCloudPlatform").addClass("hidden");
 	$("#formSet").removeClass("hidden");
-	$("#timer").removeClass("lead");
-	$("#delay").removeClass("lead");
-	$("#infrared").removeClass("lead");
-	$("#set").addClass("lead");
+
 
 	$.get("/system",function(data, status){
 		if (status == "success"){
@@ -776,17 +787,10 @@ function SetClick(){
 			var opt = $("<option>").val(1).text(data.WifiSSID);
 			opt.selected = true;
 			$("#wifiList").append(opt);
-
-            $("#PlatformSelect").val(data.CloudPlatform);
-
             $("#plugName").val(data.PlugName)
             $("#wifiCustom").val(data.WifiSSID);
 			$("#wifiPasswd").val(data.WifiPasswd);
-			$("#ProductKey").val(data.MqttProductKey);
-			$("#DeviceName").val(data.MqttDevName);
-			$("#DeviceSecret").val(data.MqttDevSecret);
-            $("#BigiotDeviceId").val(data.BigiotDevId);
-            $("#BigiotApiKey").val(data.BigiotApiKey);
+
 			modeChange();
 
 		}else{
@@ -1006,6 +1010,47 @@ function setCommitClick(){
 		}
 	});
 }
+
+
+function cloudPlatformCommitClick(){
+    var data = {};
+
+    if ( $("#PlatformSelect").val() == "0" ){
+
+        data.CloudPlatform = 0;
+    }else if ( $("#PlatformSelect").val() == "1" ){
+
+        data.CloudPlatform = 1;
+        data.MqttProductKey = $("#ProductKey").val();
+        data.MqttDevName = $("#DeviceName").val();
+        data.MqttDevSecret = $("#DeviceSecret").val();
+
+    }else if ( $("#PlatformSelect").val() == "2" ){
+
+        data.CloudPlatform = 2;
+        data.DevType = parseInt($("#BigiotDeviceTypeSelect option:selected").val());
+        data.BigiotDevId = $("#BigiotDeviceId").val();
+        data.BigiotApiKey = $("#BigiotApiKey").val();
+        data.SwitchId = $("#BigiotIfSwitchStatus").val();
+        data.TempId = $("#BigiotIfTemp").val();
+        data.HumidityId = $("#BigiotIfHumidity").val();
+    }
+
+    $.ajax({
+        type: "POST",
+        url: "/cloudplatform",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(data),
+        success: function (data) {
+            ShowInfo("修改成功，重启生效");
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            ShowInfo(jqXHR.responseText);
+        }
+    });
+}
+
 
 function scanWifiClick(){
 	$("#wifiList").empty();
