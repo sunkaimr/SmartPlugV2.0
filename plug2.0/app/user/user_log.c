@@ -40,6 +40,7 @@ VOID LOG_Logout(UINT uiLevel, CHAR *pcFileName, INT iLine, CHAR *pcfunc, CHAR *p
 	va_list Arg;
 	CHAR *pcPos = NULL;
 	CHAR *pcBuf = NULL;
+	PLUG_DATE_S stDate;
 
 	pcPos = pcBuf = g_pcLogBuf;
 
@@ -53,16 +54,21 @@ VOID LOG_Logout(UINT uiLevel, CHAR *pcFileName, INT iLine, CHAR *pcfunc, CHAR *p
 		return;
 	}
 
+	PLUG_GetDate( &stDate );
+	pcPos += snprintf( pcBuf, LOG_PREFIX_BUF_SIZE, "[%d-%02d-%02d %02d:%02d:%02d]",
+					   stDate.iYear, stDate.iMonth, stDate.iDay,
+					   stDate.iHour, stDate.iMinute, stDate.iSecond);
+
 	switch ( uiLevel )
 	{
 	    case LOGOUT_ERROR :
-			pcPos += snprintf(pcBuf, LOG_PREFIX_BUF_SIZE, "[%s][%s:%d][%s]# ", "ERROR", pcFileName, iLine, pcfunc );
+			pcPos += snprintf(pcPos, LOG_PREFIX_BUF_SIZE, "[ERROR][%s:%d][%s]# ", pcFileName, iLine, pcfunc );
 			break;
 	    case LOGOUT_INFO :
-			pcPos += snprintf(pcBuf, LOG_PREFIX_BUF_SIZE, "[%s][%s:%d][%s]# ", "INFO", pcFileName, iLine, pcfunc );
+			pcPos += snprintf(pcPos, LOG_PREFIX_BUF_SIZE, "[INFO][%s:%d][%s]# ", pcFileName, iLine, pcfunc );
 	        break;
 	    case LOGOUT_DEBUG :
-			pcPos += snprintf(pcBuf, LOG_PREFIX_BUF_SIZE, "[%s][%s:%d][%s]# ", "DEBUG", pcFileName, iLine, pcfunc );
+			pcPos += snprintf(pcPos, LOG_PREFIX_BUF_SIZE, "[DEBUG][%s:%d][%s]# ", pcFileName, iLine, pcfunc );
 	        break;
 	    default:
 	        return;
