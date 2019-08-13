@@ -12,12 +12,14 @@ $(document).ready(function () {
     TimerClick();
 	getDate();
 	getDevName();
+    GetTemperaturer();
 	refreshRelay();
 	setInterval(DateDisplay, 1000);
 
 	$("#relay").click(setRelay);
 	$("#date").click(getDate);
 	$("#timer").click(TimerClick);
+    $("#temperature").click(GetTemperaturer);
 	$("#delay").click(DelayClick);
     $("#infrared").click(InfraredClick);
     $("#cloudPlatform").click(CloudPlatformClick);
@@ -375,6 +377,7 @@ function DateDisplay(){
 	$("#date").text(FormatDate(LocalTime));
 	if (parseInt(LocalTime%60) == 1){
 		refreshRelay();
+        GetTemperaturer();
 	}
 
 	if(parseInt(LocalTime%60) == 3){
@@ -464,6 +467,18 @@ function getInfomation(){
 		}
 	});
 }
+
+
+function GetTemperaturer(){
+    $.get("/temperature",function(data, status){
+        if (status == "success"){
+            $("#temperature").text(data.Temperature.toFixed(1) + " ℃");
+        }else{
+            alert("Data: " + data + "\nStatus: " + status);
+        }
+    });
+}
+
 
 function setRelayStyle(status) {
 	if ( status ) {
