@@ -1051,6 +1051,44 @@ UINT HTTP_GetCloudPlatformData( HTTP_CTX *pstCtx )
 	return OK;
 }
 
+
+UINT HTTP_GetTemperature( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+	CHAR szBuf[30];
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	snprintf(szBuf, sizeof(szBuf), "{\"Temperature\": %2.1f}", TEMP_GetTemperature());
+	uiRet = HTTP_SetResponseBody(pstCtx, szBuf);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		return FAIL;
+	}
+
+    return OK;
+}
+
+
 UINT HTTP_GetHtmlHeader( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
@@ -1464,7 +1502,7 @@ UINT HTTP_PostCloudPlatformData( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
 
-	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Created;
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
 	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
 	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 

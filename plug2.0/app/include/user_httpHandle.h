@@ -50,6 +50,7 @@ UINT HTTP_GetInfraredData( HTTP_CTX *pstCtx );
 UINT HTTP_GetInfraredValue( HTTP_CTX *pstCtx );
 UINT HTTP_GetSystemData( HTTP_CTX *pstCtx );
 UINT HTTP_GetCloudPlatformData( HTTP_CTX *pstCtx );
+UINT HTTP_GetTemperature( HTTP_CTX *pstCtx );
 UINT HTTP_GetHtmlHeader( HTTP_CTX *pstCtx );
 UINT HTTP_PostHtmlHeader( HTTP_CTX *pstCtx );
 UINT HTTP_PutHtml( HTTP_CTX *pstCtx );

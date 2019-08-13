@@ -165,25 +165,32 @@ VOID TEMP_TempCallBack( VOID )
 	portEXIT_CRITICAL();
 
 	uiTempAdcValue = ( uiLastAdc * 0.8 +  uiCurAdc * 0.2 );
-
 	uiLastAdc = uiTempAdcValue;
 }
 
 */
 
 
-int TEMP_GetTemperature( VOID )
+float TEMP_GetTemperature( VOID )
 {
-	UINT uiTempAdcValue = 0;
+	STATIC UINT uiLastAdc = 0;
+	UINT uiCurAdc = 0;
 	float fResistor = 0;
 	UINT8 i = 0;
-	int iTemp = 0;
+	float fTemp = 0;
 
 	portENTER_CRITICAL();
-	uiTempAdcValue = system_adc_read();
+	if ( uiLastAdc == 0 )
+	{
+		uiLastAdc = system_adc_read();
+	}
+	uiCurAdc = system_adc_read();
 	portEXIT_CRITICAL();
 
-	fResistor = (float)((1024.0 * 3.3 / uiTempAdcValue ) - 1.0 );
+	uiCurAdc = ( uiLastAdc + uiCurAdc )/2;
+	uiLastAdc = uiCurAdc;
+
+	fResistor = (float)((1024.0 * 3.3 / uiCurAdc ) - 1.0 );
 
 	for( i = 0; i < sizeof(ResistorTab)/sizeof(ResistorTab[0]); i++ )
 	{
@@ -195,17 +202,14 @@ int TEMP_GetTemperature( VOID )
 
 	if ( i >= sizeof(ResistorTab)/sizeof(ResistorTab[0]) )
 	{
-		iTemp = 999;
+		fTemp = 999;
 	}
 	else
 	{
-		iTemp = TempTab[i];
+		fTemp = TempTab[i-1] + ( ResistorTab[i-1] - fResistor ) / ( ResistorTab[i-1] - ResistorTab[i] )*(TempTab[i]-TempTab[i-1]);
 	}
-
-	return iTemp;
+	//LOG_OUT(LOGOUT_INFO, "fTemp:%f, fResistor:%f", fTemp, fResistor);
+	return fTemp;
 }
-
-
-
 
 

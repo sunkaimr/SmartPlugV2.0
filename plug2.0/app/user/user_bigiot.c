@@ -692,7 +692,7 @@ static int Bigiot_UploadTempCallBack( void * para )
 {
 	BIGIOT_Ctx_S *pstCtx = para;
 	char szBuf[20] = {0};
-	int iTemp = 0;
+	float fTemp = 0;
 	int iRet = 0;
 	int i = 0;
 
@@ -717,8 +717,8 @@ static int Bigiot_UploadTempCallBack( void * para )
 		return 1;
 	}
 
-	iTemp = TEMP_GetTemperature();
-	snprintf(szBuf, sizeof(szBuf), "%d", iTemp);
+	fTemp = TEMP_GetTemperature();
+	snprintf(szBuf, sizeof(szBuf), "%2.1f", fTemp);
 
 	iRet = Bigiot_SendMessage( pstCtx, pstCtx->astEvent[i].pcIfId, szBuf );
 	if ( iRet )

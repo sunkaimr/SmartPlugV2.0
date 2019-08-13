@@ -330,6 +330,8 @@ VOID HTTP_RouterInit( VOID )
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/system",			HTTP_GetSystemData,	"HTTP_GetSystemData");
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/cloudplatform",	HTTP_GetCloudPlatformData,	"HTTP_GetCloudPlatformData");
 
+	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/temperature",	HTTP_GetTemperature,	"HTTP_GetTemperature");
+
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/html/header",	HTTP_GetHtmlHeader,	"HTTP_GetHtmlHeader");
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/html/header",	HTTP_PostHtmlHeader,"HTTP_PostHtmlHeader");
 	HTTP_RouterRegiste(HTTP_METHOD_PUT,  "/html/:html",		HTTP_PutHtml,		"HTTP_PutHtml");
