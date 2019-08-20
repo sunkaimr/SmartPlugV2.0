@@ -172,7 +172,12 @@ retry:
 
 		for ( ;; )
 		{
-			Bigiot_Cycle( pstCli );
+			iRet = Bigiot_Cycle( pstCli );
+			if ( iRet )
+			{
+				BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_Cycle failed");
+				goto exit;
+			}
 
 			if ( !pstCli->iAlived )
 			{
@@ -324,7 +329,7 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
 	iRet = pstCtx->Read( pstCtx, szMess, sizeof(szMess), pstCtx->iTimeOut );
 	if ( iRet < 0 )
 	{
-    	BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_Cycle failed");
+    	BIGIOT_LOG(BIGIOT_ERROR, "Read failed");
     	return iRet;
 	}
 
