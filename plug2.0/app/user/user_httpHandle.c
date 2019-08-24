@@ -505,6 +505,7 @@ UINT HTTP_InternalServerError( HTTP_CTX *pstCtx )
 UINT HTTP_GetHome( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
+	HTTP_FILE_LIST_S* pstFile = NULL;
 
 	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Found;
 	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Html;
@@ -520,9 +521,21 @@ UINT HTTP_GetHome( HTTP_CTX *pstCtx )
 		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
-	uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%d.%d.%d.%d/index.html",
-    		stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
-    		(stWifiInfo.uiIp>>16)&0xFF,(stWifiInfo.uiIp>>24)&0xFF);
+
+	pstFile = HTTP_GetFileList( "index.html" );
+	if ( pstFile != NULL )
+	{
+		uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%d.%d.%d.%d/index.html",
+	    		stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
+	    		(stWifiInfo.uiIp>>16)&0xFF,(stWifiInfo.uiIp>>24)&0xFF);
+	}
+	else
+	{
+		uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%d.%d.%d.%d/upload",
+	    		stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
+	    		(stWifiInfo.uiIp>>16)&0xFF,(stWifiInfo.uiIp>>24)&0xFF);
+	}
+
 	if ( uiRet != OK )
 	{
 		LOG_OUT( LOGOUT_ERROR, "set custom header failed");
