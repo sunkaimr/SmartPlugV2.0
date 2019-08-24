@@ -491,7 +491,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_None ||
 		 pstCtx->stReq.eProcess == HTTP_PROCESS_Invalid )
 	{
-		LOG_OUT(LOGOUT_ERROR, "fd:%d, eProcess:%d", pstCtx->iClientFd, pstCtx->stReq.eProcess);
+		LOG_OUT(LOGOUT_ERROR, "eProcess:%d", pstCtx->stReq.eProcess);
 		return FAIL;
 	}
 
@@ -516,8 +516,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 		{
 			if ( pstCtx->stReq.uiRecvCurLen == pstCtx->stReq.uiRecvLen )
 			{
-				LOG_OUT(LOGOUT_INFO, "fd:%d, [Request] Method:%s URL:%s",
-						pstCtx->iClientFd,
+				LOG_OUT(LOGOUT_INFO, "[Request] Method:%s URL:%s",
 						szHttpMethodStr[pstCtx->stReq.eMethod],
 						pstCtx->stReq.szURL);
 			}
@@ -527,8 +526,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 	}
 	if ( uiLoop >= HTTP_ROUTER_MAP_MAX )
 	{
-		LOG_OUT(LOGOUT_INFO, "fd:%d, %s %s",
-				pstCtx->iClientFd,
+		LOG_OUT(LOGOUT_INFO, "%s %s",
 				szHttpMethodStr[pstCtx->stReq.eMethod],
 				pstCtx->stReq.szURL);
 
@@ -692,7 +690,7 @@ UINT HTTP_SendOnce( HTTP_CTX *pstCtx )
 	uiRet = WEB_WebSend(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT(LOGOUT_ERROR, "fd:%d, send failed", pstCtx->iClientFd);
+		LOG_OUT(LOGOUT_ERROR, "send failed");
 		return FAIL;
 	}
 

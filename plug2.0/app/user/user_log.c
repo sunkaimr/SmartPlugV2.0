@@ -55,9 +55,10 @@ VOID LOG_Logout(UINT uiLevel, CHAR *pcFileName, INT iLine, CHAR *pcfunc, CHAR *p
 	}
 
 	PLUG_GetDate( &stDate );
-	pcPos += snprintf( pcBuf, LOG_PREFIX_BUF_SIZE, "[%d-%02d-%02d %02d:%02d:%02d]",
+	pcPos += snprintf( pcBuf, LOG_PREFIX_BUF_SIZE, "[%d-%02d-%02d %02d:%02d:%02d][%d]",
 					   stDate.iYear, stDate.iMonth, stDate.iDay,
-					   stDate.iHour, stDate.iMinute, stDate.iSecond);
+					   stDate.iHour, stDate.iMinute, stDate.iSecond,
+					   xTaskGetCurrentTaskHandle());
 
 	switch ( uiLevel )
 	{

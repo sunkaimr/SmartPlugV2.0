@@ -14,9 +14,9 @@
 #define HTTP_BUF_3K		(1024*3)
 #define HTTP_BUF_4K		(1024*4)
 #define HTTP_BUF_5K		(1024*5)
-
-
-
+#define HTTP_BUF_10K	(1024*10)
+#define HTTP_BUF_20K	(1024*20)
+#define HTTP_BUF_30K	(1024*30)
 
 
 #define HTTP_FILE_NAME_MAX_LEN	50

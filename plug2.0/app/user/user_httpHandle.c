@@ -223,21 +223,20 @@ UINT HTTP_SendFile( HTTP_CTX *pstCtx, HTTP_FILE_S* pstFile )
 				uiBodyLen);
 		if ( uiRet == RESULT_Fail )
 		{
-			LOG_OUT(LOGOUT_ERROR, "fd:%d, HTTP_ReadFile %s failed", pstCtx->iClientFd, pstFile->pcName);
+			LOG_OUT(LOGOUT_ERROR, "HTTP_ReadFile %s failed", pstFile->pcName);
 			return FAIL;
 		}
 
 	    pstCtx->stResp.uiSendCurLen = pstCtx->stResp.uiPos + uiBodyLen;
 		pstCtx->stResp.uiPos = 0;
 
-		LOG_OUT(LOGOUT_INFO, "fd:%d, send process:%d",
-				pstCtx->iClientFd,
+		LOG_OUT(LOGOUT_INFO, "send process:%d",
 				pstCtx->stResp.uiSentLen * 100 / pstCtx->stResp.uiSendTotalLen);
 
 		uiRet = WEB_WebSend(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT(LOGOUT_ERROR, "fd:%d, send %s failed", pstCtx->iClientFd, pstFile->pcName);
+			LOG_OUT(LOGOUT_ERROR, "send %s failed", pstFile->pcName);
 			return FAIL;
 		}
 	}
@@ -279,14 +278,14 @@ UINT HTTP_SendMultiple( HTTP_CTX *pstCtx, const CHAR* pcContent )
 			uiRet = HTTP_SetHeader( pstCtx );
 			if ( uiRet != OK )
 			{
-				LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+				LOG_OUT( LOGOUT_ERROR, "set header failed");
 				return FAIL;
 			}
 
 			uiRet = HTTP_SetBodyLen(pstCtx, uiContentLen);
 			if ( uiRet != OK )
 			{
-				LOG_OUT( LOGOUT_ERROR, "fd:%d, set body len failed", pstCtx->iClientFd );
+				LOG_OUT( LOGOUT_ERROR, "set body len failed");
 				return FAIL;
 			}
 		}
@@ -317,14 +316,13 @@ UINT HTTP_SendMultiple( HTTP_CTX *pstCtx, const CHAR* pcContent )
 	    pstCtx->stResp.uiSendCurLen = pstCtx->stResp.uiPos + uiBodyLen;
 		pstCtx->stResp.uiPos = 0;
 
-		LOG_OUT(LOGOUT_INFO, "fd:%d, send process:%d",
-				pstCtx->iClientFd,
+		LOG_OUT(LOGOUT_INFO, "send process:%d",
 				pstCtx->stResp.uiSentLen * 100 / pstCtx->stResp.uiSendTotalLen);
 
 		uiRet = WEB_WebSend(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set body len failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set body len failed");
 			return FAIL;
 		}
 	}
@@ -414,21 +412,21 @@ UINT HTTP_NotFound( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed" );
 		return FAIL;
 	}
 
 	uiRet = HTTP_SetResponseBody(pstCtx, HTML_NotFound);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -449,21 +447,21 @@ UINT HTTP_BadRequest( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SetResponseBody(pstCtx, HTML_BadRequest);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -483,21 +481,21 @@ UINT HTTP_InternalServerError( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SetResponseBody(pstCtx, HTML_InternalServerError);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -519,7 +517,7 @@ UINT HTTP_GetHome( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 	uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%d.%d.%d.%d/index.html",
@@ -527,21 +525,21 @@ UINT HTTP_GetHome( HTTP_CTX *pstCtx )
     		(stWifiInfo.uiIp>>16)&0xFF,(stWifiInfo.uiIp>>24)&0xFF);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set custom header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set custom header failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SetResponseBody(pstCtx, "");
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -562,21 +560,21 @@ UINT HTTP_GetHealth( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SetResponseBody(pstCtx, "{\"health\":true}");
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -596,7 +594,7 @@ UINT HTTP_GetInfo( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -607,7 +605,7 @@ UINT HTTP_GetInfo( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -656,21 +654,21 @@ err:
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SetResponseBody(pstCtx, HTML_BadRequest);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -680,7 +678,7 @@ succ:
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -692,7 +690,7 @@ succ:
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -747,21 +745,21 @@ err:
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SetResponseBody(pstCtx, HTML_BadRequest);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -771,7 +769,7 @@ succ:
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -783,7 +781,7 @@ succ:
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -832,21 +830,21 @@ err:
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SetResponseBody(pstCtx, HTML_BadRequest);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -856,7 +854,7 @@ succ:
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -868,7 +866,7 @@ succ:
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -943,21 +941,21 @@ err:
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SetResponseBody(pstCtx, HTML_InternalServerError);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -967,7 +965,7 @@ succ:
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -975,14 +973,14 @@ succ:
 	uiRet = HTTP_SetResponseBody(pstCtx, szBuf);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -1002,7 +1000,7 @@ UINT HTTP_GetSystemData( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -1013,7 +1011,7 @@ UINT HTTP_GetSystemData( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -1033,7 +1031,7 @@ UINT HTTP_GetCloudPlatformData( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -1044,7 +1042,7 @@ UINT HTTP_GetCloudPlatformData( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -1066,7 +1064,7 @@ UINT HTTP_GetTemperature( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -1074,14 +1072,14 @@ UINT HTTP_GetTemperature( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetResponseBody(pstCtx, szBuf);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set response body failed");
 		return FAIL;
 	}
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -1102,7 +1100,7 @@ UINT HTTP_GetHtmlHeader( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -1113,7 +1111,7 @@ UINT HTTP_GetHtmlHeader( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -1147,7 +1145,7 @@ UINT HTTP_PostHtmlHeader( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
@@ -1158,7 +1156,7 @@ UINT HTTP_PostHtmlHeader( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 	}
@@ -1210,8 +1208,7 @@ UINT HTTP_PutHtml( HTTP_CTX *pstCtx )
 	if (pstCtx->stReq.uiRecvTotalLen > 0)
 	{
 		//输出下载进度
-		LOG_OUT(LOGOUT_INFO, "fd:%d, upload process:%d",
-				pstCtx->iClientFd,
+		LOG_OUT(LOGOUT_INFO, "upload process:%d",
 				pstCtx->stReq.uiRecvLen*100 / pstCtx->stReq.uiRecvTotalLen);
 	}
 
@@ -1230,21 +1227,21 @@ UINT HTTP_PutHtml( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set response body failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 	}
@@ -1292,7 +1289,7 @@ UINT HTTP_GetDate( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -1303,7 +1300,7 @@ UINT HTTP_GetDate( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -1325,7 +1322,7 @@ UINT HTTP_PostTimerData( HTTP_CTX *pstCtx )
 
 	if ( OK != PLUG_ParseTimerData(pstCtx->stReq.pcResqBody) )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse timer data failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "parse timer data failed");
 		return HTTP_InternalServerError( pstCtx );
 	}
 
@@ -1336,20 +1333,20 @@ UINT HTTP_PostTimerData( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set response body failed");
 			return FAIL;
 		}
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 	}
@@ -1371,7 +1368,7 @@ UINT HTTP_PostDelayData( HTTP_CTX *pstCtx )
 
 	if ( OK != PLUG_ParseDelayData(pstCtx->stReq.pcResqBody) )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse daley data failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "parse daley data failed");
 		return HTTP_InternalServerError( pstCtx );
 	}
 
@@ -1382,20 +1379,20 @@ UINT HTTP_PostDelayData( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set response body failed");
 			return FAIL;
 		}
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 	}
@@ -1418,7 +1415,7 @@ UINT HTTP_PostInfraredData( HTTP_CTX *pstCtx )
 
 	if ( OK != PLUG_ParseInfraredData(pstCtx->stReq.pcResqBody) )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse Infrared data failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "parse Infrared data failed");
 		return HTTP_InternalServerError( pstCtx );
 	}
 
@@ -1429,21 +1426,21 @@ UINT HTTP_PostInfraredData( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set response body failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 	}
@@ -1466,7 +1463,7 @@ UINT HTTP_PostSystemData( HTTP_CTX *pstCtx )
 
 	if ( OK != PLUG_ParseSystemData(pstCtx->stReq.pcResqBody) )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse system data failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "parse system data failed");
 		return HTTP_InternalServerError( pstCtx );
 	}
 
@@ -1477,20 +1474,20 @@ UINT HTTP_PostSystemData( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set response body failed");
 			return FAIL;
 		}
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 	}
@@ -1513,7 +1510,7 @@ UINT HTTP_PostCloudPlatformData( HTTP_CTX *pstCtx )
 
 	if ( OK != PLUG_ParseCloudPlatformData(pstCtx->stReq.pcResqBody) )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse Platform data failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "parse Platform data failed");
 		return HTTP_InternalServerError( pstCtx );
 	}
 
@@ -1524,20 +1521,20 @@ UINT HTTP_PostCloudPlatformData( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set response body failed");
 			return FAIL;
 		}
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 	}
@@ -1559,7 +1556,7 @@ UINT HTTP_PostDeviceControl( HTTP_CTX *pstCtx )
 
 	if ( OK != PLUG_ParseDeviceControlData(pstCtx->stReq.pcResqBody) )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse device control data failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "parse device control data failed");
 		return HTTP_InternalServerError( pstCtx );
 	}
 
@@ -1570,20 +1567,20 @@ UINT HTTP_PostDeviceControl( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set response body failed");
 			return FAIL;
 		}
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 	}
@@ -1603,7 +1600,7 @@ UINT HTTP_GetScanWifi( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -1614,7 +1611,7 @@ UINT HTTP_GetScanWifi( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -1631,7 +1628,7 @@ UINT HTTP_PostDate( HTTP_CTX *pstCtx )
 
 	if ( OK != PLUG_ParseDate(pstCtx->stReq.pcResqBody) )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse date failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "parse date failed");
 		return HTTP_InternalServerError( pstCtx );
 	}
 
@@ -1642,7 +1639,7 @@ UINT HTTP_PostDate( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
@@ -1653,7 +1650,7 @@ UINT HTTP_PostDate( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 	}
@@ -1699,8 +1696,7 @@ UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx )
 			if (pstCtx->stReq.uiRecvTotalLen > 0)
 			{
 				//输出user.bin下载进度
-				LOG_OUT(LOGOUT_INFO, "fd:%d, upgrade process:%d",
-						pstCtx->iClientFd,
+				LOG_OUT(LOGOUT_INFO, "upgrade process:%d",
 						pstCtx->stReq.uiRecvLen*100 / pstCtx->stReq.uiRecvTotalLen);
 			}
 		}
@@ -1733,21 +1729,21 @@ UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SetResponseBody(pstCtx, HTML_ResultOk);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set response body failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set response body failed");
 			return FAIL;
 		}
 
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 
@@ -1771,7 +1767,7 @@ UINT HTTP_GetRelayStatus( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SetHeader( pstCtx );
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
 		return FAIL;
 	}
 
@@ -1782,7 +1778,7 @@ UINT HTTP_GetRelayStatus( HTTP_CTX *pstCtx )
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
 
@@ -1804,7 +1800,7 @@ UINT HTTP_PostRelayStatus( HTTP_CTX *pstCtx )
 
 	if ( OK != PLUG_ParseRelayStatus(pstCtx->stReq.pcResqBody) )
 	{
-		LOG_OUT( LOGOUT_ERROR, "fd:%d, parse relay status failed", pstCtx->iClientFd );
+		LOG_OUT( LOGOUT_ERROR, "parse relay status failed");
 		return HTTP_InternalServerError( pstCtx );
 	}
 
@@ -1815,7 +1811,7 @@ UINT HTTP_PostRelayStatus( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SetHeader( pstCtx );
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, set header failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
 			return FAIL;
 		}
 
@@ -1826,7 +1822,7 @@ UINT HTTP_PostRelayStatus( HTTP_CTX *pstCtx )
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
 		{
-			LOG_OUT( LOGOUT_ERROR, "fd:%d, send once failed", pstCtx->iClientFd );
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
 			return FAIL;
 		}
 	}

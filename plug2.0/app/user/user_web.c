@@ -50,7 +50,7 @@ UINT WEB_CloseWebCtx( HTTP_CTX *pstCtx )
 
 	if( pstCtx->iClientFd > 0 )
 	{
-		LOG_OUT(LOGOUT_DEBUG, "fd:%d, disconnect", pstCtx->iClientFd);
+		LOG_OUT(LOGOUT_DEBUG, "disconnect", pstCtx->iClientFd);
 		close( pstCtx->iClientFd );
 	}
 
@@ -182,12 +182,13 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 				}
 			}
 
-			if ( iLoop < WEB_MAX_FD )
+			if ( system_get_free_heap_size() > HTTP_BUF_30K  && iLoop < WEB_MAX_FD)
 			{
 				break;
 			}
-			LOG_OUT(LOGOUT_DEBUG, "connect full, fd num:%d", WEB_MAX_FD);
-			vTaskDelay(1000/portTICK_RATE_MS);
+
+			//LOG_OUT(LOGOUT_DEBUG, "connect full or heap insufficient, max free heap size: %d", WEB_MAX_FD, system_get_free_heap_size());
+			vTaskDelay(100/portTICK_RATE_MS);
 		}
 
 		if ( FD_ISSET(iSocketFd, &stFdRead ))
@@ -205,10 +206,10 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 						LOG_OUT(LOGOUT_DEBUG, "fd:%d connect", iClientFd);
 						stWebCtx[iLoop].iClientFd = iClientFd;
 
-						//UINT oldHeap = system_get_free_heap_size();
+						UINT oldHeap = system_get_free_heap_size();
 						WEB_StartHandleTheard( &stWebCtx[iLoop] );
-						//UINT newHeap = system_get_free_heap_size();
-						//LOG_OUT(LOGOUT_DEBUG, "Free heap:%d, used:%d", newHeap, oldHeap-newHeap);
+						UINT newHeap = system_get_free_heap_size();
+						LOG_OUT(LOGOUT_DEBUG, "Free heap:%d, used:%d", newHeap, oldHeap-newHeap);
 
 						break;
 					}
@@ -216,7 +217,7 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 			}
 			else
 			{
-				LOG_OUT(LOGOUT_ERROR, "fd:%d, accept error", iClientFd);
+				LOG_OUT(LOGOUT_ERROR, "accept error", iClientFd);
 			}
 		}
     }
@@ -243,7 +244,7 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
     INT32 iRet = 0;
 	HTTP_CTX *pstCtx = Para;
 
-	//LOG_OUT(LOGOUT_INFO, "fd:%d, WEB_WebHandleTask started", pstCtx->iClientFd);
+	//LOG_OUT(LOGOUT_INFO, "WEB_WebHandleTask started", pstCtx->iClientFd);
 
 	pcRecvBuf = ( CHAR* )malloc( WEB_RECVBUF_SIZE + 10 );
     if ( NULL == pcRecvBuf )
@@ -261,18 +262,18 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
 		iRet = select( pstCtx->iClientFd + 1, &stFdRead, NULL, NULL, &stRdTimeOut );
 		if ( iRet < 0 )
 		{
-			LOG_OUT(LOGOUT_ERROR, "fd:%d, read error, errno:%d, iRet:%d.", pstCtx->iClientFd, errno, iRet);
+			LOG_OUT(LOGOUT_ERROR, "read error, errno:%d, iRet:%d.", errno, iRet);
 			goto end;
 		}
 		//等待接收超时
 		else if ( 0 == iRet )
 		{
 			pstCtx->uiCostTime ++;
-			//LOG_OUT(LOGOUT_DEBUG, "fd:%d, select timeout, uiCostTime:%d", pstCtx->iClientFd, pstCtx->uiCostTime);
+			//LOG_OUT(LOGOUT_DEBUG, "select timeout, uiCostTime:%d", pstCtx->uiCostTime);
 
 			if ( pstCtx->uiCostTime >= WEB_CONTINUE_TMOUT )
 			{
-				//LOG_OUT(LOGOUT_DEBUG, "fd:%d, recv timeout closed", pstCtx->iClientFd);
+				//LOG_OUT(LOGOUT_DEBUG, "recv timeout closed", pstCtx->iClientFd);
 				goto end;
 			}
 			continue;
@@ -280,7 +281,7 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
 
 		if ( !FD_ISSET(pstCtx->iClientFd, &stFdRead ))
 		{
-			LOG_OUT(LOGOUT_ERROR, "fd:%d, stFdRead failed", pstCtx->iClientFd );
+			LOG_OUT(LOGOUT_ERROR, "stFdRead failed");
 			goto end;
 		}
 
@@ -291,33 +292,32 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
 		//数据接收出错
 		if ( iRetN <= 0 )
 		{
-			LOG_OUT(LOGOUT_DEBUG, "fd:%d recv failed, client closed", pstCtx->iClientFd );
+			LOG_OUT(LOGOUT_DEBUG, "fd:%d recv failed, client closed");
 			goto end;
 		}
 		pcRecvBuf[iRetN] = 0;
 		//LOG_OUT(LOGOUT_DEBUG, "recv:\r\n%s\r\n\r\n", pcRecvBuf);
-		//LOG_OUT(LOGOUT_DEBUG, "fd:%d, recv:%d", pstCtx->iClientFd, iRetN );
+		//LOG_OUT(LOGOUT_DEBUG, "recv:%d", iRetN );
 
 		iRet = HTTP_ParsingHttpHead( pstCtx, pcRecvBuf, iRetN );
 		if ( iRet != OK )
 		{
-			LOG_OUT(LOGOUT_INFO, "fd:%d Parsing http header failed", pstCtx->iClientFd );
+			LOG_OUT(LOGOUT_INFO, "fd:%d Parsing http header failed");
 			goto end;
 		}
-		//LOG_OUT(LOGOUT_DEBUG, "fd:%d, ParsingHttpHead", pstCtx->iClientFd );
+		//LOG_OUT(LOGOUT_DEBUG, "ParsingHttpHead");
 
 		iRet = HTTP_RouterHandle( pstCtx );
 		if ( iRet != OK )
 		{
-			LOG_OUT(LOGOUT_INFO, "fd:%d Router handle failed", pstCtx->iClientFd );
+			LOG_OUT(LOGOUT_INFO, "fd:%d Router handle failed");
 			goto end;
 		}
-		//LOG_OUT(LOGOUT_DEBUG, "fd:%d, HTTP_RouterHandle", pstCtx->iClientFd );
+		//LOG_OUT(LOGOUT_DEBUG, "HTTP_RouterHandle");
 
 		if ( HTTP_IS_SEND_FINISH( pstCtx ) )
 		{
-			LOG_OUT(LOGOUT_INFO, "fd:%d, [Response] Method:%s URL:%s Code:%s",
-					pstCtx->iClientFd,
+			LOG_OUT(LOGOUT_INFO, "[Response] Method:%s URL:%s Code:%s",
 					szHttpMethodStr[pstCtx->stReq.eMethod],
 					pstCtx->stReq.szURL,
 					szHttpCodeMap[pstCtx->stResp.eHttpCode]);
@@ -326,7 +326,7 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
 	}
 
 end:
-	//LOG_OUT(LOGOUT_INFO, "fd:%d, WEB_WebHandleTask over", pstCtx->iClientFd);
+	//LOG_OUT(LOGOUT_INFO, "WEB_WebHandleTask over", pstCtx->iClientFd);
 	WEB_CloseWebCtx( pstCtx );
 	FREE_MEM( pcRecvBuf );
     vTaskDelete( NULL );
@@ -347,7 +347,7 @@ UINT WEB_WebSend( HTTP_CTX *pstCtx )
 	fd_set stFdWrite;
 	UINT8 ucRetry = 0;
 
-	//LOG_OUT(LOGOUT_DEBUG, "fd:%d, WEB_WebSend...", pstCtx->iClientFd);
+	//LOG_OUT(LOGOUT_DEBUG, "WEB_WebSend...", pstCtx->iClientFd);
 
 retry:
 
@@ -357,8 +357,8 @@ retry:
 	iRet = select( pstCtx->iClientFd + 1, NULL, &stFdWrite, NULL, &stTimeOut );
 	if ( iRet < 0 )
 	{
-		LOG_OUT(LOGOUT_ERROR, "fd:%d, select send error, errno:%d, iRet:%d.",
-				pstCtx->iClientFd, errno, iRet);
+		LOG_OUT(LOGOUT_ERROR, "select send error, errno:%d, iRet:%d.",
+				errno, iRet);
 		return FAIL;
 	}
 	else if ( 0 == iRet )
@@ -367,7 +367,7 @@ retry:
 		pstCtx->uiCostTime ++;
 		if ( pstCtx->uiCostTime > WEB_CONTINUE_TMOUT )
 		{
-			LOG_OUT(LOGOUT_ERROR, "fd:%d, closed select send timeout", pstCtx->iClientFd);
+			LOG_OUT(LOGOUT_ERROR, "closed select send timeout", pstCtx->iClientFd);
 			return FAIL;
 		}
 
@@ -378,10 +378,10 @@ retry:
 		ucRetry ++;
 		if ( ucRetry >= 10 )
 		{
-			LOG_OUT(LOGOUT_ERROR, "fd:%d, FdWrite error", pstCtx->iClientFd);
+			LOG_OUT(LOGOUT_ERROR, "FdWrite error", pstCtx->iClientFd);
 			return FAIL;
 		}
-		LOG_OUT(LOGOUT_INFO, "fd:%d, FdWrite error", pstCtx->iClientFd);
+		LOG_OUT(LOGOUT_INFO, "FdWrite error", pstCtx->iClientFd);
 		goto retry;
 	}
 
@@ -395,22 +395,21 @@ retry:
 	FREE_MEM( pstCtx->stResp.pcResponBody );
 	if ( iRet < 0 )
 	{
-		LOG_OUT(LOGOUT_ERROR, "fd:%d, send error, errno:%d.", pstCtx->iClientFd, errno);
+		LOG_OUT(LOGOUT_ERROR, "send error, errno:%d.", errno);
 		return FAIL;
 	}
 	else if ( iRet != pstCtx->stResp.uiSendCurLen )
 	{
-		LOG_OUT(LOGOUT_ERROR, "fd:%d, should send %d, but send %d actually.",
+		LOG_OUT(LOGOUT_ERROR, "should send %d, but send %d actually.",
 				pstCtx->stResp.uiSendCurLen, iRet);
 		return FAIL;
 	}
 
 	pstCtx->stResp.uiSentLen += pstCtx->stResp.uiSendCurLen;
-	//LOG_OUT(LOGOUT_INFO, "fd:%d, send process:%d",
-	//		pstCtx->iClientFd,
+	//LOG_OUT(LOGOUT_INFO, "send process:%d",
 	//		pstCtx->stResp.uiSentLen * 100 / pstCtx->stResp.uiSendTotalLen);
 
-	//LOG_OUT(LOGOUT_DEBUG, "fd:%d, WEB_WebSend over", pstCtx->iClientFd);
+	//LOG_OUT(LOGOUT_DEBUG, "WEB_WebSend over", pstCtx->iClientFd);
 	return OK;
 }
 
