@@ -224,9 +224,9 @@ void BIGIOT_Destroy( BIGIOT_Ctx_S **ppstCtx )
 	if ( ppstCtx != 0 && *ppstCtx != 0 )
 	{
 		(*ppstCtx)->Disconnect( *ppstCtx );
-		if ( (*ppstCtx)->xKeepLiveHandle != 0 )
+		if ( (*ppstCtx)->xEventHandle != 0 )
 		{
-			vTaskDelete( (*ppstCtx)->xKeepLiveHandle );
+			vTaskDelete( (*ppstCtx)->xEventHandle );
 		}
 
 		free( *ppstCtx );
@@ -258,7 +258,7 @@ static int Bigiot_StartEventTask( BIGIOT_Ctx_S *pstCtx )
 								256,
 								(void*)pstCtx,
 								uxTaskPriorityGet(NULL),
-								&(pstCtx->xKeepLiveHandle)))
+								&(pstCtx->xEventHandle)))
 	{
 		return 1;
 	}
@@ -275,6 +275,7 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
 	int iLen = 0;
 	int iRet = 0;
 
+	//先连接至贝壳物联平台
     iRet = pstCtx->Connect( pstCtx );
 	if ( iRet )
 	{
@@ -282,6 +283,7 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
 		return 1;
 	}
 
+	//拼装并发送登陆指令
 	iLen = snprintf(szMess, sizeof(szMess), "{\"M\":\"checkin\",\"ID\":\"%s\",\"K\":\"%s\"}\n",
 					pstCtx->pcDeviceId, pstCtx->pcApiKey );
 
@@ -292,6 +294,7 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
     	return 2;
 	}
 
+	//登陆成功会返回checkinok和设备名称等字段
 	iRet = pstCtx->Read( pstCtx, szMess, sizeof(szMess), pstCtx->iTimeOut );
 	if ( iRet < 0 )
 	{
@@ -326,6 +329,7 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
 	char* pcContent = 0;
 	int iRet = 0;
 
+	//判断是否有数据发送过来
 	iRet = pstCtx->Read( pstCtx, szMess, sizeof(szMess), pstCtx->iTimeOut );
 	if ( iRet < 0 )
 	{
@@ -335,22 +339,26 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
 
 	if ( iRet > 0 )
 	{
+		//有指令发送过来
 		pcMethod = BigiotParseString(szMess, "M", szValue, sizeof(szValue));
 		if ( 0 != pcMethod && 0 == strcmp(pcMethod, BIGIOT_SAY) )
 		{
 			pcContent = BigiotParseString(szMess, "C", szValue, sizeof(szValue));
 			if ( 0 != pcContent )
 			{
+				//打开开关的指令
 				if ( 0 == strcmp(pcContent, BIGIOT_ON) )
 				{
 					BIGIOT_LOG(BIGIOT_INFO, "Conent: %s", pcContent);
 					PLUG_SetRelayByStatus( 1, 1 );
 				}
+				//关闭开关的指令
 				else if ( 0 == strcmp(pcContent, BIGIOT_OFF) )
 				{
 					BIGIOT_LOG(BIGIOT_INFO, "Conent: %s", pcContent);
 					PLUG_SetRelayByStatus( 0, 1 );
 				}
+				//其他指令
 				else
 				{
 					BIGIOT_LOG(BIGIOT_INFO, "recv content:%s", pcContent);
@@ -361,6 +369,7 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
 				BIGIOT_LOG(BIGIOT_ERROR, "BigiotParseString failed, szMess:%s", szMess);
 			}
 		}
+		//有其他途径登陆到贝壳物联平台如通过页面或者微信公众号等会收到上线的通知
 		else if ( 0 != pcMethod && 0 == strcmp(pcMethod, BIGIOT_LOGIN) )
 		{
 			pcContent = BigiotParseString(szMess, "NAME", szValue, sizeof(szValue));
@@ -372,6 +381,7 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
 				Bigiot_RelayStatusCallBack( pstCtx );
 			}
 		}
+		//有用户离线通知
 		else if ( 0 != pcMethod && 0 == strcmp(pcMethod, BIGIOT_LOGOUT) )
 		{
 			pcContent = BigiotParseString(szMess, "NAME", szValue, sizeof(szValue));
@@ -797,8 +807,8 @@ static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDev
 	pstCtx->pcDeviceId		= pcDevId;
 	pstCtx->pcApiKey		= pcApiKey;
 
-	pstCtx->xKeepLiveHandle = 0;
-	pstCtx->iAlived		= 0;
+	pstCtx->xEventHandle 	= 0;
+	pstCtx->iAlived			= 0;
 
 	pstCtx->iTimeOut 		= BIGIOT_TIMEOUT;
 	pstCtx->Read 			= Read;
