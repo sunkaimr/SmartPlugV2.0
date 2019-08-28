@@ -541,6 +541,7 @@ VOID WIFI_WifiLinkStatusTask( void *para )
 	UINT8 uiWifiMode;
 
 	LOG_OUT(LOGOUT_INFO, "WIFI_WifiLinkStatusTask started.");
+	LED_SetWifiStatus(LED_WIFI_STATUS_CONNECTTING);
 	uiWifiMode = PLUG_GetWifiMode();
 	if ( WIFI_MODE_STATION == uiWifiMode )
 	{
