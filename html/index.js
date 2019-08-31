@@ -42,6 +42,10 @@ $(document).ready(function () {
 		$("#navBar").collapse('hide');
 	});
 
+    $("#htmlMode").click(function(){
+        $("#htmlMode").attr("href","lcd.html");
+    });
+
 	$(function () {
 		$('#timerSubmitForm').bootstrapValidator({
 			message: 'This value is not valid',

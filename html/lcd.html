@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<meta http-equiv="content-type" content="text/html;charset=gb2312" />
+<head>
+	<title id="title">Smart Plug</title>
+</head>
+<style type="text/css">
+	a:link, a:visited{
+		text-decoration:none;
+	}
+	button{
+		font-size:25px;
+		width:70px;
+		height:40px
+	}
+</style>
+<body>
+<br><br>
+<table border="0" width="500px" height="80px" align="center">
+	<tr>
+		<td align="left">
+			<button type="button" id="SetRelay" onclick="SetRelayClick()" style="font-size:15px; width:30px; height:30px"/>&ensp;&ensp;</button></td>
+		</td>
+		<td align="right">
+			<input type="checkbox" id="AutoRefresh" onclick="AutoRefreshClick()" checked="checked">自动刷新 &nbsp;
+		</td>
+	</tr>
+</table>
+<table border="0" width="500px" height="150px" align="center" bgcolor="#8E8ECF" style="font-size:50px" >
+	<tr align="center"><td id="row1"></td></tr>
+	<tr align="center"><td id="row2"></td></tr>
+</table>
+<table border="0" width="550px" height="100px" align="center" >
+	<tr align="center">
+		<form name="form2">
+			<td><button type="button" id="keyEsc" onclick="KeyEscClick()"/>&Xi;</button></td>
+			<td><button type="button" id="keyUp" onclick="KeyUpClick()"/>&Delta;</button></td>
+			<td><button type="button" id="keyDown" onclick="KeyDownClick()"/>&nabla;</button></td>
+			<td><button type="button" id="keyEnter" onclick="KeyEnterClick()"/>&Omicron;</button></td>
+		</form>
+	</tr>
+</table>
+<table border="0" width="500px" height="50px" align="center" >
+	<tr align="right"><td><a id="htmlMode" href="/">功能模式</a></td></tr>
+</table>
+
+<script type="text/javascript">
+
+	var timer;
+	var titleSetTimer;
+
+    window.onload = function() {
+        RefreshClick();
+        AutoRefreshClick();
+        titleSetTimer = setTimeout(getDevName,100);
+	}
+
+    function AutoRefreshClick(){
+        if ( document.getElementById("AutoRefresh").checked == true ){
+            timer = setInterval(RefreshClick, 1000);
+		}else{
+            clearInterval(timer);
+		}
+	}
+
+    function ShowMenu( data ){
+		data = JSON.parse( data );
+		var row1 = "";
+		var row2 = "";
+        for (var i = 0; i < data.row1.length; i++ ){
+            if ( data.row1.charAt(i) == " " ){
+                row1 += "&ensp;";
+            }else{
+                if ( data.flicker && data.flickerRow == 1 && i == data.flickerCol ){
+                    row1 += "<font color=\"yellow\">"+ data.row1.charAt(i) + "</font>";
+                }else{
+                    row1 += data.row1.charAt(i);
+                }
+			}
+        }
+
+        for (var i = 0; i < data.row2.length; i++ ){
+            if ( data.row2.charAt(i) == " " ){
+                row2 += "&ensp;";
+            }else{
+                if ( data.flicker && data.flickerRow == 2 && i == data.flickerCol ){
+                    row2 += "<font color=\"yellow\">"+ data.row2.charAt(i) + "</font>";
+                }else{
+                    row2 += data.row2.charAt(i);
+                }
+			}
+        }
+
+        document.getElementById("row1").innerHTML="<code>"+row1+"</code>";
+        document.getElementById("row2").innerHTML="<code>"+row2+"</code>";
+        GetRelayStatus();
+    }
+
+    function KeyEscClick(){
+        xhr=new XMLHttpRequest();
+        xhr.open("post", "/key", true);
+        xhr.onreadystatechange=function () {
+            if (xhr.readyState==4 && xhr.status==200) {
+				ShowMenu(xhr.responseText);
+            }
+        }
+        xhr.send("{\"key\":\"esc\"}");
+    }
+
+    function KeyUpClick(){
+        xhr=new XMLHttpRequest();
+        xhr.open("post", "/key", true);
+        xhr.onreadystatechange=function () {
+            if (xhr.readyState==4 && xhr.status==200) {
+                ShowMenu(xhr.responseText);
+            }
+        }
+        xhr.send("{\"key\":\"up\"}");
+    }
+
+    function KeyDownClick(){
+        xhr=new XMLHttpRequest();
+        xhr.open("post", "/key", true);
+        xhr.onreadystatechange=function () {
+            if (xhr.readyState==4 && xhr.status==200) {
+                ShowMenu(xhr.responseText);
+            }
+        }
+        xhr.send("{\"key\":\"down\"}");
+    }
+
+    function KeyEnterClick(){
+        xhr=new XMLHttpRequest();
+        xhr.open("post", "/key", true);
+        xhr.onreadystatechange=function () {
+            if (xhr.readyState==4 && xhr.status==200) {
+                ShowMenu(xhr.responseText);
+            }
+        }
+        xhr.send("{\"key\":\"enter\"}");
+    }
+
+    function SetRelayClick(){
+        xhr=new XMLHttpRequest();
+        xhr.open("get", "/relaystatus", true);
+        xhr.onreadystatechange=function () {
+            if ( xhr.readyState == 4 && xhr.status == 200 ) {
+				var data = JSON.parse( xhr.responseText );
+				xhr.open("post", "/relaystatus", true);
+				xhr.onreadystatechange=function () {
+					if (xhr.readyState==4 && xhr.status==200) {
+						var data = JSON.parse( xhr.responseText );
+						if ( data.status == "on"){
+							document.getElementById("SetRelay").style.backgroundColor="Red";
+						}else{
+							document.getElementById("SetRelay").style.backgroundColor="WhiteSmoke";
+						}
+					}
+				}
+				if ( data.status == "on"){
+					xhr.send("{\"status\":\"off\"}");
+				}else{
+					xhr.send("{\"status\":\"on\"}");
+				}
+
+            }
+        }
+        xhr.send("");
+    }
+
+    function RefreshClick(){
+        xhr=new XMLHttpRequest();
+        xhr.open("get", "/refresh", true);
+        xhr.onreadystatechange=function () {
+            if (xhr.readyState==4) {
+                if( xhr.status==200){
+                    ShowMenu(xhr.responseText);
+                }
+            }
+        }
+        xhr.send("");
+    }
+
+    function GetRelayStatus(){
+        xhr=new XMLHttpRequest();
+        xhr.open("get", "/relaystatus", true);
+        xhr.onreadystatechange=function () {
+            if (xhr.readyState==4 && xhr.status==200) {
+				var data = JSON.parse( xhr.responseText );
+				if ( data.status == "on"){
+					document.getElementById("SetRelay").style.backgroundColor="Red";
+				}else if ( data.status == "off"){
+					document.getElementById("SetRelay").style.backgroundColor="WhiteSmoke";
+				}else{
+					alert(data.status);
+				}
+            }
+        }
+        xhr.send("");
+    }
+
+    function getDevName(){
+        xhr=new XMLHttpRequest();
+        xhr.open("get", "/system", true);
+        xhr.onreadystatechange=function () {
+            if (xhr.readyState==4 && xhr.status==200) {
+                var data = JSON.parse( xhr.responseText );
+                document.getElementById("title").innerHTML=data.PlugName;
+            }
+        }
+        xhr.send("");
+
+        window.clearTimeout(titleSetTimer);
+    }
+
+</script>
+</body>
+</html>
