@@ -41,6 +41,8 @@ UINT HTTP_InternalServerError( HTTP_CTX *pstCtx );
 UINT HTTP_GetHome( HTTP_CTX *pstCtx );
 UINT HTTP_GetHealth( HTTP_CTX *pstCtx );
 UINT HTTP_GetInfo( HTTP_CTX *pstCtx );
+UINT HTTP_GetRefresh( HTTP_CTX *pstCtx );
+UINT HTTP_PostKey( HTTP_CTX *pstCtx );
 UINT HTTP_GetDate( HTTP_CTX *pstCtx );
 UINT HTTP_PutTest( HTTP_CTX *pstCtx );
 UINT HTTP_GetTest( HTTP_CTX *pstCtx );

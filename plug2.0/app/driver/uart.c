@@ -45,7 +45,7 @@ typedef struct _os_event_ {
 xTaskHandle xUartTaskHandle;
 xQueueHandle xQueueUart;
 
-#define UART_RECVMAXCNT          (100)      	//接收缓冲区的最大值
+#define UART_RECVMAXCNT          (200)      	//接收缓冲区的最大值
 #define UART_SENDMAXCNT 		 (1024*3)
 
 uint8_t  Uart_RecvBuf[UART_RECVMAXCNT+1];
@@ -391,83 +391,80 @@ uart0_rx_intr_handler(void *para)
 
     			Uart_RecvBuf[ Uart_RecvCnt ] = 0;
     			Uart_RecvCnt = 0;
-    			printf("\r\n> ");
-    			printf(Uart_RecvBuf);
-
-
-
+    			//printf(Uart_RecvBuf);
+#if 1
     			if ( 0 == strcmp((char*)Uart_RecvBuf, "help\r\n") )
 				{
-    				printf("===> help <===\r\n" );
-    				printf("get timer\r\n" );
-    				printf("get delay\r\n" );
-    				printf("get infrared\r\n" );
-    				printf("get platform\r\n" );
-    				printf("get sys\r\n" );
-    				printf("get date\r\n" );
-    				//printf("get wifi\r\n" );
-    				printf("get device info\r\n" );
-    				printf("get html header\r\n" );
-    				printf("get relay status\r\n" );
-    				printf("debug free heap\r\n" );
-    				printf("debug show malloc\r\n" );
-    				printf("set reboot\r\n" );
-    				printf("set log level[debug|info|error|none]\r\n" );
-    				printf("\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "===> help <===\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "get timer\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "get delay\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "get infrared\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "get platform\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "get sys\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "get date\r\n" );
+    				//LOG_OUT(LOGOUT_INFO, "get wifi\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "get device info\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "get html header\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "get relay status\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "debug free heap\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "debug show malloc\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "set reboot\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "set log level[debug|info|error|none]\r\n" );
+    				LOG_OUT(LOGOUT_INFO, "\r\n" );
 				}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get device info\r\n") )
     			{
 					WIFI_DeviceInfoMarshalJson(Uart_SendBuf, UART_SENDMAXCNT);
-					printf(Uart_SendBuf);
+					LOG_OUT(LOGOUT_INFO, Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get sys\r\n") )
     			{
 					PLUG_MarshalJsonSystemSet(Uart_SendBuf, UART_SENDMAXCNT);
-					printf(Uart_SendBuf);
+					LOG_OUT(LOGOUT_INFO, Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get timer\r\n") )
     			{
     				PLUG_MarshalJsonTimer(Uart_SendBuf, UART_SENDMAXCNT, PLUG_TIMER_ALL);
-					printf(Uart_SendBuf);
+    				LOG_OUT(LOGOUT_INFO, Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get delay\r\n") )
     			{
     				PLUG_MarshalJsonDelay(Uart_SendBuf, UART_SENDMAXCNT, PLUG_DELAY_ALL);
-					printf(Uart_SendBuf);
+    				LOG_OUT(LOGOUT_INFO, Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get infrared\r\n") )
     			{
     				PLUG_MarshalJsonInfrared(Uart_SendBuf, UART_SENDMAXCNT, INFRARED_ALL);
-					printf(Uart_SendBuf);
+    				LOG_OUT(LOGOUT_INFO, Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get platform\r\n") )
     			{
     				PLUG_MarshalJsonCloudPlatformSet(Uart_SendBuf, UART_SENDMAXCNT);
-					printf(Uart_SendBuf);
+    				LOG_OUT(LOGOUT_INFO, Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get html header\r\n") )
     			{
     				PLUG_MarshalJsonHtmlData(Uart_SendBuf, UART_SENDMAXCNT);
-					printf(Uart_SendBuf);
+    				LOG_OUT(LOGOUT_INFO, Uart_SendBuf);
     			}
     			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get wifi\r\n") )
     			{
     				//WIFI_WifiScanMarshalJson(pcBuf, UART_SENDMAXCNT);
-					printf(Uart_SendBuf);
+    				LOG_OUT(LOGOUT_INFO, Uart_SendBuf);
     			}
       			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get relay status\r\n") )
     			{
       				PLUG_MarshalJsonRelayStatus(Uart_SendBuf, UART_SENDMAXCNT);
-    				printf(Uart_SendBuf);
+      				LOG_OUT(LOGOUT_INFO, Uart_SendBuf);
     			}
       			else if ( 0 == strcmp((char*)Uart_RecvBuf, "get date\r\n") )
     			{
       				PLUG_MarshalJsonDate(Uart_SendBuf, UART_SENDMAXCNT);
-      				printf(Uart_SendBuf);
+      				LOG_OUT(LOGOUT_INFO, Uart_SendBuf);
     			}
       			else if ( 0 == strcmp((char*)Uart_RecvBuf, "debug free heap\r\n") )
     			{
-      				printf("Free heap Size:%d", system_get_free_heap_size());
+      				LOG_OUT(LOGOUT_INFO, "Free heap Size:%d", system_get_free_heap_size());
     			}
       			else if ( 0 == strcmp((char*)Uart_RecvBuf, "debug show malloc\r\n") )
     			{
@@ -481,31 +478,38 @@ uart0_rx_intr_handler(void *para)
     			{
       				if ( strstr(Uart_RecvBuf,"debug" ) != 0 ){
       					LOG_SetLogLevel(LOGOUT_DEBUG);
-      					printf("set log level:debug\r\n");
+      					LOG_OUT(LOGOUT_INFO, "set log level:debug\r\n");
       				}
       				else if (strstr(Uart_RecvBuf, "info" ) != 0){
       					LOG_SetLogLevel(LOGOUT_INFO);
-      					printf("set log level:info\r\n");
+      					LOG_OUT(LOGOUT_INFO, "set log level:info\r\n");
       				}
       				else if (strstr(Uart_RecvBuf, "error" ) != 0){
       					LOG_SetLogLevel(LOGOUT_ERROR);
-      					printf("set log level:error\r\n");
+      					LOG_OUT(LOGOUT_INFO, "set log level:error\r\n");
       				}
       				else if (strstr(Uart_RecvBuf, "none" ) != 0){
       					LOG_SetLogLevel(LOGOUT_NONE);
-      					printf("set log level:none\r\n");
+      					LOG_OUT(LOGOUT_INFO, "set log level:none\r\n");
       				}
+    			}
+      			else if ( 0 != strstr((char*)Uart_RecvBuf, "GetEspIp()") )
+    			{
+      				WIFI_INFO_S stWifiInfo = {0, 0, 0};
+      				stWifiInfo = WIFI_GetIpInfo();
+      				printf("SetEspIp() %d.%d.%d.%d\r\n", stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
+      						(stWifiInfo.uiIp>>16)&0xFF,(stWifiInfo.uiIp>>24)&0xFF);
     			}
     			else
     			{
-    				printf("unknow cmd,send \"help\" to list all cmd." );
+    				LOG_OUT(LOGOUT_INFO, "unknow cmd,send \"help\" to list all cmd\r\n" );
     			}
+#endif
 
-    			printf("\r\n");
     		}
     		else if( Uart_RecvCnt >= UART_RECVMAXCNT ) {  //缓冲区满
     			Uart_RecvBuf[ Uart_RecvCnt ] = '\0';
-    			printf(Uart_RecvBuf);
+    			LOG_OUT(LOGOUT_INFO, Uart_RecvBuf);
     			Uart_RecvCnt = 0;
     		}
 

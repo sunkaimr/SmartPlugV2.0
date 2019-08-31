@@ -512,6 +512,7 @@ VOID PLUG_SetPlugName( CHAR* pcPlugName )
 
 UINT8 PLUG_GetRelayStatus( VOID )
 {
+	g_stPLUG_SystemSet.bRelayStatus = MCU_GetRelayStatus();
 	return g_stPLUG_SystemSet.bRelayStatus;
 }
 
@@ -520,6 +521,7 @@ VOID PLUG_SetRelayOn( UINT uiSaveFlag )
 {
 	g_stPLUG_SystemSet.bRelayStatus = TRUE;
 	LED_RelayOn();
+	MCU_SetRelayOn();
 	if ( uiSaveFlag )
 	{
 	    CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
@@ -535,6 +537,7 @@ VOID PLUG_SetRelayOff( UINT uiSaveFlag )
 {
 	g_stPLUG_SystemSet.bRelayStatus = FALSE;
 	LED_RelayOff();
+	MCU_SetRelayOff();
 	if ( uiSaveFlag )
 	{
 	    CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
@@ -563,11 +566,13 @@ VOID PLUG_SetRelayReversal( UINT uiSaveFlag )
 	if ( g_stPLUG_SystemSet.bRelayStatus == TRUE )
 	{
 		LED_RelayOff();
+		MCU_SetRelayOff();
 		g_stPLUG_SystemSet.bRelayStatus = FALSE;
 	}
 	else
 	{
 		LED_RelayOn();
+		MCU_SetRelayOn();
 		g_stPLUG_SystemSet.bRelayStatus = TRUE;
 	}
 
@@ -1174,12 +1179,12 @@ UINT PLUG_ParseRelayStatus( CHAR* pDataStr )
 		//正确的时间格式如："{"status":"on"}
 		if ( strcmp(pcTmp, "on") == 0 )
 		{
-			PLUG_SetRelayByStatus( TRUE, TRUE );
+			printf("SetRelayOn()\r\n");
 			LOG_OUT(LOGOUT_INFO, "HTTP_PostRelayStatus, RelayStatus:on");
 		}
 		else if ( strcmp(pcTmp, "off") == 0 )
 		{
-			PLUG_SetRelayByStatus( FALSE, TRUE );
+			printf("SetRelayOff()\r\n");
 			LOG_OUT(LOGOUT_INFO, "HTTP_PostRelayStatus, RelayStatus:off");
 		}
 		else
@@ -1253,7 +1258,9 @@ UINT PLUG_ParseDate( CHAR* pDateStr)
 
 		stDate.iSecond = (pcTmp[0]-'0')*10 + (pcTmp[1]-'0');
 
-		PLUG_SetDate( &stDate );
+		printf("SetDate() %d-%02d-%02d %02d:%02d:%02d",
+				stDate.iYear, stDate.iMonth, stDate.iDay,
+				stDate.iHour, stDate.iMinute, stDate.iSecond);
 		PLUG_SetTimeSyncFlag(TIME_SYNC_MAN);
 		LED_SetWifiStatus(LED_WIFI_STATUS_ON);
 

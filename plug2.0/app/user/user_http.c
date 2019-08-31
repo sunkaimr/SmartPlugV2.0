@@ -319,7 +319,10 @@ VOID HTTP_RouterInit( VOID )
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/", 				HTTP_GetHome, 		"home");
 
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/health", 		HTTP_GetHealth, 	"HTTP_GetHealth");
-	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/info", 			HTTP_GetInfo, 		"info");
+	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/info", 			HTTP_GetInfo, 		"HTTP_GetInfo");
+
+	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/refresh", 		HTTP_GetRefresh, 	"HTTP_GetRefresh");
+	HTTP_RouterRegiste(HTTP_METHOD_POST, "/key", 			HTTP_PostKey, 		"HTTP_PostKey");
 
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/timer/:timer",	HTTP_GetTimerData,	"HTTP_GetTimerData");
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/delay/:delay",	HTTP_GetDelayData,	"HTTP_GetDelayData");
@@ -561,6 +564,7 @@ UINT HTTP_SetHeader( HTTP_CTX *pstCtx )
 		return FAIL;
 	}
 
+	pstCtx->stResp.uiPos = 0;
 	pstCtx->stResp.uiPos += snprintf(
 			pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
 			pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,

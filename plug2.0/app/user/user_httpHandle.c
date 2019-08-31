@@ -14,8 +14,7 @@
 
 const CHAR HTML_UploadHtml[] = "<!DOCTYPE html>\r\n<html>\r\n<head>\r\n <meta http-equiv=\"content-type\" content=\"text/html;charset=gb2312\">\r\n <title>升级</title>\r\n</head>\r\n<body>\r\n	<table border=\"0\" width=\"70%\" align=\"center\" cellpadding=\"6\" id=\"tab\" cellspacing=\"0\" >\r\n		<tr><th colspan=\"4\">固件升级</th></tr>\r\n		<tr><td colspan=\"4\"><hr/></td></tr>\r\n		<tr align=\"left\">\r\n			<th width=\"40%\">文件</th>\r\n			<th width=\"15%\">大小</th>\r\n			<th width=\"20%\">状态</th>\r\n			<th width=\"25%\"></th>\r\n		</tr>\r\n <tr align=\"left\">\r\n <td><input type=\"file\" id=\"binFile\" accept=\".bin\" onchange=\"return fileChg(this);\"></td>\r\n <td>----</td>\r\n <td>----</td>\r\n <td><input type=\"button\" onclick=\"upgread()\" value=\"升级\"/></td>\r\n </tr>\r\n		<tr><td colspan=\"4\"><hr/></td></tr>\r\n <tr><td colspan=\"4\">&nbsp;</td></tr>\r\n		<tr><th colspan=\"4\">网页升级</th></tr>\r\n <tr><td colspan=\"4\"><hr/></td></tr>\r\n <tr><td colspan=\"4\"><hr/></td></tr>\r\n		<tr>\r\n			<td colspan=\"3\"></td>\r\n			<td>\r\n <input type=\"button\" onclick=\"addFile()\" value=\"添加\"/>\r\n <input type=\"button\" onclick=\"uploadFile()\" value=\"上传\"/>\r\n <input type=\"button\" onclick=\"reboot()\" value=\"重启\"/>\r\n </td>\r\n		</tr>\r\n	</table>\r\n <script type=\"text/javascript\">\r\n window.onload = function() {\r\n			addFile();\r\n }\r\n	 function addFile() {\r\n			var t = document.getElementById('tab');\r\n			var r = t.insertRow(t.rows.length-2);\r\n			r.insertCell(0).innerHTML=\"<input type=\\\"file\\\" onchange=\\\"return fileChg(this);\\\">\";\r\n			r.insertCell(1).innerHTML=\"----\";\r\n			r.insertCell(2).innerHTML=\"----\";\r\n			r.insertCell(3).innerHTML=\"<a href=\\\"javascript:void(0);\\\" onclick=\\\"this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode)\\\">删除</a>\";\r\n }\r\n		function fileChg(obj) {\r\n			var fz=obj.files[0].size;\r\n			if( fz > 1024*1024 ){\r\n				fz=(fz/1024/1024).toFixed(1) + \"MB\";\r\n			}else if(fz > 1024){\r\n				fz=(fz/1024).toFixed(1) + \"KB\";\r\n			}else{\r\n				fz=fz+\"B\";\r\n			}\r\n			var sta = obj.parentNode.parentNode.cells;\r\n sta[1].innerHTML = fz;\r\n sta[2].innerHTML = \"等待上传\";\r\n }\r\n\r\n		function uploadFile() {\r\n			var files = new Array();\r\n			var tableObj = document.getElementById(\"tab\");\r\n			for (var i = 8; i < tableObj.rows.length-2; i++) {\r\n				file = tableObj.rows[i].cells[0].getElementsByTagName(\"input\")[0];\r\n				if ( file.files[0] == null ){\r\n					continue;\r\n				}\r\n				files.push(file.files[0]);\r\n tableObj.rows[i].cells[2].innerHTML = \"等待上传\";\r\n			}\r\n			if (files.length == 0){\r\n			 alert(\"请选择文件！\");\r\n			 return;\r\n			}\r\n			if( sendHead(files)){\r\n sendFile(files, 0);\r\n }\r\n\r\n }\r\n function sendHead(fileObj) {\r\n			var dataArr=[];\r\n			for ( var i in fileObj ){\r\n				var data = {};\r\n				data.Name = fileObj[i].name;\r\n				data.Length = parseInt(fileObj[i].size);\r\n				dataArr.push(data);\r\n			}\r\n xhr = new XMLHttpRequest();\r\n xhr.open(\"post\", \"/html/header\", false);\r\n xhr.send(JSON.stringify(dataArr));\r\n return true;\r\n }\r\n function sendFile(fileObj, index) {\r\n if ( index >= fileObj.length){\r\n alert(\"上传完成\");\r\n return;\r\n }\r\n var t = document.getElementById('tab');\r\n xhr = new XMLHttpRequest();\r\n url = \"/html/\"+fileObj[index].name\r\n xhr.open(\"put\", url, true);\r\n xhr.upload.onprogress = function progressFunction(evt) {\r\n if (evt.lengthComputable) {\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = Math.round(evt.loaded / evt.total * 100) + \"%\";\r\n }\r\n };\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"%0\";\r\n xhr.onreadystatechange = function () {\r\n if ( xhr.readyState == 2 ){\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"正在校验\";\r\n }else if (xhr.readyState == 4) {\r\n if( xhr.status == 201){\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"上传成功\";\r\n index=index+1;\r\n sendFile(fileObj, index);\r\n }else{\r\n t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML = \"上传失败\";\r\n }\r\n }\r\n }\r\n xhr.send(fileObj[index]);\r\n }\r\n function reboot(){\r\n xhr = new XMLHttpRequest();\r\n xhr.open(\"post\", \"/control\", true);\r\n xhr.onreadystatechange = function () {\r\n if (xhr.readyState == 4) {\r\n if( xhr.status == 200){\r\n alert(\"设备正在重启\");\r\n }else{\r\n alert(\"设备重启失败\");\r\n }\r\n }\r\n }\r\n xhr.send(\"{\\\"Action\\\":0}\");\r\n }\r\n function upgread(){\r\n var file = document.getElementById(\"binFile\").files[0];\r\n if(file == null){\r\n alert(\"请选择固件\");\r\n return;\r\n }\r\n var t = document.getElementById('tab');\r\n xhr = new XMLHttpRequest();\r\n xhr.upload.onprogress = function progressFunction(evt) {\r\n if (evt.lengthComputable) {\r\n t.rows[3].cells[2].innerHTML= Math.round(evt.loaded / evt.total * 100) + \"%\";\r\n }\r\n };\r\n xhr.open(\"put\", \"/upgrade\", true);\r\n t.rows[3].cells[2].innerHTML = \"0%\";\r\n xhr.onreadystatechange = function () {\r\n if ( xhr.readyState == 2 ){\r\n t.rows[3].cells[2].innerHTML = \"正在校验\";\r\n }else if (xhr.readyState == 4) {\r\n if( xhr.status == 201){\r\n t.rows[3].cells[2].innerHTML = \"上传成功\";\r\n alert(\"升级成功，设备正在重启\");\r\n }else{\r\n t.rows[3].cells[2].innerHTML = \"上传失败\";\r\n alert(\"升级失败\");\r\n }\r\n }\r\n }\r\n xhr.send(file);\r\n }\r\n </script>\r\n</body>\r\n</html>\r\n";
 
-const CHAR HTML_NotFound[] = "<html><head><title>404 Not Found</title></head><center><h1>404 Not Found</h1></center><hr><center>SmartPlug</center></body></html>";
-
+const CHAR HTML_NotFound[] = "{\"result\":\"failed\", \"msg\":\"404 Not Found\"}";
 const CHAR HTML_ResultOk[] = "{\"result\":\"success\", \"msg\":\"\"}";
 const CHAR HTML_BadRequest[] = "{\"result\":\"failed\", \"msg\":\"bad request\"}";
 const CHAR HTML_InternalServerError[] ="{\"result\":\"failed\", \"msg\":\"internal server error\"}";
@@ -625,6 +624,92 @@ UINT HTTP_GetInfo( HTTP_CTX *pstCtx )
     return OK;
 }
 
+
+UINT HTTP_GetRefresh( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
+		return FAIL;
+	}
+
+    uiRet = MCU_MarshalJsonGetRefresh(
+    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+    if ( uiRet == 0 )
+    {
+    	return HTTP_InternalServerError(pstCtx);
+    }
+    pstCtx->stResp.uiPos += uiRet;
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
+		return FAIL;
+	}
+
+    return OK;
+}
+
+
+UINT HTTP_PostKey( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if (pstCtx->stReq.uiRecvCurLen < pstCtx->stReq.uiRecvTotalLen)
+	{
+		return OK;
+	}
+
+	if ( OK != MCU_ParseKeyValue(pstCtx->stReq.pcResqBody) )
+	{
+		LOG_OUT( LOGOUT_ERROR, "parse key value failed");
+		return HTTP_InternalServerError( pstCtx );
+	}
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
+			return FAIL;
+		}
+		uiRet = MCU_MarshalJsonGetRefresh(
+	    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+	    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+	    if ( uiRet == 0 )
+	    {
+	    	return HTTP_InternalServerError(pstCtx);
+	    }
+	    pstCtx->stResp.uiPos += uiRet;
+
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
+			return FAIL;
+		}
+	}
+	return OK;
+}
+
 UINT HTTP_GetTimerData( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
@@ -1081,13 +1166,14 @@ UINT HTTP_GetTemperature( HTTP_CTX *pstCtx )
 		return FAIL;
 	}
 
-	snprintf(szBuf, sizeof(szBuf), "{\"Temperature\": %2.1f}", TEMP_GetTemperature());
-	uiRet = HTTP_SetResponseBody(pstCtx, szBuf);
-	if ( uiRet != OK )
-	{
-		LOG_OUT( LOGOUT_ERROR, "set response body failed");
-		return FAIL;
-	}
+	uiRet = MCU_MarshalJsonTemperature(
+	    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+	    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+    if ( uiRet == 0 )
+    {
+    	return HTTP_InternalServerError(pstCtx);
+    }
+    pstCtx->stResp.uiPos += uiRet;
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
@@ -1306,9 +1392,15 @@ UINT HTTP_GetDate( HTTP_CTX *pstCtx )
 		return FAIL;
 	}
 
-    pstCtx->stResp.uiPos += PLUG_MarshalJsonDate(
+	uiRet = MCU_MarshalJsonDate(
     		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
     		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+    if ( uiRet == 0 )
+    {
+    	return HTTP_InternalServerError(pstCtx);
+    }
+
+    pstCtx->stResp.uiPos += uiRet;
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
@@ -1784,9 +1876,14 @@ UINT HTTP_GetRelayStatus( HTTP_CTX *pstCtx )
 		return FAIL;
 	}
 
-    pstCtx->stResp.uiPos += PLUG_MarshalJsonRelayStatus(
-    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
-    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+	uiRet = PLUG_MarshalJsonRelayStatus(
+				pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+				pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+    if ( uiRet == 0 )
+    {
+    	return HTTP_InternalServerError(pstCtx);
+    }
+    pstCtx->stResp.uiPos += uiRet;
 
 	uiRet = HTTP_SendOnce(pstCtx);
 	if ( uiRet != OK )
@@ -1811,7 +1908,7 @@ UINT HTTP_PostRelayStatus( HTTP_CTX *pstCtx )
 		return OK;
 	}
 
-	if ( OK != PLUG_ParseRelayStatus(pstCtx->stReq.pcResqBody) )
+	if ( OK != MCU_ParseRelayStatus(pstCtx->stReq.pcResqBody) )
 	{
 		LOG_OUT( LOGOUT_ERROR, "parse relay status failed");
 		return HTTP_InternalServerError( pstCtx );
@@ -1828,9 +1925,14 @@ UINT HTTP_PostRelayStatus( HTTP_CTX *pstCtx )
 			return FAIL;
 		}
 
-	    pstCtx->stResp.uiPos += PLUG_MarshalJsonRelayStatus(
+		uiRet = PLUG_MarshalJsonRelayStatus(
 	    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
 	    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+	    if ( uiRet == 0 )
+	    {
+	    	return HTTP_InternalServerError(pstCtx);
+	    }
+	    pstCtx->stResp.uiPos += uiRet;
 
 		uiRet = HTTP_SendOnce(pstCtx);
 		if ( uiRet != OK )
