@@ -255,7 +255,7 @@ static int Bigiot_StartEventTask( BIGIOT_Ctx_S *pstCtx )
 {
 	if ( pdPASS != xTaskCreate( Bigiot_EventHanderTask,
 								"Bigiot_EventHanderTask",
-								256,
+								512,
 								(void*)pstCtx,
 								uxTaskPriorityGet(NULL),
 								&(pstCtx->xEventHandle)))

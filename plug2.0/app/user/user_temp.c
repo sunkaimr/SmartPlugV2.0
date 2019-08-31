@@ -150,6 +150,8 @@ const float ResistorTab[] =
 	 2.06,  2.00,  1.93,  1.87,  1.82,  1.76,  1.71,  1.67,  1.62,  1.58
 };
 
+extern float MCU_GetTemperature( VOID );
+
 /*
 VOID TEMP_TempCallBack( VOID )
 {
@@ -173,6 +175,7 @@ VOID TEMP_TempCallBack( VOID )
 
 float TEMP_GetTemperature( VOID )
 {
+#if 0
 	STATIC UINT uiLastAdc = 0;
 	UINT uiCurAdc = 0;
 	float fResistor = 0;
@@ -210,6 +213,11 @@ float TEMP_GetTemperature( VOID )
 	}
 	//LOG_OUT(LOGOUT_INFO, "fTemp:%f, fResistor:%f", fTemp, fResistor);
 	return fTemp;
+#else
+
+	return MCU_GetTemperature();
+
+#endif
 }
 
 

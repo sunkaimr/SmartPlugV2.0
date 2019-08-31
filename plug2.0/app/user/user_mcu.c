@@ -27,6 +27,7 @@ retry:
 	{
 		if( 0 != strstr((char*)Uart_RecvBuf, "GetMenu() "))
 		{
+			LOG_OUT(LOGOUT_DEBUG, "Uart_RecvBuf:%s", Uart_RecvBuf);
 			pcPos = strstr((char*)Uart_RecvBuf, "\r\n");
 			if ( pcPos != NULL )
 			{
@@ -68,6 +69,7 @@ retry:
 	{
 		if( 0 != strstr((char*)Uart_RecvBuf, "GetRelayStatus() "))
 		{
+			LOG_OUT(LOGOUT_DEBUG, "Uart_RecvBuf:%s", Uart_RecvBuf);
 			if ( 0 != strstr((char*)Uart_RecvBuf+17, "true" ))
 			{
 				return TRUE;
@@ -141,12 +143,12 @@ UINT MCU_ParseRelayStatus( CHAR* pDataStr )
 		if ( strcmp(pcTmp, "on") == 0 )
 		{
 			printf("SetRelayOn()\r\n");
-			LOG_OUT(LOGOUT_INFO, "SetRelayOn");
+			LOG_OUT(LOGOUT_DEBUG, "SetRelayOn()");
 		}
 		else if ( strcmp(pcTmp, "off") == 0 )
 		{
 			printf("SetRelayOff()\r\n");
-			LOG_OUT(LOGOUT_INFO, "SetRelayOff");
+			LOG_OUT(LOGOUT_DEBUG, "SetRelayOff()");
 		}
 		else
 		{
@@ -185,6 +187,7 @@ retry:
 	{
 		if( 0 != strstr((char*)Uart_RecvBuf, "GetDate() "))
 		{
+			LOG_OUT(LOGOUT_DEBUG, "Uart_RecvBuf:%s", Uart_RecvBuf);
 			pcPos = strstr((char*)Uart_RecvBuf, "\r\n");
 			if ( pcPos != NULL )
 			{
@@ -201,6 +204,7 @@ retry:
 		{
 			if ( uiRetry++ > 3 )
 			{
+				LOG_OUT(LOGOUT_DEBUG, "GetDate(), wait for mcu timeout");
 				return 0;
 			}
 			goto retry;
@@ -211,42 +215,64 @@ retry:
 	return strlen(pcBuf);
 }
 
-UINT MCU_MarshalJsonTemperature( CHAR* pcBuf, UINT uiBufLen)
+
+float MCU_GetTemperature( VOID )
 {
 	UINT8 uiWaitCount = 0;
 	UINT8 uiRetry = 0;
 	CHAR* pcPos = NULL;
+	float fTemp = 999;
 
 retry:
 
 	uiWaitCount = 0;
-	memset((char*)Uart_RecvBuf, 0, sizeof((char*)Uart_RecvBuf));
 	printf("GetTemperature()\r\n");
+	memset((char*)Uart_RecvBuf, 0, sizeof((char*)Uart_RecvBuf));
 	for ( ;; )
 	{
 		if( 0 != strstr((char*)Uart_RecvBuf, "GetTemperature() "))
 		{
+			LOG_OUT(LOGOUT_DEBUG, "Uart_RecvBuf:%s", Uart_RecvBuf);
 			pcPos = strstr((char*)Uart_RecvBuf, "\r\n");
 			if ( pcPos != NULL )
 			{
 				pcPos[0] = 0;
 			}
+			else
+			{
+				return fTemp;
+			}
 
-			snprintf(pcBuf, uiBufLen, "{\"Temperature\": %s}", Uart_RecvBuf+17);
-			LOG_OUT(LOGOUT_INFO, "GetTemperature");
-			break;
+			sscanf(Uart_RecvBuf+17, "%f", &fTemp);
+			return fTemp;
 		}
 		/* 等待mcu回应后拼装 */
 		else if ( uiWaitCount++ > 10 )
 		{
 			if ( uiRetry++ > 3 )
 			{
-				return 0;
+				LOG_OUT(LOGOUT_ERROR, "GetTemperature(), wait for mcu timeout");
+				return fTemp;
 			}
 			goto retry;
 		}
 		vTaskDelay( 10 / portTICK_RATE_MS );
 	}
+
+	return fTemp;
+}
+
+
+UINT MCU_MarshalJsonTemperature( CHAR* pcBuf, UINT uiBufLen)
+{
+	float fTemp = 0;
+
+	fTemp = MCU_GetTemperature();
+	if ( fTemp >= 999 ){
+		return 0;
+	}
+
+	snprintf(pcBuf, uiBufLen, "{\"Temperature\": %2.1f}", fTemp);
 
 	return strlen(pcBuf);
 }
