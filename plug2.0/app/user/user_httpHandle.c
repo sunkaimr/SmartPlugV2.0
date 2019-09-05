@@ -53,38 +53,16 @@ HTTP_FILE_S* HTTP_FileOpen( CHAR *pcFileName )
 	pstFile->uiLength	= pstHtmlData->uiLength;
 	pstFile->uiPos		= 0;
 	pstFile->eType		= pstHtmlData->eType;
-
+	pstFile->eEncode	= pstHtmlData->eEncode;
 	return pstFile;
 }
 
 UINT HTTP_FileClose( HTTP_FILE_S** ppstFile )
 {
-	CHAR szName[HTTP_FILE_NAME_MAX_LEN];
-	HTTP_FILE_LIST_S* pstHtmlData = NULL;
-
 	if ( NULL == ppstFile || NULL == *ppstFile)
 	{
 		LOG_OUT(LOGOUT_ERROR, "ppstFile:%p, *ppstFile:%p", ppstFile, *ppstFile);
 		return RESULT_Fail;
-	}
-
-	if ( (*ppstFile)->uiPos >= (*ppstFile)->uiLength )
-	{
-		pstHtmlData = HTTP_GetFileList((*ppstFile)->pcName);
-		if ( NULL == pstHtmlData )
-		{
-			LOG_OUT(LOGOUT_ERROR, "%s not found", (*ppstFile)->pcName);
-			return RESULT_Fail;
-		}
-
-		pstHtmlData->bIsUpload = TRUE;
-		if ( HTTP_SaveFileListToFlash() != OK )
-		{
-			LOG_OUT(LOGOUT_ERROR, "save file list failed, fileName:%s.", (*ppstFile)->pcName);
-			return RESULT_Fail;
-		}
-		sprintf(szName, "/%s", pstHtmlData->szName);
-		HTTP_RouterRegiste(HTTP_METHOD_GET, szName, HTTP_GetHtml, szName);
 	}
 
 	memset(*ppstFile, 0, sizeof(HTTP_FILE_S));
@@ -132,6 +110,8 @@ UINT HTTP_ReadFile( HTTP_FILE_S* pstFile, CHAR *pcBuf, UINT uiLen )
 UINT HTTP_WriteFile( HTTP_FILE_S* pstFile, CHAR *pcBuf, UINT uiLen )
 {
 	UINT uiRet = 0;
+	CHAR szName[HTTP_FILE_NAME_MAX_LEN];
+	HTTP_FILE_LIST_S* pstHtmlData = NULL;
 
 	if ( NULL == pstFile )
 	{
@@ -158,6 +138,36 @@ UINT HTTP_WriteFile( HTTP_FILE_S* pstFile, CHAR *pcBuf, UINT uiLen )
 	//Ð´ÈëÍê³É
 	if ( pstFile->uiPos >= pstFile->uiLength )
 	{
+		pstHtmlData = HTTP_GetFileList( pstFile->pcName );
+		if ( NULL == pstHtmlData )
+		{
+			LOG_OUT(LOGOUT_ERROR, "%s not found", pstFile->pcName);
+			return RESULT_Fail;
+		}
+
+		pstHtmlData->bIsUpload = TRUE;
+
+		if ( pstHtmlData->eEncode != HTTP_ENCODING_Buff )
+		{
+			pstHtmlData->szName[strlen(pstHtmlData->szName)-strlen(aGzipSuffix[pstHtmlData->eEncode])] = '\0';
+		}
+
+		if ( HTTP_SaveFileListToFlash() != OK )
+		{
+			LOG_OUT(LOGOUT_ERROR, "save file list failed, fileName:%s.", pstFile->pcName);
+			return RESULT_Fail;
+		}
+		sprintf(szName, "/%s", pstHtmlData->szName);
+		uiRet = HTTP_RouterRegiste(HTTP_METHOD_GET, szName, HTTP_GetHtml, szName);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "Route registe:%s failed", szName);
+		}
+		else
+		{
+			LOG_OUT( LOGOUT_INFO, "Route registe:%s", szName);
+		}
+
 		return RESULT_Finish;
 	}
 
@@ -196,6 +206,12 @@ UINT HTTP_SendFile( HTTP_CTX *pstCtx, HTTP_FILE_S* pstFile )
 			pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_MaxAge_1y;
 
 			HTTP_SetHeader( pstCtx );
+
+			if ( pstFile->eEncode != HTTP_ENCODING_Buff )
+			{
+				HTTP_SetCustomHeader(pstCtx, "Content-encoding", szHttpEncodingStr[pstFile->eEncode]);
+			}
+
 			HTTP_SetBodyLen(pstCtx, pstFile->uiLength);
 		}
 
@@ -339,6 +355,7 @@ VOID HTTP_FileListInit( VOID )
 		astHttpHtmlData[i].uiAddr		= 0;
 		astHttpHtmlData[i].bIsUpload	= FALSE;
 		astHttpHtmlData[i].eType 		= HTTP_CONTENT_TYPE_Stream;
+		astHttpHtmlData[i].eEncode 		= HTTP_ENCODING_Buff;
 		memset( astHttpHtmlData[i].szName, 0, HTTP_FILE_NAME_MAX_LEN);
 	}
 }
@@ -386,14 +403,23 @@ VOID HTTP_FileListRegiste( VOID )
 {
 	UINT8 i = 0;
 	CHAR szUrl[HTTP_FILE_NAME_MAX_LEN]={};
+	UINT uiRet = 0;
 
 	for ( i = 0; i < HTTP_FILE_NUM_MAX; i ++)
 	{
 		if ( astHttpHtmlData[i].bIsUpload == TRUE && strlen(astHttpHtmlData[i].szName) != 0 )
 		{
 			snprintf(szUrl, HTTP_FILE_NAME_MAX_LEN, "/%s", astHttpHtmlData[i].szName);
-			HTTP_RouterRegiste(HTTP_METHOD_GET, szUrl, HTTP_GetHtml, "HTTP_GetHtml");
-			LOG_OUT( LOGOUT_INFO, "Route registe:%s.", szUrl);
+			uiRet = HTTP_RouterRegiste(HTTP_METHOD_GET, szUrl, HTTP_GetHtml, "HTTP_GetHtml");
+			if ( uiRet != OK )
+			{
+				LOG_OUT( LOGOUT_ERROR, "Route registe:%s failed", szUrl);
+			}
+			else
+			{
+				LOG_OUT( LOGOUT_INFO, "Route registe:%s", szUrl);
+			}
+
 		}
 	}
 }
@@ -1294,6 +1320,8 @@ UINT HTTP_PutHtml( HTTP_CTX *pstCtx )
 	uiRet = HTTP_WriteFile( pstFile, pstCtx->stReq.pcResqBody, pstCtx->stReq.uiRecvCurLen);
 	if ( uiRet == RESULT_Fail )
 	{
+		HTTP_FileClose( &pstFile );
+
 		LOG_OUT(LOGOUT_ERROR, "wtite file failed, %s", &pstCtx->stReq.szURL[1]);
 		return HTTP_InternalServerError(pstCtx);
 

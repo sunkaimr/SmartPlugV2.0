@@ -78,6 +78,13 @@ const CHAR szHttpContentTypeStr[][25] =
 	""
 };
 
+const CHAR szHttpEncodingStr[][10] =
+{
+	"gzip",
+
+	""
+};
+
 const CHAR szHttpCacheControlStr[][20] =
 {
 	"no-cache",
@@ -89,6 +96,8 @@ const CHAR szHttpCacheControlStr[][20] =
 
 	""
 };
+
+const CHAR aGzipSuffix[HTTP_ENCODING_Buff+1][5] = {".gz",""};
 
 UINT HTTP_RequestInit( HTTP_CTX *pstCtx );
 
@@ -267,20 +276,20 @@ VOID HTTP_RouterMapInit( VOID )
 	}
 }
 
-VOID HTTP_RouterRegiste( UINT uiMethod, CHAR* pcUrl, VOID* pfFunc, CHAR* pcFunStr)
+UINT HTTP_RouterRegiste( UINT uiMethod, CHAR* pcUrl, VOID* pfFunc, CHAR* pcFunStr)
 {
 	UINT uiLoop = 0;
 
 	if ( uiMethod >= HTTP_METHOD_BUFF )
 	{
 		LOG_OUT(LOGOUT_ERROR, "HTTP_RouterRegiste uiMethod:%d", uiMethod);
-		return;
+		return FAIL;
 	}
 
 	if ( pcUrl == NULL ||  pfFunc == NULL )
 	{
 		LOG_OUT(LOGOUT_ERROR, "HTTP_RouterRegiste pcUrl or pfFunc is NULL, pcUrl:%d,pfFunc:%d.", pcUrl, pfFunc);
-		return;
+		return FAIL;
 	}
 
 	//判断是否注册过，若注册过进行更新
@@ -290,7 +299,7 @@ VOID HTTP_RouterRegiste( UINT uiMethod, CHAR* pcUrl, VOID* pfFunc, CHAR* pcFunSt
 			 strcmp(stHttpRouterMap[uiLoop].szURL, pcUrl ) == 0 )
 		{
 			stHttpRouterMap[uiLoop].pfHttpHandler = pfFunc;
-			return;
+			return OK;
 		}
 	}
 
@@ -307,8 +316,11 @@ VOID HTTP_RouterRegiste( UINT uiMethod, CHAR* pcUrl, VOID* pfFunc, CHAR* pcFunSt
 
 	if ( uiLoop >= HTTP_ROUTER_MAP_MAX )
 	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_RouterRegiste stHttpRouterMap is full.");
+		LOG_OUT(LOGOUT_ERROR, "HTTP_RouterRegiste stHttpRouterMap is full, num:%d", HTTP_ROUTER_MAP_MAX);
+		return FAIL;
 	}
+
+	return OK;
 }
 
 
@@ -529,7 +541,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 	}
 	if ( uiLoop >= HTTP_ROUTER_MAP_MAX )
 	{
-		LOG_OUT(LOGOUT_INFO, "%s %s",
+		LOG_OUT(LOGOUT_INFO, "[Request] Method:%s URL:%s",
 				szHttpMethodStr[pstCtx->stReq.eMethod],
 				pstCtx->stReq.szURL);
 
