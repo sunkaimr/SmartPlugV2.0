@@ -103,6 +103,11 @@ typedef enum {
 	HTTP_CACHE_CTL_TYPE_Buff
 }HTTP_CACHE_CTL_TYPE_E;
 
+typedef enum {
+	HTTP_ENCODING_Gzip = 0,
+
+	HTTP_ENCODING_Buff
+}HTTP_ENCODING_E;
 
 typedef struct tagHttpResponseHead
 {
@@ -173,6 +178,7 @@ typedef struct tagHttpFile
 	UINT				uiPos;
 	HTTP_FILE_STATUS_E	eStatus;
 	HTTP_CONTENT_TYPE_E	eType;
+	HTTP_ENCODING_E 	eEncode;
 }HTTP_FILE_S;
 
 typedef UINT (*ROUTER_FUN)(HTTP_CTX *pstCtx);
@@ -192,13 +198,16 @@ typedef struct tagHttpFileList
 	UINT32				uiAddr;							//数据在FLASH中的存放地址
 	UINT32				uiLength;						//数据长度
 	HTTP_CONTENT_TYPE_E eType;							//数据类型
+	HTTP_ENCODING_E 	eEncode;						//压缩方式
 }HTTP_FILE_LIST_S;
 
 
 extern const CHAR szHttpMethodStr[][10];
 extern const CHAR szHttpUserAgentStringmap[][10];
 extern const CHAR szHttpContentTypeStr[][25];
+extern const CHAR szHttpEncodingStr[][10];
 extern const CHAR szHttpCodeMap[][5];
+extern const CHAR aGzipSuffix[][5];
 
 VOID HTTP_RouterInit( VOID );
 //extern VOID HTTP_RouterHandle( HTTP_CTX *pstCtx );

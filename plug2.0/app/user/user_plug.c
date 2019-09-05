@@ -883,6 +883,7 @@ UINT PLUG_MarshalJsonHtmlData( CHAR* pcBuf, UINT uiBufLen )
 		cJSON_AddNumberToObject( pJsonsub, 	"Addr", 	pstHtmlData->uiAddr);
 		cJSON_AddNumberToObject( pJsonsub, 	"Length", 	pstHtmlData->uiLength);
 		cJSON_AddStringToObject( pJsonsub, 	"Type", 	szHttpContentTypeStr[pstHtmlData->eType]);
+		cJSON_AddStringToObject( pJsonsub, 	"eEncode", 	szHttpEncodingStr[pstHtmlData->eEncode]);
 
 		cJSON_AddItemToArray(pJsonArry, pJsonsub);
 	}
@@ -905,7 +906,7 @@ UINT PLUG_ParseHtmlData( CHAR* pData )
 	CHAR *pcTmp = NULL;
 	UINT uiRet = 0;
 	UINT uiIndex = 0;
-	const CHAR aSuffix[HTTP_CONTENT_TYPE_Buff][10] = {".html", ".js", ".css", ".json", ".ico", ".png", ".gif",};
+	const CHAR aSuffix[HTTP_CONTENT_TYPE_Buff][10] = {".html", ".js", ".css", ".json", ".ico", ".png", ".gif"};
 
 	if ( pData == NULL )
 	{
@@ -962,6 +963,16 @@ UINT PLUG_ParseHtmlData( CHAR* pData )
 		if (uiIndex == HTTP_CONTENT_TYPE_Buff-1 )
 		{
 			pstHtml->eType = HTTP_CONTENT_TYPE_Stream;
+		}
+
+		pstHtml->eEncode = HTTP_ENCODING_Buff;
+		for (uiIndex = 0; uiIndex < HTTP_ENCODING_Buff; uiIndex++ )
+		{
+			if ( strstr(pstHtml->szName, aGzipSuffix[uiIndex]) != NULL )
+			{
+				pstHtml->eEncode = uiIndex;
+				break;
+			}
 		}
 
 		if ( uiLoop == 0 )

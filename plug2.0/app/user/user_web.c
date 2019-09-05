@@ -310,7 +310,7 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
 		iRet = HTTP_RouterHandle( pstCtx );
 		if ( iRet != OK )
 		{
-			LOG_OUT(LOGOUT_INFO, "fd:%d Router handle failed");
+			LOG_OUT(LOGOUT_INFO, "Router handle failed");
 			goto end;
 		}
 		//LOG_OUT(LOGOUT_DEBUG, "HTTP_RouterHandle");
