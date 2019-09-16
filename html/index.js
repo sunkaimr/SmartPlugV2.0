@@ -544,7 +544,7 @@ function BoolConversion( b ) {
 
 function weekConversionString( week ) {
 	if ( week == 0 ){
-		return "执行一次";
+		return "一次";
 	}
 
 	if ( week == 127 ){
@@ -601,37 +601,39 @@ function TimerClick(){
 		if (status == "success"){
 
 			$("#tabTimer").empty();
-			$("#tabTimer").html("<thead><th>编号</th><th>名称</th><th>启用</th><th>开启时间</th><th>关闭时间</th><th>关联延时</th><th>重复</th><th></th></thead><tbody><tr></tr></tbody>");
+			$("#tabTimer").html("<thead><th>编号</th><th>名称</th><th>开启时间</th><th>关闭时间</th><th>关联延时</th><th>重复</th><th></th></thead><tbody><tr></tr></tbody>");
 
 			data = eval(data);
 			var t = document.getElementById('tabTimer');
 			$.each(data, function (index, item) {
 				var r = t.insertRow(t.rows.length);
-				for( var i = 0; i < 8; i++){
+                if (item.Enable){
+                    r.style.background = "#33FFCC";
+                }
+				for( var i = 0; i < 7; i++){
 					switch (i){
 						case 0: r.insertCell(i).innerHTML=item.Num;break;
 						case 1: r.insertCell(i).innerHTML=item.Name;break;
-						case 2: r.insertCell(i).innerHTML=BoolConversion(item.Enable);break;
-						case 3: if (item.OnEnable){
+						case 2: if (item.OnEnable){
                                     r.insertCell(i).innerHTML=item.OnTime+" / Y";
                                 }else{
                                     r.insertCell(i).innerHTML=item.OnTime+" / N";
                                 }
                                 break;
-						case 4: if (item.OffEnable){
+						case 3: if (item.OffEnable){
                                     r.insertCell(i).innerHTML=item.OffTime+" / Y";
                                 }else{
                                     r.insertCell(i).innerHTML=item.OffTime+" / N";
                                 }
                                 break;
-						case 5: if (item.Cascode){
+						case 4: if (item.Cascode){
                                     r.insertCell(i).innerHTML=item.CascodeNum+" / Y";
                                 }else{
                                     r.insertCell(i).innerHTML=item.CascodeNum+" / N";
                                 }
                                 break;
-						case 6: r.insertCell(i).innerHTML=weekConversionString(item.Week);break;
-						case 7: r.insertCell(i).innerHTML="<a>修改</a>";break;
+						case 5: r.insertCell(i).innerHTML=weekConversionString(item.Week);break;
+						case 6: r.insertCell(i).innerHTML="<a>修改</a>";break;
 						default:break;
 					}
 				}
@@ -654,42 +656,44 @@ function DelayClick(){
 	$.get("delay/all",function(data, status){
 		if (status == "success"){
 			$("#tabDelay").empty();
-			$("#tabDelay").html("<thead><th>编号</th><th>名称</th><th>启用</th><th>开启间隔</th><th>关闭间隔</th><th>关联延时</th><th>重复次数</th><th></th></thead><tbody><tr></tr></tbody>");
+			$("#tabDelay").html("<thead><th>编号</th><th>名称</th><th>开启间隔</th><th>关闭间隔</th><th>关联延时</th><th>重复次数</th><th></th></thead><tbody><tr></tr></tbody>");
             DelayData = data;
 			data = eval(data);
 			var t = document.getElementById('tabDelay');
 			$.each(data, function (index, item) {
 				var r = t.insertRow(t.rows.length);
-				for( var i = 0; i < 8; i++){
+                if (item.Enable){
+                    r.style.background = "#33FFCC";
+                }
+				for( var i = 0; i < 7; i++){
 					switch (i){
 						case 0: r.insertCell(i).innerHTML=item.Num;break;
 						case 1: r.insertCell(i).innerHTML=item.Name;break;
-						case 2: r.insertCell(i).innerHTML=BoolConversion(item.Enable);break;
-						case 3: if (item.OnEnable){
+						case 2: if (item.OnEnable){
                                     r.insertCell(i).innerHTML=item.OnInterval+" / Y";
                                 }else{
                                     r.insertCell(i).innerHTML=item.OnInterval+" / N";
                                 }
                                 break;
-						case 4: if (item.OffEnable){
+						case 3: if (item.OffEnable){
                                     r.insertCell(i).innerHTML=item.OffInterval+" / Y";
                                 }else{
                                     r.insertCell(i).innerHTML=item.OffInterval+" / N";
                                 }
                                 break;
-						case 5: if (item.Cascode){
+						case 4: if (item.Cascode){
                                     r.insertCell(i).innerHTML=item.CascodeNum+" / Y";
                                 }else{
                                     r.insertCell(i).innerHTML=item.CascodeNum+" / N";
                                 }
                                 break;
-						case 6: if (item.Enable){
+						case 5: if (item.Enable){
 									r.insertCell(i).innerHTML=item.TmpCycleTimes;
 								}else{
 									r.insertCell(i).innerHTML=item.CycleTimes;
 								}
 								break;
-						case 7: r.insertCell(i).innerHTML="<a>修改</a>";break;
+						case 6: r.insertCell(i).innerHTML="<a>修改</a>";break;
 						default:break;
 					}
 				}
@@ -716,20 +720,22 @@ function InfraredClick(){
     $.get("infrared/all",function(data, status){
         if (status == "success"){
             $("#tabInfrared").empty();
-            $("#tabInfrared").html("<thead><th>编号</th><th>名称</th><th>启用</th><th>开启值</th><th>关闭值</th></thead><tbody><tr></tr></tbody>");
+            $("#tabInfrared").html("<thead><th>编号</th><th>名称</th><th>开启值</th><th>关闭值</th></thead><tbody><tr></tr></tbody>");
             InfraredData = data;
             data = eval(data);
             var t = document.getElementById('tabInfrared');
             $.each(data, function (index, item) {
                 var r = t.insertRow(t.rows.length);
-                for( var i = 0; i < 6; i++){
+                if (item.Enable){
+                    r.style.background = "#33FFCC";
+                }
+                for( var i = 0; i < 5; i++){
                     switch (i){
                         case 0: r.insertCell(i).innerHTML=item.Num;break;
                         case 1: r.insertCell(i).innerHTML=item.Name;break;
-                        case 2: r.insertCell(i).innerHTML=BoolConversion(item.Enable);break;
-                        case 3: r.insertCell(i).innerHTML=item.OnValue;break;
-                        case 4: r.insertCell(i).innerHTML=item.OffValue;break;
-                        case 5: r.insertCell(i).innerHTML="<a>修改</a>";break;
+                        case 2: r.insertCell(i).innerHTML=item.OnValue;break;
+                        case 3: r.insertCell(i).innerHTML=item.OffValue;break;
+                        case 4: r.insertCell(i).innerHTML="<a>修改</a>";break;
                         default: break;
                     }
                 }
