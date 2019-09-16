@@ -8,7 +8,7 @@
 #include "esp_common.h"
 #include "user_common.h"
 
-#define INFRA_GPIO_NUM			GPIO_Pin_14
+#define INFRA_GPIO_NUM			GPIO_Pin_5
 
 UINT32 uiInfraredValue = 0;
 
