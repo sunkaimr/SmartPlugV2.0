@@ -2254,6 +2254,7 @@ VOID PLUG_TimerHandle( VOID *pPara )
 			PLUG_JudgeTimer();
 			PLUG_JudgeDelay();
 		}
+		TEMP_TempCallBack();
 	}
 
 	INFRARED_JudgeInfrared();
