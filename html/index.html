@@ -124,6 +124,7 @@
 					<li><a id="timer">定时</a></li>
 					<li><a id="delay">延时</a></li>
 					<li><a id="infrared">红外控制</a></li>
+					<li><a id="meter">计量计费</a></li>
 					<li><a id="cloudPlatform">云平台</a></li>
 					<li><a id="set">设置</a></li>
 				</ul>
@@ -328,6 +329,80 @@
 					</div>
 			</form>
 
+			<form id="meterInfo" class="form-horizontal hidden" action="#" method="POST">
+				<div class="form-group">
+					<label class="col-sm-1 control-label">自动刷新 :</label>
+					<div class="col-sm-2 ">
+						<select id="meterRefreshSelect" class="form-control">
+							<option value=0 selected>关闭</option>
+							<option value=1>1 秒</option>
+							<option value=1>2 秒</option>
+							<option value=5>5 秒</option>
+							<option value=5>10 秒</option>
+							<option value=30>30 秒</option>
+							<option value=60>60 秒</option>
+							<option value=60>300 秒</option>
+						</select>
+					</div>
+					<span class="help-block col-sm-6">设置自动刷新时间间隔</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">电压 :</label>
+					<div class="col-sm-2 ">
+						<input id="meterVoltage" class="form-control" type="text">
+					</div>
+					<span class="help-block col-sm-5">单位：伏/V</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">电流 :</label>
+					<div class="col-sm-2 ">
+						<input id="meterCurrent" class="form-control" type="text">
+					</div>
+					<span class="help-block col-sm-5">单位：安培/A</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">功率 :</label>
+					<div class="col-sm-2 ">
+						<input id="meterPower" class="form-control" type="text">
+					</div>
+					<span class="help-block col-sm-5">单位：瓦/W</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">视在功率 :</label>
+					<div class="col-sm-2 ">
+						<input id="meterApparentPower" class="form-control" type="text">
+					</div>
+					<span class="help-block col-sm-5">单位：瓦/W</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">功率因数 :</label>
+					<div class="col-sm-2 ">
+						<input id="meterPowerFactor" class="form-control" type="text">
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">电量 :</label>
+					<div class="col-sm-2 ">
+						<input id="meterElectricity" class="form-control" type="text">
+					</div>
+					<span class="help-block col-sm-5">单位：度/W·h</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label">运行时间 :</label>
+					<div class="col-sm-2 ">
+						<input id="meterRunTime" class="form-control" type="text">
+					</div>
+					<span class="help-block col-sm-5">单位：小时/h</span>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label"></label>
+					<div class="col-sm-2">
+						<button id="meterClear" class="btn btn-primary btn-block" type="button">清零数据</button>
+					</div>
+					<span class="help-block col-sm-5">计量数据清零</span>
+				</div>
+			</form>
+
 			</div>
 		</div>
 	</div>
@@ -374,6 +449,21 @@
 			</div>
 		</div>
 	</div>
+
+		<div class="modal fade" id="meterClearModal" tabindex="1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4>提示</h4>
+					</div>
+					<div id="meterCleartBody" class="modal-body">确认将计量清零数据</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+						<button id="meterClearModalButton" type="submit" class="btn btn-primary">确定</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
 	<div class="modal fade" id="resetModal" tabindex="1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 		<div class="modal-dialog">

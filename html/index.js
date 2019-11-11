@@ -2,15 +2,18 @@
 var LocalTime = 0;
 var relaystatus = false;
 var SysData;
+var MeterData;
 var DelayData;
 var InfraredData;
 var DelayRefreshTime="";
-
+var meterRefreshTimer;
+var webSet;
+var ModelTab=""
 
 $(document).ready(function () {
 
-    TimerClick();
-	getDate();
+    getWebSet();
+    getDate();
 	getDevName();
     GetTemperaturer();
 	refreshRelay();
@@ -22,6 +25,7 @@ $(document).ready(function () {
     $("#temperature").click(GetTemperaturer);
 	$("#delay").click(DelayClick);
     $("#infrared").click(InfraredClick);
+    $("#meter").click(MeterClick);
     $("#cloudPlatform").click(CloudPlatformClick);
 	$("#set").click(SetClick);
 	$("#setCommit").click(setCommitClick);
@@ -30,6 +34,7 @@ $(document).ready(function () {
 	$("#scanWifi").click(scanWifiClick);
 	$("#upload").click(uploadClick);
 	$("#reboot").click(rebootClick);
+    $("#meterClear").click(meterClearClick);
 	$("#reset").click(resetClick);
 	$("#modeSelect").change(modeChange);
     $("#PlatformSelect").change(PlatformSelectChange);
@@ -37,6 +42,8 @@ $(document).ready(function () {
 	$("#information").click(getInfomation);
 	$("#rebootModalButton").click(reboot);
 	$("#resetModalButton").click(reset);
+    $("#meterClearModalButton").click(meterClear);
+    $("#meterRefreshSelect").change(meterRefreshChange);
 
 	$("#content").click(function () {
 		$("#navBar").collapse('hide');
@@ -437,6 +444,63 @@ function getDevName(){
 	});
 }
 
+function getWebSet(){
+    $.get("/webset",function(data, status){
+        if (status == "success"){
+            webSet = data
+			switch (webSet.ModelTab) {
+				case "timer":
+                    TimerClick();
+					break;
+                case "delay":
+                    DelayClick();
+                    break;
+                case "infrared":
+                    InfraredClick();
+                    break;
+                case "meter":
+                    MeterClick();
+                    break;
+                case "cloudplatform":
+                    CloudPlatformClick();
+                    break;
+                case "sysset":
+                    SetClick();
+                    break;
+				default:
+                    TimerClick();
+					break;
+			}
+        }else{
+            TimerClick();
+            alert("Data: " + data + "\nStatus: " + status);
+        }
+    });
+}
+
+function setWebSet(){
+    var data = {};
+    data.ModelTab = ModelTab;
+    data.MeterRefresh = $("#meterRefreshSelect").val().toString();
+    if ( data.MeterRefresh == webSet.MeterRefresh && data.ModelTab == webSet.ModelTab ){
+        return;
+    }
+
+    $.ajax({
+        type: "POST",
+        url: "/webset",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(data),
+        success: function (data) {
+            webSet = data
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+
+        }
+    });
+}
+
 function getInfomation(){
 	$.get("/info",function(data, status){
 		if (status == "success"){
@@ -588,15 +652,18 @@ function stringConversionWeek() {
 }
 
 function TimerClick(){
+    clearInterval(meterRefreshTimer);
 
-	$("#delay, #infrared, #cloudPlatform, #set").removeClass("lead");
+	$("#delay, #infrared, #cloudPlatform, #set, #meter").removeClass("lead");
     $("#timer").addClass("lead");
 
-	$("#tabDelay, #tabInfrared, #formSet, #formCloudPlatform, #delayTaskClass").addClass("hidden");
+	$("#tabDelay, #tabInfrared, #formSet, #formCloudPlatform, #delayTaskClass, #meterInfo").addClass("hidden");
 
 	$("#tabTimer").removeClass("hidden");
 	$("#tabTimer").html("<p>正在加载数据...</p>");
 
+    ModelTab = "timer"
+    setWebSet();
 	$.get("timer/all",function(data, status){
 		if (status == "success"){
 
@@ -646,13 +713,16 @@ function TimerClick(){
 }
 
 function DelayClick(){
-	$("#timer, #infrared, #cloudPlatform, #set").removeClass("lead");
+    clearInterval(meterRefreshTimer);
+
+    $("#timer, #infrared, #cloudPlatform, #set, #meter").removeClass("lead");
 	$("#delay").addClass("lead");
 
-	$("#formSet, #tabTimer, #formCloudPlatform, #tabInfrared").addClass("hidden");
+	$("#formSet, #tabTimer, #formCloudPlatform, #tabInfrared, #meterInfo").addClass("hidden");
 	$("#tabDelay").removeClass("hidden");
 	$("#tabDelay").html("<p><centor>正在加载数据...</centor></p>");
-
+    ModelTab = "delay"
+    setWebSet();
 	$.get("delay/all",function(data, status){
 		if (status == "success"){
 			$("#tabDelay").empty();
@@ -708,15 +778,17 @@ function DelayClick(){
 
 
 function InfraredClick(){
+    clearInterval(meterRefreshTimer);
 
-    $("#timer, #delay, #cloudPlatform, #set").removeClass("lead");
+    $("#timer, #delay, #cloudPlatform, #set, #meter").removeClass("lead");
     $("#infrared").addClass("lead");
 
-    $("#formSet, #tabDelay, #formCloudPlatform, #tabTimer").addClass("hidden");
+    $("#formSet, #tabDelay, #formCloudPlatform, #tabTimer, #meterInfo").addClass("hidden");
     $("#tabInfrared").removeClass("hidden");
 
     $("#tabInfrared").html("<p><centor>正在加载数据...</centor></p>");
-
+    ModelTab = "infrared"
+    setWebSet();
     $.get("infrared/all",function(data, status){
         if (status == "success"){
             $("#tabInfrared").empty();
@@ -750,13 +822,15 @@ function InfraredClick(){
 
 
 function CloudPlatformClick(){
+    clearInterval(meterRefreshTimer);
 
-    $("#timer, #delay, #infrared, #set").removeClass("lead");
+    $("#timer, #delay, #infrared, #set, #meter").removeClass("lead");
     $("#cloudPlatform").addClass("lead");
 
-    $("#formSet, #tabDelay, #tabTimer, #tabInfrared").addClass("hidden");
+    $("#formSet, #tabDelay, #tabTimer, #tabInfrared, #meterInfo").addClass("hidden");
 	$("#formCloudPlatform").removeClass("hidden");
-
+    ModelTab = "cloudplatform"
+    setWebSet();
     $.get("/cloudplatform",function(data, status){
         if (status == "success"){
             $("#PlatformSelect").val(data.CloudPlatform);
@@ -791,12 +865,15 @@ function CloudPlatformClick(){
 
 
 function SetClick(){
-    $("#timer, #delay, #infrared, #cloudPlatform").removeClass("lead");
+    clearInterval(meterRefreshTimer);
+
+    $("#timer, #delay, #infrared, #cloudPlatform, #meter").removeClass("lead");
     $("#set").addClass("lead");
 
-	$("#tabTimer, #tabDelay, #tabInfrared, #delayTaskClass, #formCloudPlatform").addClass("hidden");
+	$("#tabTimer, #tabDelay, #tabInfrared, #delayTaskClass, #formCloudPlatform, #meterInfo").addClass("hidden");
 	$("#formSet").removeClass("hidden");
-
+    ModelTab = "sysset"
+    setWebSet();
 
 	$.get("/system",function(data, status){
 		if (status == "success"){
@@ -820,12 +897,47 @@ function SetClick(){
 	});
 }
 
+function MeterClick(){
+    $("#timer, #delay, #infrared, #cloudPlatform, #set").removeClass("lead");
+    $("#meter").addClass("lead");
+
+    $("#tabTimer, #tabDelay, #tabInfrared, #delayTaskClass, #formCloudPlatform, #formSet").addClass("hidden");
+    $("#meterInfo").removeClass("hidden");
+
+    $("#meterRefreshSelect").val(parseInt(webSet.MeterRefresh))
+    ModelTab = "meter"
+    meterRefreshChange();
+    getMeterInfo();
+}
+
+function getMeterInfo(){
+    $.get("/meter",function(data, status){
+        if (status == "success"){
+            MeterData = data;
+            $("#meterVoltage").val(data.Voltage)
+            $("#meterCurrent").val(data.Current)
+            $("#meterPower").val(data.Power)
+            $("#meterApparentPower").val(data.ApparentPower)
+            $("#meterPowerFactor").val(data.PowerFactor)
+            $("#meterElectricity").val(data.Electricity)
+            $("#meterRunTime").val(data.RunTime)
+        }else{
+            alert("Data: " + data + "\nStatus: " + status);
+        }
+    });
+}
+
+
 function chooseBinClick(){
 	$('#file').click();
 }
 
 function rebootClick(){
 	$('#rebootModal').modal("show")
+}
+
+function meterClearClick(){
+    $('#meterClearModal').modal("show")
 }
 
 function reboot(){
@@ -858,6 +970,35 @@ function reset(){
 		}
 	});
 	$('#resetModal').modal("toggle")
+}
+
+function meterClear(){
+    $.ajax({
+        type: "POST",
+        url: "/meter",
+        contentType: "application/json",
+        dataType: "json",
+        data: '{"Electricity":"0","RunTime":"0"}',
+        success: function (data) {
+            MeterData = data;
+            $("#meterVoltage").val(data.Voltage)
+            $("#meterCurrent").val(data.Current)
+            $("#meterPower").val(data.Power)
+            $("#meterApparentPower").val(data.ApparentPower)
+            $("#meterPowerFactor").val(data.PowerFactor)
+            $("#meterElectricity").val(data.Electricity)
+            $("#meterRunTime").val(data.RunTime)
+        }
+    });
+    $('#meterClearModal').modal("toggle")
+}
+
+function meterRefreshChange(){
+    clearInterval(meterRefreshTimer);
+    if( $("#meterRefreshSelect").val() != 0 ){
+        meterRefreshTimer = setInterval(getMeterInfo, $("#meterRefreshSelect").val()*1000);
+	}
+    setWebSet();
 }
 
 function uploadClick() {
