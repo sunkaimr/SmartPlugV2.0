@@ -823,7 +823,6 @@ succ:
 		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
-
 	return OK;
 }
 
@@ -908,7 +907,6 @@ succ:
 		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
-
 	return OK;
 }
 
@@ -1030,6 +1028,7 @@ succ:
 UINT HTTP_GetSystemData( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
+
 	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
 	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
 	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
@@ -1053,7 +1052,6 @@ UINT HTTP_GetSystemData( HTTP_CTX *pstCtx )
 		LOG_OUT( LOGOUT_ERROR, "send once failed");
 		return FAIL;
 	}
-
 	return OK;
 }
 
@@ -1061,6 +1059,7 @@ UINT HTTP_GetSystemData( HTTP_CTX *pstCtx )
 UINT HTTP_GetCloudPlatformData( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
+
 	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
 	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
 	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
@@ -1535,6 +1534,79 @@ UINT HTTP_PostSystemData( HTTP_CTX *pstCtx )
 	return OK;
 }
 
+UINT HTTP_GetWebSet( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
+		return FAIL;
+	}
+
+    pstCtx->stResp.uiPos += PLUG_MarshalJsonWebSet(
+    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
+		return FAIL;
+	}
+
+	return OK;
+}
+
+UINT HTTP_PostWebSet( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if (pstCtx->stReq.uiRecvCurLen < pstCtx->stReq.uiRecvTotalLen)
+	{
+		return OK;
+	}
+
+	if ( OK != PLUG_ParseWebSetData(pstCtx->stReq.pcResqBody) )
+	{
+		LOG_OUT( LOGOUT_ERROR, "parse webset data failed");
+		return HTTP_InternalServerError( pstCtx );
+	}
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+		HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
+			return FAIL;
+		}
+
+	    pstCtx->stResp.uiPos += PLUG_MarshalJsonWebSet(
+	    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+	    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
+			return FAIL;
+		}
+	}
+	return OK;
+}
 
 UINT HTTP_PostCloudPlatformData( HTTP_CTX *pstCtx )
 {
@@ -1874,3 +1946,75 @@ UINT HTTP_GetUploadHtml( HTTP_CTX *pstCtx )
 {
 	return HTTP_SendMultiple(pstCtx, HTML_UploadHtml);
 }
+
+UINT HTTP_GetMeter( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+	PLUG_WEBSET_S stWebSet = {"meter", ""};
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+	uiRet = HTTP_SetHeader( pstCtx );
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "set header failed");
+		return FAIL;
+	}
+
+    pstCtx->stResp.uiPos += METER_MarshalJsonMeter(
+    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+	uiRet = HTTP_SendOnce(pstCtx);
+	if ( uiRet != OK )
+	{
+		LOG_OUT( LOGOUT_ERROR, "send once failed");
+		return FAIL;
+	}
+	PLUG_SetWebSetData(&stWebSet);
+    return OK;
+}
+
+UINT HTTP_PostMeter( HTTP_CTX *pstCtx )
+{
+	UINT uiRet = 0;
+
+	pstCtx->stResp.eHttpCode 	 = HTTP_CODE_Ok;
+	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
+	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
+
+	if ( OK != METER_ParseMeterData(pstCtx->stReq.pcResqBody) )
+	{
+		LOG_OUT( LOGOUT_ERROR, "parse meter data failed");
+		return HTTP_InternalServerError( pstCtx );
+	}
+
+	if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+	{
+		HTTP_Malloc(pstCtx, HTTP_BUF_1K);
+
+		uiRet = HTTP_SetHeader( pstCtx );
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "set header failed");
+			return FAIL;
+		}
+
+	    pstCtx->stResp.uiPos += METER_MarshalJsonMeter(
+	    		pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+	    		pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos );
+
+		uiRet = HTTP_SendOnce(pstCtx);
+		if ( uiRet != OK )
+		{
+			LOG_OUT( LOGOUT_ERROR, "send once failed");
+			return FAIL;
+		}
+	}
+	return OK;
+}
+

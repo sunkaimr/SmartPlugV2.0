@@ -69,7 +69,9 @@ UINT HTTP_PostRelayStatus( HTTP_CTX *pstCtx );
 UINT WIFI_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen);
 UINT WIFI_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen);
 UINT HTTP_GetUploadHtml( HTTP_CTX *pstCtx );
-
-
+UINT HTTP_GetMeter( HTTP_CTX *pstCtx );
+UINT HTTP_PostMeter( HTTP_CTX *pstCtx );
+UINT HTTP_PostWebSet( HTTP_CTX *pstCtx );
+UINT HTTP_GetWebSet( HTTP_CTX *pstCtx );
 
 #endif /* __USER_HTTP_HANDLE_H__ */

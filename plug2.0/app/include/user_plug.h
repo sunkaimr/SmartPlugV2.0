@@ -28,6 +28,7 @@
 #define PLUG_TIMER_ALL    		(PLUG_TIMER_MAX + 1)
 #define PLUG_DELAY_ALL    		(PLUG_DELAY_MAX + 1)
 
+#define PLUG_WEBSET_LEN 		32
 
 #define PLUG_NAME  	"SmartPlug"
 
@@ -117,6 +118,13 @@ typedef struct tagPLUG_SYSSET							/*  系统模块    */
 	CHAR    szWifiPasswd[PLUG_WIFI_PASSWD_LEN+1];		/* wifi密码 */
 
 }PLUG_SYSSET_S;
+
+typedef struct tagPLUG_WebSet							/*  web的相关设置    */
+{
+	CHAR    szModelTab[PLUG_WEBSET_LEN+1];				/* tab标签 */
+	CHAR    szMeterRefresh[PLUG_WEBSET_LEN+1];		/* meter刷新间隔 */
+
+}PLUG_WEBSET_S;
 
 
 typedef enum
@@ -243,7 +251,7 @@ UINT PLUG_MarshalJsonSystemSet( CHAR* pcBuf, UINT uiBufLen );
 UINT PLUG_MarshalJsonHtmlData( CHAR* pcBuf, UINT uiBufLen );
 UINT PLUG_MarshalJsonRelayStatus( CHAR* pcBuf, UINT uiBufLen );
 UINT PLUG_MarshalJsonDate( CHAR* pcBuf, UINT uiBufLen );
-
+UINT PLUG_MarshalJsonWebSet( CHAR* pcBuf, UINT uiBufLen );
 
 INT32 PLUG_GetTimeFromInternet();
 VOID PLUG_GetDate(PLUG_DATE_S * pstDate );
@@ -252,6 +260,7 @@ VOID PLUG_SetDate(PLUG_DATE_S * pstDate );
 UINT PLUG_ParseDate( CHAR* pDateStr);
 UINT PLUG_ParseTimerData( CHAR* pData );
 UINT PLUG_ParseRelayStatus( CHAR* pDataStr);
+UINT PLUG_ParseWebSetData( CHAR* pData );
 
 VOID PLUG_StartJudgeTimeHanderTimer( VOID );
 

@@ -119,6 +119,7 @@ VOID UPGRADE_SetUpgradeReboot()
 
 	LOG_OUT(LOGOUT_INFO, "system will upgrade reboot with 0x%X", uiAddr);
 	system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
+	METER_RestartHandle();
 	system_upgrade_reboot();
 }
 
@@ -143,6 +144,7 @@ VOID UPGRADE_StartUpgradeRebootTimer()
 
 VOID UPGRADE_SetReboot()
 {
+	METER_RestartHandle();
 	system_restart();
 }
 

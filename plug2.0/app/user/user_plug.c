@@ -21,9 +21,37 @@ PLUG_DELAY_S 	g_astPLUG_Delay[PLUG_DELAY_MAX];
 PLUG_SYSSET_S 	g_stPLUG_SystemSet;
 PLUG_PLATFORM_S g_stPLUG_PlatForm;
 
+PLUG_WEBSET_S g_stWebSet = {"timer", "0"};
+
 /* 保存时间同步状态 0:未同步，1:已网同步络时间 2:已通过手工同步  */
 UINT g_PLUG_TimeSyncFlag = TIME_SYNC_NONE;
 UINT32 g_uiRunTime = 0;
+
+VOID PLUG_SetWebSetData( PLUG_WEBSET_S *pstWebSe )
+{
+	if ( pstWebSe == NULL )
+	{
+		 LOG_OUT(LOGOUT_ERROR, "pstWebSe is NULL");
+		return;
+	}
+
+	if ( strlen(pstWebSe->szModelTab) != 0 )
+	{
+		strncpy(g_stWebSet.szModelTab, pstWebSe->szModelTab, PLUG_WEBSET_LEN);
+		g_stWebSet.szModelTab[PLUG_WEBSET_LEN] = 0;
+	}
+
+	if ( strlen(pstWebSe->szMeterRefresh) != 0 )
+	{
+		strncpy(g_stWebSet.szMeterRefresh, pstWebSe->szMeterRefresh, PLUG_WEBSET_LEN);
+		g_stWebSet.szMeterRefresh[PLUG_WEBSET_LEN] = 0;
+	}
+}
+
+PLUG_WEBSET_S* PLUG_GetWebSetData( VOID )
+{
+	return &g_stWebSet;
+}
 
 UINT PLUG_GetRunTime( VOID )
 {
@@ -1758,6 +1786,70 @@ succ:
 error:
 	cJSON_Delete(pJsonRoot);
 	return FAIL;
+}
+
+
+UINT PLUG_ParseWebSetData( CHAR* pData )
+{
+	cJSON *pJsonRoot = NULL;
+	cJSON *pJsonIteam = NULL;
+	UINT uiRet = 0;
+
+	if ( pData == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "pData is NULL.");
+	    return FAIL;
+	}
+
+	pJsonRoot = cJSON_Parse( pData );
+	if ( pJsonRoot == NULL )
+	{
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pData:%s.", pData);
+	    goto error;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "ModelTab");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(g_stWebSet.szModelTab, pJsonIteam->valuestring, PLUG_WEBSET_LEN);
+		g_stWebSet.szModelTab[PLUG_WEBSET_LEN] = 0;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "MeterRefresh");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(g_stWebSet.szMeterRefresh, pJsonIteam->valuestring, PLUG_WEBSET_LEN);
+		g_stWebSet.szMeterRefresh[PLUG_WEBSET_LEN] = 0;
+	}
+
+succ:
+	cJSON_Delete(pJsonRoot);
+	return OK;
+
+error:
+	cJSON_Delete(pJsonRoot);
+	return FAIL;
+}
+
+
+UINT PLUG_MarshalJsonWebSet( CHAR* pcBuf, UINT uiBufLen )
+{
+	cJSON  *pJson = NULL;
+	CHAR *pJsonStr = NULL;
+	WIFI_INFO_S stWifiInfo = {0, 0, 0};
+	CHAR szBuf[20];
+
+	pJson = cJSON_CreateObject();
+
+	cJSON_AddStringToObject( pJson, "ModelTab", 		g_stWebSet.szModelTab);
+	cJSON_AddStringToObject( pJson, "MeterRefresh", 	g_stWebSet.szMeterRefresh);
+
+    pJsonStr = cJSON_PrintUnformatted(pJson);
+    strncpy(pcBuf, pJsonStr, uiBufLen);
+    cJSON_Delete(pJson);
+    FREE_MEM(pJsonStr);
+
+	return strlen(pcBuf);
 }
 
 

@@ -42,7 +42,7 @@ VOID KEY_GetKeyTimerHandle( VOID *pPara )
 		{
 			PLUG_SetWifiMode(WIFI_MODE_SOFTAP);
 			LOG_OUT(LOGOUT_INFO, "switch ap mode, system restart!!!");
-			system_restart();
+			UPGRADE_SetReboot();
 		}
 		/* 长按:>6s  进入station模式  */
 		else if ( uiPressCount >= 300 )
@@ -50,7 +50,7 @@ VOID KEY_GetKeyTimerHandle( VOID *pPara )
 			PLUG_SetWifiMode(WIFI_MODE_STATION);
 			PLUG_SetSmartConfig(FALSE);
 			LOG_OUT(LOGOUT_INFO, "switch station mode, system restart!!!");
-			system_restart();
+			UPGRADE_SetReboot();
 		}
 		uiPressCount = 0;
 	}

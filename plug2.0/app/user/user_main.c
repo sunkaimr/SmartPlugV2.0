@@ -86,7 +86,7 @@ uint32 user_rf_cal_sector_set(void)
 void user_init(void)
 {
 	//vTaskDelay(3000/portTICK_RATE_MS );
-	uart_init_new();
+	user_uart1_init();
 	LOG_LogInit();
 	LOG_SetLogLevel( LOGOUT_INFO );
 
@@ -103,5 +103,6 @@ void user_init(void)
 	KEY_StartKeyHanderTimer();
 	PLUG_StartJudgeTimeHanderTimer();
 	WIFI_StartWifiModeTheard();
+	METER_Init();
 }
 

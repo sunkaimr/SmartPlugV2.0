@@ -348,6 +348,7 @@ UINT CONFIG_ReadConfig( PLUG_MOUDLE_E uiMoudle )
 		PLUG_DelayDataDeInit();
 		PLUG_SystemSetDataDeInit();
 		HTTP_FileListInit();
+		METER_DeinitData();
 		CONFIG_SaveConfig(PLUG_MOUDLE_BUFF);
 	    LOG_OUT(LOGOUT_INFO, "Flash check failed, Loaded Default Config.");
 		return FAIL;

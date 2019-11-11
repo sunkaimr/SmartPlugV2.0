@@ -31,6 +31,7 @@
 #include "user_upgrade.h"
 #include "user_bigiot.h"
 #include "user_infrared.h"
+#include "user_meter.h"
 
 #ifndef GIT_COMMIT_SHA1
 	#define GIT_COMMIT_SHA1 "NULL"

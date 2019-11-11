@@ -353,6 +353,8 @@ VOID HTTP_RouterInit( VOID )
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/infrared",		HTTP_PostInfraredData,	"HTTP_PostInfraredData");
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/system",	   		HTTP_PostSystemData,	"HTTP_PostSystemData");
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/cloudplatform",	HTTP_PostCloudPlatformData,	"HTTP_PostCloudPlatformData");
+	HTTP_RouterRegiste(HTTP_METHOD_POST, "/webset",			HTTP_PostWebSet,		"HTTP_PostWebSet");
+	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/webset",			HTTP_GetWebSet,			"HTTP_GetWebSet");
 
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/control",	   	HTTP_PostDeviceControl,	"HTTP_PostDeviceControl");
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/scanwifi",	   	HTTP_GetScanWifi,		"HTTP_GetScanWifi");
@@ -362,6 +364,9 @@ VOID HTTP_RouterInit( VOID )
 
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/date",	    	HTTP_GetDate,		"HTTP_GetDate");
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/date",	    	HTTP_PostDate,		"HTTP_PostDate");
+
+	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/meter",	    	HTTP_GetMeter,		"HTTP_GetDate");
+	HTTP_RouterRegiste(HTTP_METHOD_POST, "/meter",	    	HTTP_PostMeter,		"HTTP_GetDate");
 
 	HTTP_RouterRegiste(HTTP_METHOD_PUT,  "/upgrade",	    HTTP_PutUpgrade,	"HTTP_PutUpgrade");
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/upload",    		HTTP_GetUploadHtml,		"HTTP_GetUploadHtml");
