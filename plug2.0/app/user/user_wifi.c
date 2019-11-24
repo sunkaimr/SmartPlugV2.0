@@ -182,7 +182,7 @@ UINT WIFI_SetWifiModeStation( VOID )
 		 !strncmp(sta_conf.password, PLUG_GetWifiPasswd(), PLUG_GetWifiPasswdLenth())
 	)
 	{
-		LOG_OUT(LOGOUT_DEBUG, "wifi info %s not change.", szWifiModeString[uiOpmode]);
+		LOG_OUT(LOGOUT_DEBUG, "wifi info %s not change", szWifiModeString[uiOpmode]);
 	}
 	else
 	{
@@ -307,7 +307,7 @@ UINT WIFI_SetWifiModeAP( VOID )
 		 config.ssid_len == PLUG_GetPlugNameLenth() &&
 		 strncmp(config.ssid, PLUG_GetPlugName(), PLUG_GetPlugNameLenth()) == 0)
 	{
-		LOG_OUT(LOGOUT_DEBUG, "wifi mode %s not change.", szWifiModeString[uiOpmode]);
+		LOG_OUT(LOGOUT_DEBUG, "wifi mode %s not change", szWifiModeString[uiOpmode]);
 
 		goto end;
 	}
@@ -581,7 +581,7 @@ VOID WIFI_WifiLinkStatusTask( void *para )
 						LED_SetWifiStatus(LED_WIFI_STATUS_ON);
 
 						wifi_get_ip_info( STATION_IF, &stStationInfo );
-						LOG_OUT(LOGOUT_INFO, "connet wifi successed, IP:%d.%d.%d.%d.", stStationInfo.ip.addr&0xFF, (stStationInfo.ip.addr>>8)&0xFF,
+						LOG_OUT(LOGOUT_INFO, "connet wifi successed, IP:%d.%d.%d.%d", stStationInfo.ip.addr&0xFF, (stStationInfo.ip.addr>>8)&0xFF,
 							(stStationInfo.ip.addr>>16)&0xFF, (stStationInfo.ip.addr>>24)&0xFF);
 
 						break;

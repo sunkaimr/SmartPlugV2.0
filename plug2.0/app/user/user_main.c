@@ -97,6 +97,8 @@ void user_init(void)
 			system_upgrade_userbin_check()+1);
 
 	LED_GpioInit();
+	KEY_Restore();
+	COMM_ExtiIntInit();
 	INFRA_InfraredInit();
 	CONFIG_ReadConfig(PLUG_MOUDLE_BUFF);
 
@@ -104,5 +106,6 @@ void user_init(void)
 	PLUG_StartJudgeTimeHanderTimer();
 	WIFI_StartWifiModeTheard();
 	METER_Init();
+
 }
 

@@ -367,5 +367,6 @@ void user_uart1_init(void)
 	UART_ParamConfig(UART1, &uart_config);
 
 	UART_SetPrintPort( UART1 );
+	printf("\r\n\r\n");
 }
 

@@ -288,7 +288,7 @@ UINT HTTP_RouterRegiste( UINT uiMethod, CHAR* pcUrl, VOID* pfFunc, CHAR* pcFunSt
 
 	if ( pcUrl == NULL ||  pfFunc == NULL )
 	{
-		LOG_OUT(LOGOUT_ERROR, "HTTP_RouterRegiste pcUrl or pfFunc is NULL, pcUrl:%d,pfFunc:%d.", pcUrl, pfFunc);
+		LOG_OUT(LOGOUT_ERROR, "HTTP_RouterRegiste pcUrl or pfFunc is NULL, pcUrl:%d,pfFunc:%d", pcUrl, pfFunc);
 		return FAIL;
 	}
 
@@ -365,8 +365,8 @@ VOID HTTP_RouterInit( VOID )
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/date",	    	HTTP_GetDate,		"HTTP_GetDate");
 	HTTP_RouterRegiste(HTTP_METHOD_POST, "/date",	    	HTTP_PostDate,		"HTTP_PostDate");
 
-	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/meter",	    	HTTP_GetMeter,		"HTTP_GetDate");
-	HTTP_RouterRegiste(HTTP_METHOD_POST, "/meter",	    	HTTP_PostMeter,		"HTTP_GetDate");
+	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/meter",	    	HTTP_GetMeter,		"HTTP_GetMeter");
+	HTTP_RouterRegiste(HTTP_METHOD_POST, "/meter",	    	HTTP_PostMeter,		"HTTP_PostMeter");
 
 	HTTP_RouterRegiste(HTTP_METHOD_PUT,  "/upgrade",	    HTTP_PutUpgrade,	"HTTP_PutUpgrade");
 	HTTP_RouterRegiste(HTTP_METHOD_GET,  "/upload",    		HTTP_GetUploadHtml,		"HTTP_GetUploadHtml");
@@ -383,7 +383,7 @@ BOOL HTTP_RouterIsMatch( const CHAR* pcRouter, const CHAR* pcUrl)
 
 	if (pcRouter == NULL || pcUrl == NULL )
 	{
-		LOG_OUT(LOGOUT_ERROR, "pcRouter:%p, pcUrl:%p.", pcRouter, pcUrl);
+		LOG_OUT(LOGOUT_ERROR, "pcRouter:%p, pcUrl:%p", pcRouter, pcUrl);
 		return FALSE;
 	}
 
@@ -562,19 +562,19 @@ UINT HTTP_SetHeader( HTTP_CTX *pstCtx )
 {
 	if ( pstCtx->stResp.eHttpCode >= HTTP_CODE_Buff )
 	{
-		LOG_OUT(LOGOUT_ERROR, "uiHttpCode unknown, %d.", pstCtx->stResp.eHttpCode);
+		LOG_OUT(LOGOUT_ERROR, "uiHttpCode unknown, %d", pstCtx->stResp.eHttpCode);
 		return FAIL;
 	}
 
 	if ( pstCtx->stResp.eContentType >= HTTP_CONTENT_TYPE_Buff )
 	{
-		LOG_OUT(LOGOUT_ERROR, "ContentType unknown, %d.", pstCtx->stResp.eContentType);
+		LOG_OUT(LOGOUT_ERROR, "ContentType unknown, %d", pstCtx->stResp.eContentType);
 		return FAIL;
 	}
 
 	if (pstCtx->stResp.eCacheControl >= HTTP_CACHE_CTL_TYPE_Buff )
 	{
-		LOG_OUT(LOGOUT_ERROR, "CacheControl unknown, %d.", pstCtx->stResp.eCacheControl);
+		LOG_OUT(LOGOUT_ERROR, "CacheControl unknown, %d", pstCtx->stResp.eCacheControl);
 		return FAIL;
 	}
 

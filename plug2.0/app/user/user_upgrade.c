@@ -172,8 +172,11 @@ VOID UPGRADE_Reset()
 	LOG_OUT(LOGOUT_INFO, "system will reset and reboot");
 	PLUG_TimerDataDeInit();
 	PLUG_DelayDataDeInit();
+	INFRARED_InfraredDataDeInit();
 	PLUG_SystemSetDataDeInit();
 	HTTP_FileListInit();
+	PLUG_PlatformDeInit();
+	METER_DeinitData();
 	CONFIG_SaveConfig(PLUG_MOUDLE_BUFF);
 
 	UPGRADE_StartRebootTimer();

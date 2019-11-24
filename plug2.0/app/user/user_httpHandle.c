@@ -30,7 +30,7 @@ HTTP_FILE_S* HTTP_FileOpen( CHAR *pcFileName )
 
 	if ( NULL == pcFileName )
 	{
-		LOG_OUT(LOGOUT_ERROR, "pcFileName:%p.", pcFileName);
+		LOG_OUT(LOGOUT_ERROR, "pcFileName:%p", pcFileName);
 		return NULL;
 	}
 
@@ -79,7 +79,7 @@ UINT HTTP_ReadFile( HTTP_FILE_S* pstFile, CHAR *pcBuf, UINT uiLen )
 
 	if ( NULL == pstFile )
 	{
-		LOG_OUT(LOGOUT_ERROR, "pstFile:%p.", pstFile);
+		LOG_OUT(LOGOUT_ERROR, "pstFile:%p", pstFile);
 		return RESULT_Fail;
 	}
 
@@ -116,7 +116,7 @@ UINT HTTP_WriteFile( HTTP_FILE_S* pstFile, CHAR *pcBuf, UINT uiLen )
 
 	if ( NULL == pstFile )
 	{
-		LOG_OUT(LOGOUT_ERROR, "pstFile:%p.", pstFile);
+		LOG_OUT(LOGOUT_ERROR, "pstFile:%p", pstFile);
 		return RESULT_Fail;
 	}
 
@@ -155,7 +155,7 @@ UINT HTTP_WriteFile( HTTP_FILE_S* pstFile, CHAR *pcBuf, UINT uiLen )
 
 		if ( HTTP_SaveFileListToFlash() != OK )
 		{
-			LOG_OUT(LOGOUT_ERROR, "save file list failed, fileName:%s.", pstFile->pcName);
+			LOG_OUT(LOGOUT_ERROR, "save file list failed, fileName:%s", pstFile->pcName);
 			return RESULT_Fail;
 		}
 		sprintf(szName, "/%s", pstHtmlData->szName);
@@ -965,7 +965,7 @@ UINT HTTP_GetInfraredValue( HTTP_CTX *pstCtx )
         else
         {
         	pstCtx->stResp.eHttpCode = HTTP_CODE_BadRequest;
-        	LOG_OUT(LOGOUT_ERROR, "unknown switch :%s.", szBuf);
+        	LOG_OUT(LOGOUT_ERROR, "unknown switch :%s", szBuf);
         	goto err;
         }
     }

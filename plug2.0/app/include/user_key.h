@@ -12,6 +12,6 @@
 
 
 VOID KEY_StartKeyHanderTimer( VOID );
-
+VOID KEY_Restore( VOID );
 
 #endif /* __USER_KEY_H__ */

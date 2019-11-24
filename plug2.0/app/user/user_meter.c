@@ -7,7 +7,6 @@
 #include "esp_common.h"
 #include "user_common.h"
 
-
 UINT VolParReg  	= 0;    // 电压参数寄存器
 UINT VolPar   		= 0;    // 电压寄存器
 UINT CurrentParReg  = 0;    // 电流参数寄存器
@@ -31,10 +30,11 @@ METER_MerterInfo stRecordMeterInfo;
 UINT uiPowerDownFlag = 0;
 
 LOCAL VOID METER_RecvData(void *para);
-VOID METER_DataAnalysis( UINT8 *ucBuf );
+UINT METER_DataAnalysis( UINT8 *ucBuf );
 VOID METER_PowerUpHandle( VOID );
 VOID METER_PowerDownHandle( VOID );
 VOID MTER_StartEraseMeterDataTimer();
+VOID MTER_StartMeterProtectionTimer();
 VOID MTER_EraseMeterData();
 UINT METER_WriteMeterDataToFlash(METER_MerterInfo *pstMeter);
 
@@ -51,11 +51,17 @@ VOID METER_DeinitData( VOID )
 	stRecordMeterInfo.fElectricity = 0;
 	stRecordMeterInfo.fRunTime = 0;
 
-	uiRet = FlASH_Write(FLASH_METER_ADDR, (CHAR*)&stRecordMeterInfo, sizeof(stRecordMeterInfo));
-	if ( OK != uiRet )
-	{
-		LOG_OUT(LOGOUT_ERROR, "FlASH_Write meter data failed.");
-	}
+	stRecordMeterInfo.fUnderVoltage = 180.0;
+	stRecordMeterInfo.fOverVoltage = 250.0;;
+	stRecordMeterInfo.fOverCurrent = 10.0;
+	stRecordMeterInfo.fOverPower = 2200.0;
+	stRecordMeterInfo.fUnderPower = 0.5;
+
+	stRecordMeterInfo.bUnderVoltageEnable = TRUE;
+	stRecordMeterInfo.bOverVoltageEnable = TRUE;
+	stRecordMeterInfo.bOverCurrentEnable = TRUE;
+	stRecordMeterInfo.bOverPowerEnable = TRUE;
+	stRecordMeterInfo.bUnderPowerEnable = FALSE;
 
 	//保存到备份分区
 	uiRet = FlASH_Write(FLASH_METER_BK_ADDR, (CHAR*)&stRecordMeterInfo, sizeof(stRecordMeterInfo));
@@ -66,7 +72,7 @@ VOID METER_DeinitData( VOID )
 }
 
 //从FLASH加载计量数据
-UINT METER_GetMeterData( VOID )
+UINT METER_ReadMeterDataFromFlash( VOID )
 {
 	UINT uiRet = 0;
 
@@ -107,8 +113,20 @@ UINT METER_SetMeterData( METER_MerterInfo *pstMeter )
 		return FAIL;
 	}
 
-	stRecordMeterInfo.fRunTime     = pstMeter->fRunTime - PLUG_GetRunTime() * 1.0 / 3600 + 0.0001;
-	stRecordMeterInfo.fElectricity = pstMeter->fElectricity - stRealMeterInfo.fElectricity + 0.0001;
+	stRecordMeterInfo.fRunTime     			= pstMeter->fRunTime;
+	stRecordMeterInfo.fElectricity 			= pstMeter->fElectricity;
+
+	stRecordMeterInfo.fUnderVoltage			= pstMeter->fUnderVoltage;
+	stRecordMeterInfo.fOverVoltage 			= pstMeter->fOverVoltage;
+	stRecordMeterInfo.fOverCurrent 			= pstMeter->fOverCurrent;
+	stRecordMeterInfo.fOverPower 			= pstMeter->fOverPower;
+	stRecordMeterInfo.fUnderPower 			= pstMeter->fUnderPower;
+
+	stRecordMeterInfo.bUnderVoltageEnable 	= pstMeter->bUnderVoltageEnable;
+	stRecordMeterInfo.bOverVoltageEnable 	= pstMeter->bOverVoltageEnable;
+	stRecordMeterInfo.bOverCurrentEnable 	= pstMeter->bOverCurrentEnable;
+	stRecordMeterInfo.bOverPowerEnable 		= pstMeter->bOverPowerEnable;
+	stRecordMeterInfo.bUnderPowerEnable 	= pstMeter->bUnderPowerEnable;
 
 	METER_WriteMeterDataToFlash(&stRecordMeterInfo);
 
@@ -118,16 +136,46 @@ UINT METER_SetMeterData( METER_MerterInfo *pstMeter )
 	return OK;
 }
 
+float METER_GetMeterVoltage( VOID )
+{
+	return stRealMeterInfo.fVoltage;
+}
+
+float METER_GetMeterCurrent( VOID )
+{
+	return stRealMeterInfo.fCurrent;
+}
+
+
+float METER_GetMeterPower( VOID )
+{
+	return stRealMeterInfo.fPower;
+}
+
+float METER_GetMeterApparentPower( VOID )
+{
+	return stRealMeterInfo.fApparentPower;
+}
+
+float METER_GetMeterPowerFactor( VOID )
+{
+	return stRealMeterInfo.fPowerFactor;
+}
+
+float METER_GetMeterElectricity( VOID )
+{
+	return stRecordMeterInfo.fElectricity + stRealMeterInfo.fElectricity;
+}
 
 //上电进行的操作.1,从flash读取历史数据  2,提前擦除保存计量信息的FLASH，以便于掉电时直接写入
 VOID METER_PowerUpHandle( VOID )
 {
 	UINT uiRet = 0;
 
-	uiRet = METER_GetMeterData();
+	uiRet = METER_ReadMeterDataFromFlash();
 	if ( OK != uiRet )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "METER_GetMeterData data failed.");
+	    LOG_OUT(LOGOUT_ERROR, "METER_ReadMeterDataFromFlash data failed.");
 	}
 	else
 	{
@@ -146,29 +194,29 @@ VOID METER_PowerUpHandle( VOID )
 VOID METER_PowerDownHandle( VOID )
 {
 	UINT uiRet = 0;
-	METER_MerterInfo stMeter;
+	UINT uiStartTime, uiStopTime;
 
-	memset(&stMeter, 0, sizeof(stMeter));
-	stMeter.fRunTime     = stRecordMeterInfo.fRunTime + PLUG_GetRunTime() * 1.0 / 3600;
-	stMeter.fElectricity = stRecordMeterInfo.fElectricity + stRealMeterInfo.fElectricity;
+	stRecordMeterInfo.fRunTime     +=  PLUG_GetRunTime() * 1.0 / 3600;
+	stRecordMeterInfo.fElectricity +=  stRealMeterInfo.fElectricity;
 
-	uiRet = spi_flash_write((UINT)FLASH_METER_ADDR, (UINT*)&stMeter, sizeof(stMeter));
+	uiStartTime = system_get_time();
+	uiRet = spi_flash_write((UINT)FLASH_METER_ADDR, (UINT*)&stRecordMeterInfo, sizeof(stRecordMeterInfo));
 	if ( SPI_FLASH_RESULT_OK != uiRet )
 	{
 		LOG_OUT(LOGOUT_ERROR, "write meter data failed, addr:0x%X, uiRet:%d", FLASH_METER_ADDR, uiRet);
 	}
+	uiStopTime = system_get_time();
+
+	LOG_OUT(LOGOUT_INFO, "Power down detected, saved meter data cost %d us", (uiStopTime - uiStartTime));
+
+	MTER_StartEraseMeterDataTimer();
 }
 
 VOID METER_RestartHandle( VOID )
 {
-	UINT uiRet = 0;
-	METER_MerterInfo stMeter;
+	stRecordMeterInfo.fRunTime +=  PLUG_GetRunTime() * 1.0 / 3600;
 
-	memset(&stMeter, 0, sizeof(stMeter));
-	stMeter.fRunTime     = stRecordMeterInfo.fRunTime + PLUG_GetRunTime() * 1.0 / 3600;
-	stMeter.fElectricity = stRecordMeterInfo.fElectricity;
-
-	METER_WriteMeterDataToFlash(&stMeter);
+	METER_WriteMeterDataToFlash(&stRecordMeterInfo);
 }
 
 UINT METER_WriteMeterDataToFlash(METER_MerterInfo *pstMeter)
@@ -194,24 +242,6 @@ UINT METER_WriteMeterDataToFlash(METER_MerterInfo *pstMeter)
 	}
 
 	return uiRet;
-}
-
-VOID METER_GpioInterrupt( VOID* Para )
-{
-	_xt_isr_mask(1 << ETS_GPIO_INUM);
-
-	UINT uiStartTime, uiStopTime;
-
-	uiStartTime = system_get_time();
-	METER_PowerDownHandle();
-	uiStopTime = system_get_time();
-
-	LOG_OUT(LOGOUT_INFO, "Power down detected, saved meter data cost %d us", (uiStopTime - uiStartTime));
-
-	MTER_StartEraseMeterDataTimer();
-
-    GPIO_REG_WRITE( GPIO_STATUS_W1TC_ADDRESS, GPIO_Pin_4 );
-    _xt_isr_unmask(1 << ETS_GPIO_INUM);
 }
 
 VOID MTER_MeterDataRecvTimerHandle()
@@ -264,7 +294,7 @@ VOID METER_InitUart()
 }
 
 //初始化外部中断，断电时进行数据的保存
-VOID METER_InitGpioInterrupt()
+VOID METER_InitGpioInit(VOID)
 {
 	GPIO_ConfigTypeDef stGpioCfg;
 	stGpioCfg.GPIO_IntrType = GPIO_PIN_INTR_NEGEDGE;
@@ -272,9 +302,6 @@ VOID METER_InitGpioInterrupt()
 	stGpioCfg.GPIO_Pullup 	= GPIO_PullUp_EN;
 	stGpioCfg.GPIO_Pin 		= GPIO_Pin_4;
 	gpio_config( &stGpioCfg );
-
-	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, GPIO_Pin_4);
-	gpio_intr_handler_register(METER_GpioInterrupt, NULL);
 }
 
 VOID METER_Init()
@@ -282,17 +309,20 @@ VOID METER_Init()
 	METER_PowerUpHandle();
 
 	METER_InitUart();
-	METER_InitGpioInterrupt();
+
+	COMM_ExtiIntRegister(GPIO_Pin_4, METER_InitGpioInit, NULL, METER_PowerDownHandle, "METER_PowerDownHandle");
 
     //每隔一定时间打开一次串口中断来接收一次数据
     MTER_StartMeterDataRecvTimer();
+    MTER_StartMeterProtectionTimer();
 }
 
 
 LOCAL VOID METER_RecvData(void *para)
 {
-    uint8 ucFifoLen = 0;
-    uint8 i, j;
+    static UINT8 ucFifoLen = 0;
+    static UINT8 i, j;
+    static UINT8 ucSum = 0;
 
     uint32 uiStatus = READ_PERI_REG(UART_INT_ST(UART0)) ;
 
@@ -316,7 +346,7 @@ LOCAL VOID METER_RecvData(void *para)
             WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR);
             WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_TOUT_INT_CLR);
 
-            if ( ucRecvDataCnt < 48 )
+            if ( ucRecvDataCnt < 24 )
             {
             	return;
             }
@@ -330,44 +360,45 @@ LOCAL VOID METER_RecvData(void *para)
 				}
         	}
 
-        	//没有找到数据头
-        	if ( ucRecvDataCnt == i )
-        	{
-        		// do nothing
-        	}
-        	//找到数据头,且数据完整
-        	else if ( ucRecvDataCnt - i >= 23)
-        	{
-        	    ETS_UART_INTR_DISABLE();
-        		METER_DataAnalysis( ucRecvData+i );
 
-        		//for ( j = 0; j < ucRecvDataCnt-i-24; j++ )
-        		//{
-        		//	ucRecvData[j] = ucRecvData[i+j+24];
-        		//}
-        		//ucRecvDataCnt = j;
+        	//没有找到数据头
+        	if ( i >= ucRecvDataCnt )
+        	{
         		ucRecvDataCnt = 0;
         	}
-        	// 找到数据头，但数据不完整
+        	//找到数据头
         	else
         	{
-        		//for ( j = 0; j < ucRecvDataCnt-i; j++ )
-        		//{
-        		//	ucRecvData[j] = ucRecvData[i+j];
-        		//}
-        		//ucRecvDataCnt = j;
-        	}
+        		// 数据长度足够
+        		if ( ucRecvDataCnt - i > 23 )
+        		{
+        			//判断校验合
+        			ucSum = 0;
+        			for ( j = i+2; j < 23; j++ )
+        			{
+        				ucSum += ucRecvData[j];
+        			}
 
-        	if ( ucRecvDataCnt >= sizeof(ucRecvData) )
-    		{
-    			printf("ucRecvData full:");
-    			for ( i = 0; i < ucRecvDataCnt; i++ )
-    			{
-    				printf("%02X ", ucRecvData[i]);
-    			}
-    			printf("\r\n");
-    			ucRecvDataCnt = 0;
-    		}
+        			// 校验通过
+        			if ( ucSum == ucRecvData[23] )
+        			{
+        				//提取数据
+                	    ETS_UART_INTR_DISABLE();
+                	    METER_DataAnalysis( ucRecvData+i );
+        			}
+
+            	    ucRecvDataCnt = 0;
+        		}
+        		//数据长度不足
+        		else
+        		{
+            		for ( j = 0; j < ucRecvDataCnt-i; j++ )
+            		{
+            			ucRecvData[j] = ucRecvData[i];
+            		}
+            		ucRecvDataCnt = j;
+        		}
+        	}
         }
         else if (UART_TXFIFO_EMPTY_INT_ST == (uiStatus & UART_TXFIFO_EMPTY_INT_ST))
         {
@@ -384,13 +415,13 @@ LOCAL VOID METER_RecvData(void *para)
     }
 }
 
-VOID METER_DataAnalysis( UINT8 *ucBuf )
+UINT METER_DataAnalysis( UINT8 *ucBuf )
 {
 	UINT8 i = 0;
-	UINT8 ucSum = 0;
 
 	//上一次 数据更新寄存器(Data Updata REG)bit7状态
-	static UINT8 ucPFRegBit7Last = 0xFF;
+	static UINT8 DataUpdateRegBit7Last = 0xFF;
+	static UINT PFRegLast = 0;
 
 
 	//寄存器1: 状态寄存器(1Byte, 0) 不需参与计算校验值
@@ -409,11 +440,11 @@ VOID METER_DataAnalysis( UINT8 *ucBuf )
 	if ( StateReg == 0xAA || (StateReg != 0x55 && (StateReg & 1)) )
 	{
 		LOG_OUT(LOGOUT_ERROR, "VolParReg, CurrentParReg and PowerParReg is unavailable, StateReg:0X%X", StateReg );
-		return;
+		return FAIL;
 	}
 
 	//除状态寄存器(State REG)、检测寄存器(Check REG)和校验和寄存器(CheckSum REG)之外的寄存器的数据之和的低8bit
-	for ( i = 2; i < 23; i++ )
+	/*for ( i = 2; i < 23; i++ )
 	{
 		ucSum = ucSum + ucBuf[i];
 	}
@@ -426,12 +457,12 @@ VOID METER_DataAnalysis( UINT8 *ucBuf )
 		//	printf("%02X ", ucBuf[i]);
 		//}
 		//printf("\r\n");
-		return;
+		return FAIL;
 	}
-
-	if ( ucPFRegBit7Last == 0xFF )
+*/
+	if ( DataUpdateRegBit7Last == 0xFF )
 	{
-		ucPFRegBit7Last = DataUpdateReg & (1<<7);
+		DataUpdateRegBit7Last = DataUpdateReg & (1<<7);
 	}
 
 	//寄存器3: 电压参数寄存器(3Byte, 2-4)
@@ -498,19 +529,27 @@ VOID METER_DataAnalysis( UINT8 *ucBuf )
 		stRealMeterInfo.fApparentPower = stRealMeterInfo.fVoltage * stRealMeterInfo.fCurrent;
 	}
 
-	//PFReg已满清零，需要将更新stRecordMeterInfo信息并保存在falsh
-	if ( (DataUpdateReg & (1<<7)) != ucPFRegBit7Last)
+	//PFReg已满清零，需要将更新stRecordMeterInfo信息并保存在falsh; 只判断DataUpdateRegBit7Last会有误判因此加入(PFReg<PFRegLast)
+	if ( (DataUpdateReg & (1<<7)) != DataUpdateRegBit7Last && PFReg < PFRegLast )
 	{
-		ucPFRegBit7Last = DataUpdateReg & (1<<7);
+		DataUpdateRegBit7Last = DataUpdateReg & (1<<7);
 
 		stRecordMeterInfo.fElectricity += (65536 * 1.0/3600) * (PowerParReg/1000000*1.88);
 		METER_WriteMeterDataToFlash(&stRecordMeterInfo);
 
-		LOG_OUT(LOGOUT_INFO, "Update stRecordMeterInfo.fElectricity: %3.3f", stRecordMeterInfo.fElectricity);
+		LOG_OUT(LOGOUT_INFO, "Update fElectricity: %3.3f, PFReg:%X, PFRegLast:%X", stRecordMeterInfo.fElectricity, PFReg, PFRegLast);
+
+		printf("data: ");
+		for ( i = 0; i < 24; i++ )
+		{
+			printf("%02X ", ucBuf[i]);
+		}
+		printf("\r\n");
 
 		//擦除保存计量数据的扇区下电时没有时间擦除，提前擦除数据下电时可以直接保存数据不用再擦除了
 		MTER_EraseMeterData();
 	}
+	PFRegLast = PFReg;
 
 	//计算电量
 	stRealMeterInfo.fElectricity = (PFReg*1.0/3600) * (PowerParReg/1000000*1.88);
@@ -518,38 +557,69 @@ VOID METER_DataAnalysis( UINT8 *ucBuf )
 	stRealMeterInfo.fPowerFactor = stRealMeterInfo.fPower / stRealMeterInfo.fApparentPower;
 	stRealMeterInfo.fPowerFactor = stRealMeterInfo.fPowerFactor > 1 ? 1 : stRealMeterInfo.fPowerFactor;
 
-	LOG_OUT(LOGOUT_INFO, "ucPFRegBit7Last:%X, PFReg:%X, PowerParReg:%X, stRecordMeterInfo:%3.3f, stRealMeterInfo:%3.3f",
-			ucPFRegBit7Last, PFReg, PowerParReg, stRecordMeterInfo.fElectricity, stRealMeterInfo.fElectricity);
+	/*
+	printf("data: ");
+	for ( i = 0; i < 24; i++ )
+	{
+		printf("%02X ", ucBuf[i]);
+	}
+	printf("\r\n");
+	LOG_OUT(LOGOUT_INFO, "DataUpdateRegBit7Last:%X, PFReg:%X, PowerParReg:%X, stRecordMeterInfo:%3.3f, stRealMeterInfo:%3.3f",
+			DataUpdateRegBit7Last, PFReg, PowerParReg, stRecordMeterInfo.fElectricity, stRealMeterInfo.fElectricity);
+
+	 */
+	return OK;
 }
 
 UINT METER_MarshalJsonMeter( CHAR* pcBuf, UINT uiBufLen )
 {
 	cJSON  *pJson = NULL;
 	CHAR *pJsonStr = NULL;
-	CHAR szBuf[20] = {0};
+	CHAR szBuf[30] = {0};
 
 	pJson = cJSON_CreateObject();
 
-	sprintf(szBuf, "%3.3f", stRealMeterInfo.fVoltage);
+	sprintf(szBuf, "%3.1f", stRealMeterInfo.fVoltage);
 	cJSON_AddStringToObject( pJson, "Voltage", 			szBuf);
 
-	sprintf(szBuf, "%3.3f", stRealMeterInfo.fCurrent);
+	sprintf(szBuf, "%3.1f", stRealMeterInfo.fCurrent);
 	cJSON_AddStringToObject( pJson, "Current", 			szBuf);
 
-	sprintf(szBuf, "%3.3f", stRealMeterInfo.fPower);
+	sprintf(szBuf, "%3.1f", stRealMeterInfo.fPower);
 	cJSON_AddStringToObject( pJson, "Power", 			szBuf);
 
-	sprintf(szBuf, "%3.3f", stRealMeterInfo.fApparentPower);
+	sprintf(szBuf, "%3.1f", stRealMeterInfo.fApparentPower);
 	cJSON_AddStringToObject( pJson, "ApparentPower", 	szBuf);
 
-	sprintf(szBuf, "%3.3f", stRealMeterInfo.fPowerFactor);
+	sprintf(szBuf, "%3.2f", stRealMeterInfo.fPowerFactor);
 	cJSON_AddStringToObject( pJson, "PowerFactor", 		szBuf);
 
-	sprintf(szBuf, "%3.3f", stRecordMeterInfo.fElectricity + stRealMeterInfo.fElectricity);
+	sprintf(szBuf, "%3.1f", stRecordMeterInfo.fElectricity + stRealMeterInfo.fElectricity);
 	cJSON_AddStringToObject( pJson, "Electricity", 		szBuf);
 
-	sprintf(szBuf, "%3.3f", stRecordMeterInfo.fRunTime + PLUG_GetRunTime() * 1.0 / 3600);
+	sprintf(szBuf, "%3.1f", stRecordMeterInfo.fRunTime + PLUG_GetRunTime() * 1.0 / 3600);
 	cJSON_AddStringToObject( pJson, "RunTime", 			szBuf);
+
+	sprintf(szBuf, "%3.0f", stRecordMeterInfo.fUnderVoltage);
+	cJSON_AddStringToObject( pJson, "UnderVoltage", 	szBuf);
+
+	sprintf(szBuf, "%3.0f", stRecordMeterInfo.fOverVoltage);
+	cJSON_AddStringToObject( pJson, "OverVoltage", 		szBuf);
+
+	sprintf(szBuf, "%3.0f", stRecordMeterInfo.fOverCurrent);
+	cJSON_AddStringToObject( pJson, "OverCurrent", 		szBuf);
+
+	sprintf(szBuf, "%3.0f", stRecordMeterInfo.fOverPower);
+	cJSON_AddStringToObject( pJson, "OverPower", 		szBuf);
+
+	sprintf(szBuf, "%3.1f", stRecordMeterInfo.fUnderPower);
+	cJSON_AddStringToObject( pJson, "UnderPower", 		szBuf);
+
+	cJSON_AddBoolToObject( pJson, "UnderVoltageEnable", 	stRecordMeterInfo.bUnderVoltageEnable);
+	cJSON_AddBoolToObject( pJson, "OverVoltageEnable", 		stRecordMeterInfo.bOverVoltageEnable);
+	cJSON_AddBoolToObject( pJson, "OverCurrentEnable", 		stRecordMeterInfo.bOverCurrentEnable);
+	cJSON_AddBoolToObject( pJson, "OverPowerEnable", 		stRecordMeterInfo.bOverPowerEnable);
+	cJSON_AddBoolToObject( pJson, "UnderPowerEnable", 		stRecordMeterInfo.bUnderPowerEnable);
 
     pJsonStr = cJSON_PrintUnformatted(pJson);
     strncpy(pcBuf, pJsonStr, uiBufLen);
@@ -564,7 +634,7 @@ UINT METER_ParseMeterData( CHAR* pDataStr)
 {
 	cJSON *pJsonRoot = NULL;
 	cJSON *pJson = NULL;
-	METER_MerterInfo stMeter;
+	METER_MerterInfo stMeter = stRecordMeterInfo;
 
 	if ( pDataStr == NULL )
 	{
@@ -575,24 +645,121 @@ UINT METER_ParseMeterData( CHAR* pDataStr)
 	pJsonRoot = cJSON_Parse( pDataStr );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pDataStr);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pDataStr);
 	    goto error;
 	}
 
 	pJson = cJSON_GetObjectItem(pJsonRoot, "Electricity");
 	if ( pJson != NULL && pJson->type == cJSON_String )
 	{
-		LOG_OUT(LOGOUT_INFO, "%s", pJson->valuestring);
 		sscanf(pJson->valuestring, "%f", &stMeter.fElectricity);
-		LOG_OUT(LOGOUT_INFO, "%3.3f", stMeter.fElectricity);
+		//LOG_OUT(LOGOUT_INFO, "fElectricity:%3.3f", stMeter.fElectricity);
+
+		stMeter.fElectricity =  -1.0 * stRealMeterInfo.fElectricity + 0.0001;
 	}
 
 	pJson = cJSON_GetObjectItem(pJsonRoot, "RunTime");
 	if ( pJson != NULL && pJson->type == cJSON_String )
 	{
-		LOG_OUT(LOGOUT_INFO, "%s", pJson->valuestring);
 		sscanf(pJson->valuestring, "%f", &stMeter.fRunTime);
-		LOG_OUT(LOGOUT_INFO, "%3.3f", stMeter.fRunTime);
+
+		//LOG_OUT(LOGOUT_INFO, "fRunTime:%3.3f", stMeter.fRunTime);
+		stMeter.fRunTime =  PLUG_GetRunTime() * -1.0 / 3600 + 0.0001;
+	}
+
+	pJson = cJSON_GetObjectItem(pJsonRoot, "UnderVoltage");
+	if ( pJson != NULL && pJson->type == cJSON_String )
+	{
+		sscanf(pJson->valuestring, "%f", &stMeter.fUnderVoltage);
+		//LOG_OUT(LOGOUT_INFO, "fUnderVoltage:%3.3f", stMeter.fUnderVoltage);
+	}
+
+	pJson = cJSON_GetObjectItem(pJsonRoot, "OverVoltage");
+	if ( pJson != NULL && pJson->type == cJSON_String )
+	{
+		sscanf(pJson->valuestring, "%f", &stMeter.fOverVoltage);
+		//LOG_OUT(LOGOUT_INFO, "fOverVoltage:%3.3f", stMeter.fOverVoltage);
+	}
+
+	pJson = cJSON_GetObjectItem(pJsonRoot, "OverCurrent");
+	if ( pJson != NULL && pJson->type == cJSON_String )
+	{
+		sscanf(pJson->valuestring, "%f", &stMeter.fOverCurrent);
+		//LOG_OUT(LOGOUT_INFO, "fOverCurrent:%3.3f", stMeter.fOverCurrent);
+	}
+
+	pJson = cJSON_GetObjectItem(pJsonRoot, "OverPower");
+	if ( pJson != NULL && pJson->type == cJSON_String )
+	{
+		sscanf(pJson->valuestring, "%f", &stMeter.fOverPower);
+		//LOG_OUT(LOGOUT_INFO, "fOverPower:%3.3f", stMeter.fOverPower);
+	}
+
+	pJson = cJSON_GetObjectItem(pJsonRoot, "UnderPower");
+	if ( pJson != NULL && pJson->type == cJSON_String )
+	{
+		sscanf(pJson->valuestring, "%f", &stMeter.fUnderPower);
+		//LOG_OUT(LOGOUT_INFO, "fUnderPower:%3.3f", stMeter.fUnderPower);
+	}
+
+	pJson = cJSON_GetObjectItem(pJsonRoot, "UnderVoltageEnable");
+	if ( pJson != NULL && pJson->type == cJSON_True )
+	{
+		stMeter.bUnderVoltageEnable = TRUE;
+		//LOG_OUT(LOGOUT_INFO, "bUnderVoltageEnable:%d", stMeter.bUnderVoltageEnable);
+	}
+	else if ( pJson != NULL && pJson->type == cJSON_False )
+	{
+		stMeter.bUnderVoltageEnable = FALSE;
+		//LOG_OUT(LOGOUT_INFO, "bUnderVoltageEnable:%d", stMeter.bUnderVoltageEnable);
+	}
+
+	pJson = cJSON_GetObjectItem(pJsonRoot, "OverVoltageEnable");
+	if ( pJson != NULL && pJson->type == cJSON_True )
+	{
+		stMeter.bOverVoltageEnable = TRUE;
+		//LOG_OUT(LOGOUT_INFO, "bOverVoltageEnable:%d", stMeter.bOverVoltageEnable);
+	}
+	else if ( pJson != NULL && pJson->type == cJSON_False )
+	{
+		stMeter.bOverVoltageEnable = FALSE;
+		//LOG_OUT(LOGOUT_INFO, "bUnderVoltageEnable:%d", stMeter.bOverVoltageEnable);
+	}
+
+	pJson = cJSON_GetObjectItem(pJsonRoot, "OverCurrentEnable");
+	if ( pJson != NULL && pJson->type == cJSON_True )
+	{
+		stMeter.bOverCurrentEnable = TRUE;
+		//LOG_OUT(LOGOUT_INFO, "bOverVoltageEnable:%d", stMeter.bOverCurrentEnable);
+	}
+	else if ( pJson != NULL && pJson->type == cJSON_False )
+	{
+		stMeter.bOverCurrentEnable = FALSE;
+		//LOG_OUT(LOGOUT_INFO, "bOverCurrentEnable:%d", stMeter.bOverCurrentEnable);
+	}
+
+	pJson = cJSON_GetObjectItem(pJsonRoot, "OverPowerEnable");
+	if ( pJson != NULL && pJson->type == cJSON_True )
+	{
+		stMeter.bOverPowerEnable = TRUE;
+		//LOG_OUT(LOGOUT_INFO, "bOverPowerEnable:%d", stMeter.bOverPowerEnable);
+	}
+	else if ( pJson != NULL && pJson->type == cJSON_False )
+	{
+		stMeter.bOverPowerEnable = FALSE;
+		//LOG_OUT(LOGOUT_INFO, "bOverPowerEnable:%d", stMeter.bOverPowerEnable);
+	}
+
+	pJson = cJSON_GetObjectItem(pJsonRoot, "UnderPowerEnable");
+	if ( pJson != NULL && pJson->type == cJSON_True )
+	{
+		stMeter.bUnderPowerEnable = TRUE;
+		//LOG_OUT(LOGOUT_INFO, "bUnderPowerEnable:%d", stMeter.bUnderPowerEnable);
+	}
+	else if ( pJson != NULL && pJson->type == cJSON_False )
+	{
+		stMeter.bUnderPowerEnable = FALSE;
+		//LOG_OUT(LOGOUT_INFO, "bUnderPowerEnable:%d", stMeter.bUnderPowerEnable);
 	}
 
 	if ( METER_SetMeterData(&stMeter) != OK )
@@ -616,11 +783,10 @@ VOID MTER_EraseMeterData()
 	if ( SPI_FLASH_RESULT_OK != spi_flash_erase_sector(FLASH_METER_ADDR/FLASH_SEC_SIZE) )
 	{
 	    LOG_OUT(LOGOUT_ERROR, "spi_flash_erase_sector failed, addr:0X%x", FLASH_METER_ADDR);
+	    return;
 	}
-	else
-	{
-		LOG_OUT(LOGOUT_INFO, "spi_flash_erase_sector success, addr:0X%x", FLASH_METER_ADDR);
-	}
+
+	//LOG_OUT(LOGOUT_INFO, "spi_flash_erase_sector success, addr:0X%x", FLASH_METER_ADDR);
 }
 
 
@@ -643,5 +809,94 @@ VOID MTER_StartEraseMeterDataTimer()
 }
 
 
+VOID MTER_JudgeMeterProtection()
+{
+	BOOL bProtection = FALSE;
+	static UINT uiCount = 0;
+
+	//是否开启欠压保护
+	if ( stRecordMeterInfo.bUnderVoltageEnable && stRealMeterInfo.fVoltage < stRecordMeterInfo.fUnderVoltage )
+	{
+		bProtection = TRUE;
+		LOG_OUT(LOGOUT_INFO, "low voltage protection in effect, current:%3.1f, protection:%3.1f",
+				stRealMeterInfo.fVoltage, stRecordMeterInfo.fUnderVoltage);
+	}
+
+	//是否开启过压保护
+	if ( stRecordMeterInfo.bOverVoltageEnable && stRealMeterInfo.fVoltage > stRecordMeterInfo.fOverVoltage )
+	{
+		bProtection = TRUE;
+		LOG_OUT(LOGOUT_INFO, "over voltage protection in effect, current:%3.1f, protection:%3.1f",
+				stRealMeterInfo.fVoltage, stRecordMeterInfo.fOverVoltage);
+	}
+
+	//是否开启过流保护
+	if ( stRecordMeterInfo.bOverCurrentEnable && stRealMeterInfo.fCurrent > stRecordMeterInfo.fOverCurrent )
+	{
+		bProtection = TRUE;
+		LOG_OUT(LOGOUT_INFO, "over current protection in effect, current:%3.1f, protection:%3.1f",
+				stRealMeterInfo.fCurrent, stRecordMeterInfo.fOverCurrent);
+	}
+
+	//是否开启过功率保护
+	if ( stRecordMeterInfo.bOverPowerEnable && stRealMeterInfo.fPower > stRecordMeterInfo.fOverPower )
+	{
+		bProtection = TRUE;
+		LOG_OUT(LOGOUT_INFO, "over power protection in effect, current:%3.1f, protection:%3.1f",
+				stRealMeterInfo.fPower, stRecordMeterInfo.fOverPower);
+	}
+
+	//是否开启充电保护，手机等设备充满电后自动断电
+	if ( stRecordMeterInfo.bUnderPowerEnable && (PLUG_GetRelayStatus() == TRUE ))
+	{
+		if ( stRealMeterInfo.fPower < stRecordMeterInfo.fUnderPower )
+		{
+			uiCount++;
+		}
+		else
+		{
+			uiCount = 0;
+		}
+
+		// 5min之内功率小于设定的功率就关闭设备
+		if ( uiCount > 300 )
+		{
+			uiCount = 0;
+
+			bProtection = TRUE;
+			LOG_OUT(LOGOUT_INFO, "charging protection in effect, current:%3.1f, protection:%3.1f",
+					stRealMeterInfo.fPower, stRecordMeterInfo.fUnderPower);
+		}
+	}
+	else
+	{
+		uiCount = 0;
+	}
+
+	//进入保护转态关闭设备
+	if ( bProtection && PLUG_GetRelayStatus() != FALSE )
+	{
+		PLUG_SetRelayOff(FALSE);
+	}
+}
+
+
+VOID MTER_StartMeterProtectionTimer()
+{
+	xTimerHandle xTimers = NULL;
+
+	xTimers = xTimerCreate("MTER_StartMeterProtectionTimer", 1000/portTICK_RATE_MS, TRUE, NULL, MTER_JudgeMeterProtection);
+	if ( !xTimers )
+	{
+		LOG_OUT(LOGOUT_ERROR, "xTimerCreate MTER_JudgeMeterProtection failed.");
+	}
+	else
+	{
+		if(xTimerStart(xTimers, 0) != pdPASS)
+	    {
+			LOG_OUT(LOGOUT_ERROR, "xTimerCreate MTER_JudgeMeterProtection start failed.");
+		}
+	}
+}
 
 

@@ -15,7 +15,7 @@ UINT32 uiInfraredValue = 0;
 INFRARED_SET_S g_stinfrared_Set = { FALSE, FALSE, 0};
 INFRARED_VALUE_S g_astInfrared_Value[INFRARED_MAX];
 
-VOID INFRA_InfrareHandle( VOID* Para )
+VOID INFRA_InfrareHandle(VOID)
 {
 	static UINT32 infraredValue = 0;	/* 解码的红外值 */
 	static UINT32 uiCurTime = 0;
@@ -25,7 +25,7 @@ VOID INFRA_InfrareHandle( VOID* Para )
 	static uint8_t  BitCount = 0;   	/* BitCount等于32时解码完成 */
 
 	//GPIO_INPUT_GET( GPIO_ID_PIN(INFRA_GPIO_NUM) );
-	_xt_isr_mask(1 << ETS_GPIO_INUM);
+	//_xt_isr_mask(1 << ETS_GPIO_INUM);
 
 	uiCurTime = system_get_time();
 
@@ -90,13 +90,12 @@ VOID INFRA_InfrareHandle( VOID* Para )
             break;
     }
 
-    GPIO_REG_WRITE( GPIO_STATUS_W1TC_ADDRESS, INFRA_GPIO_NUM );
-    _xt_isr_unmask(1 << ETS_GPIO_INUM);
+    //GPIO_REG_WRITE( GPIO_STATUS_W1TC_ADDRESS, INFRA_GPIO_NUM );
+    //_xt_isr_unmask(1 << ETS_GPIO_INUM);
 
 }
 
-
-void INFRA_InfraredInit(void)
+void INFRA_GPIOInit(void)
 {
 	GPIO_ConfigTypeDef stGpioCfg;
 
@@ -105,12 +104,18 @@ void INFRA_InfraredInit(void)
 	stGpioCfg.GPIO_Pullup 	= GPIO_PullUp_EN;
 	stGpioCfg.GPIO_Pin 		= INFRA_GPIO_NUM;
 	gpio_config( &stGpioCfg );
+}
 
-	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, INFRA_GPIO_NUM);
 
-	gpio_intr_handler_register(INFRA_InfrareHandle, NULL);
+void INFRA_InfraredInit(void)
+{
+	COMM_ExtiIntRegister(INFRA_GPIO_NUM, INFRA_GPIOInit, NULL, INFRA_InfrareHandle, "INFRA_InfrareHandle");
 
-	_xt_isr_unmask(1 << ETS_GPIO_INUM);
+	//GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, INFRA_GPIO_NUM);
+
+	//gpio_intr_handler_register(INFRA_InfrareHandle, NULL);
+
+	//_xt_isr_unmask(1 << ETS_GPIO_INUM);
 
 	//LOG_OUT(LOGOUT_INFO, "INFRA_InfraredInit success");
 }

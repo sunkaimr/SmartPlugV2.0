@@ -284,7 +284,7 @@ UINT MQTT_ParsePowerSwitchData( CHAR* pData )
 	pJsonRoot = cJSON_Parse( pData );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pData);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pData);
 	    goto error;
 	}
 

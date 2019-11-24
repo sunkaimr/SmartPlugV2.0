@@ -76,6 +76,13 @@ VOID KEY_StartKeyHanderTimer( VOID )
 	}
 }
 
-
+VOID KEY_Restore( VOID )
+{
+	if ( LED_GetKeyStatus() == 0 )
+	{
+		LOG_OUT(LOGOUT_INFO, "power on and restore");
+		UPGRADE_Reset();
+	}
+}
 
 

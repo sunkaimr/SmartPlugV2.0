@@ -26,6 +26,9 @@ SPI_SPEED?=40
 SPI_MODE?=QIO
 SPI_SIZE_MAP?=6
 
+#记录git的commit id
+GIT_COMMIT_SHA1 = `git log -n 1 | head -n 1 | cut -d ' ' -f 2`
+
 ifeq ($(BOOT), new)
     boot = new
 else
@@ -204,9 +207,6 @@ OIMAGES := $(GEN_IMAGES:%=$(IMAGEODIR)/%)
 
 BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
-
-#记录git的commit id
-GIT_COMMIT_SHA1 = `git log -n 1 | head -n 1 | cut -d ' ' -f 2`
 
 CCFLAGS += 			\
 	-g			\

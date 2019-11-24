@@ -107,28 +107,28 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 	{
     	LOG_OUT(LOGOUT_ERROR, "socket failed started. iSocketFd:%d", iSocketFd);
     }
-    LOG_OUT(LOGOUT_DEBUG, "socket ok, iSocketFd:%d.", iSocketFd);
+    LOG_OUT(LOGOUT_DEBUG, "socket ok, iSocketFd:%d", iSocketFd);
 
 	//不知道为什么一直失败
 	//iRet = setsockopt(iSocketFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&Reuseaddr, sizeof(Reuseaddr));
     //iRet = setsockopt(iSocketFd, SOL_SOCKET, SO_RCVTIMEO, (char *)&stRecvTimeOut, sizeof(stRecvTimeOut));
     //if ( 0 != iRet )
 	//{
-	//	LOG_OUT(LOGOUT_ERROR, "setsockopt failed, iRet:%d.", iRet);
+	//	LOG_OUT(LOGOUT_ERROR, "setsockopt failed, iRet:%d", iRet);
 	//}
-	//LOG_OUT(LOGOUT_DEBUG, "setsockopt ok, iSocketFd:%d.", iSocketFd);
+	//LOG_OUT(LOGOUT_DEBUG, "setsockopt ok, iSocketFd:%d", iSocketFd);
 
     do
 	{
         iRet = bind( iSocketFd, (struct sockaddr *)&stServerAddr, sizeof(stServerAddr));
 		if ( 0 != iRet )
 		{
-			LOG_OUT(LOGOUT_ERROR, "bind failed, iRet:%d.", iRet);
+			LOG_OUT(LOGOUT_ERROR, "bind failed, iRet:%d", iRet);
             vTaskDelay(1000/portTICK_RATE_MS);
         }
     } while ( iRet != 0 );
 
-    LOG_OUT(LOGOUT_DEBUG, "bind ok, iSocketFd:%d.", iSocketFd);
+    LOG_OUT(LOGOUT_DEBUG, "bind ok, iSocketFd:%d", iSocketFd);
 
 	do
 	{
@@ -138,7 +138,7 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 			vTaskDelay(1000/portTICK_RATE_MS);
 		}
 	} while ( iRet != 0 );
-	//LOG_OUT(LOGOUT_DEBUG, "listen ok, iSocketFd:%d.", iSocketFd);
+	//LOG_OUT(LOGOUT_DEBUG, "listen ok, iSocketFd:%d", iSocketFd);
 
 	FD_ZERO( &stFdRead );
 	FD_SET( iSocketFd, &stFdRead );
@@ -169,7 +169,7 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 			continue;
 		}
 		
-		//LOG_OUT(LOGOUT_DEBUG, "WEB_WebServerTask, select ok, iRet:%d.", iRet);
+		//LOG_OUT(LOGOUT_DEBUG, "WEB_WebServerTask, select ok, iRet:%d", iRet);
 
 		//客户端已满，等待释放
 		while (1)
@@ -262,7 +262,7 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
 		iRet = select( pstCtx->iClientFd + 1, &stFdRead, NULL, NULL, &stRdTimeOut );
 		if ( iRet < 0 )
 		{
-			LOG_OUT(LOGOUT_ERROR, "read error, errno:%d, iRet:%d.", errno, iRet);
+			LOG_OUT(LOGOUT_ERROR, "read error, errno:%d, iRet:%d", errno, iRet);
 			goto end;
 		}
 		//等待接收超时
@@ -347,7 +347,7 @@ UINT WEB_WebSend( HTTP_CTX *pstCtx )
 	fd_set stFdWrite;
 	UINT8 ucRetry = 0;
 
-	//LOG_OUT(LOGOUT_DEBUG, "WEB_WebSend...", pstCtx->iClientFd);
+	//LOG_OUT(LOGOUT_DEBUG, "WEB_WebSend..", pstCtx->iClientFd);
 
 retry:
 
@@ -357,7 +357,7 @@ retry:
 	iRet = select( pstCtx->iClientFd + 1, NULL, &stFdWrite, NULL, &stTimeOut );
 	if ( iRet < 0 )
 	{
-		LOG_OUT(LOGOUT_ERROR, "select send error, errno:%d, iRet:%d.",
+		LOG_OUT(LOGOUT_ERROR, "select send error, errno:%d, iRet:%d",
 				errno, iRet);
 		return FAIL;
 	}
@@ -395,12 +395,12 @@ retry:
 	FREE_MEM( pstCtx->stResp.pcResponBody );
 	if ( iRet < 0 )
 	{
-		LOG_OUT(LOGOUT_ERROR, "send error, errno:%d.", errno);
+		LOG_OUT(LOGOUT_ERROR, "send error, errno:%d", errno);
 		return FAIL;
 	}
 	else if ( iRet != pstCtx->stResp.uiSendCurLen )
 	{
-		LOG_OUT(LOGOUT_ERROR, "should send %d, but send %d actually.",
+		LOG_OUT(LOGOUT_ERROR, "should send %d, but send %d actually",
 				pstCtx->stResp.uiSendCurLen, iRet);
 		return FAIL;
 	}

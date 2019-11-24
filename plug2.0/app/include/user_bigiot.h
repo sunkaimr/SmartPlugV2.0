@@ -19,19 +19,20 @@
 
 
 #define BIGIOT_DEVNAME_LEN  64
-#define BIGIOT_EVENT_NUM  	5
+#define BIGIOT_EVENT_NUM  	10
+#define BIGIOT_CBNAME_NUM  	64
 
 typedef int (*TriggerFun)(void);
 typedef int (*CallbackFun)(void * para);
 
 typedef struct tagBigiotEvent
 {
-	char* 			pcIfName;				//接口的名称
-    char* 			pcIfId;					//贝壳物联的接口ID
-	TriggerFun 		tf;						//触发条件函数，调用该函数指针返回true时才会调用回调函数
-	char*			cbName;					//回调函数名称
-	CallbackFun 	cb;						//回调函数
-	void* 			cbPara;					//回调函数入参
+    char* 			pcIfId;								//贝壳物联的接口ID
+	char			szCbName[BIGIOT_CBNAME_NUM];		//回调函数名称
+	CallbackFun 	cb;									//回调函数
+	void* 			cbPara;								//回调函数入参
+	void* 			pstCtx;								//BIGIOT_Ctx_S
+	long 			lNextTime;							//下一次接口数据的上报时间
 
 }BIGIOT_Event_S;
 

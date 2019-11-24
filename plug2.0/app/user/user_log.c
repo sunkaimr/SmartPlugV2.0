@@ -1,7 +1,7 @@
 #include "user_common.h"
 
 #define LOG_PREFIX_BUF_SIZE 	(100)
-#define LOG_BUF_SIZE 			(300)
+#define LOG_BUF_SIZE 			(500)
 
 
 //日志默认INFO级别
@@ -15,7 +15,7 @@ VOID LOG_LogInit( VOID )
  	g_pcLogBuf = (CHAR*)malloc( LOG_PREFIX_BUF_SIZE + LOG_BUF_SIZE + 5 );
 	if ( NULL == g_pcLogBuf )
 	{
-		printf("[ERROR][%s:%d][%s]# malloc failed, Free heap:%d.",
+		printf("[ERROR][%s:%d][%s]# malloc failed, Free heap:%d",
 				__FILE__, __LINE__, __func__, system_get_free_heap_size());
 		while(1);
 	}
@@ -55,7 +55,7 @@ VOID LOG_Logout(UINT uiLevel, CHAR *pcFileName, INT iLine, CHAR *pcfunc, CHAR *p
 	}
 
 	PLUG_GetDate( &stDate );
-	pcPos += snprintf( pcBuf, LOG_PREFIX_BUF_SIZE, "[%d-%02d-%02d %02d:%02d:%02d][%d]",
+	pcPos += snprintf( pcBuf, LOG_PREFIX_BUF_SIZE, "[%d-%02d-%02d %02d:%02d:%02d][%x]",
 					   stDate.iYear, stDate.iMonth, stDate.iDay,
 					   stDate.iHour, stDate.iMinute, stDate.iSecond,
 					   xTaskGetCurrentTaskHandle());

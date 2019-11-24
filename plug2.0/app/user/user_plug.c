@@ -73,7 +73,7 @@ UINT PLUG_SetTimerData( PLUG_TIMER_S* pstData )
 
 	if ( NULL == pstData )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "PLUG_SetTimerData, pstData = 0x%p.", pstData);
+	    LOG_OUT(LOGOUT_ERROR, "PLUG_SetTimerData, pstData = 0x%p", pstData);
 		return FAIL;
 	}
 
@@ -105,7 +105,7 @@ UINT PLUG_SetDelayData( PLUG_DELAY_S* pstData )
 
 	if ( NULL == pstData )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "PLUG_SetDelayData, pstData:0x%p.", pstData);
+	    LOG_OUT(LOGOUT_ERROR, "PLUG_SetDelayData, pstData:0x%p", pstData);
 		return FAIL;
 	}
 
@@ -136,7 +136,7 @@ UINT PLUG_SetSystemSetData( PLUG_SYSSET_S* pstData )
 
 	if ( NULL == pstData )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "PLUG_SetDelayData, pstData:0x%p.", pstData);
+	    LOG_OUT(LOGOUT_ERROR, "PLUG_SetDelayData, pstData:0x%p", pstData);
 		return FAIL;
 	}
 
@@ -168,7 +168,7 @@ UINT PLUG_SetPlatFormData( PLUG_PLATFORM_S* pstData )
 
 	if ( NULL == pstData )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "pstData:0x%p.", pstData);
+	    LOG_OUT(LOGOUT_ERROR, "pstData:0x%p", pstData);
 		return FAIL;
 	}
 
@@ -262,9 +262,10 @@ VOID PLUG_DelayDataDeInit( VOID )
 
 VOID PLUG_SystemSetDataDeInit( VOID )
 {
-	g_stPLUG_SystemSet.bRelayStatus = 0;
-	g_stPLUG_SystemSet.ucWifiMode = WIFI_MODE_STATION;
+	g_stPLUG_SystemSet.bRelayStatus 	= 0;
+	g_stPLUG_SystemSet.ucWifiMode 		= WIFI_MODE_STATION;
 	g_stPLUG_SystemSet.bSmartConfigFlag = FALSE;
+	g_stPLUG_SystemSet.eRelayPowerUp 	= PWUP_LAST;
 
 	strncpy(g_stPLUG_SystemSet.szPlugName, PLUG_NAME, PLUG_NAME_MAX_LEN);
 	memset(g_stPLUG_SystemSet.szWifiSSID, 0, PLUG_WIFI_SSID_LEN);
@@ -276,17 +277,22 @@ VOID PLUG_PlatformDeInit( VOID )
 {
 	g_stPLUG_PlatForm.ucCloudPlatform = PLATFORM_NONE;
 
-	g_stPLUG_PlatForm.eDevType		  = DEVTYPE_OTHER;
+	g_stPLUG_PlatForm.eDevType = DEVTYPE_other;
 
-	memset(g_stPLUG_PlatForm.szMqttProductKey, 0, PLUG_MQTT_PRODUCTKEY_LEN);
-	memset(g_stPLUG_PlatForm.szMqttDevName, 0, PLUG_MQTT_DEVNAME_LEN);
-	memset(g_stPLUG_PlatForm.szMqttDevSecret, 0, PLUG_MQTT_DEVSECRET_LEN);
+	memset(g_stPLUG_PlatForm.szMqttProductKey, 	0, PLUG_MQTT_PRODUCTKEY_LEN);
+	memset(g_stPLUG_PlatForm.szMqttDevName, 	0, PLUG_MQTT_DEVNAME_LEN);
+	memset(g_stPLUG_PlatForm.szMqttDevSecret, 	0, PLUG_MQTT_DEVSECRET_LEN);
 
-	memset(g_stPLUG_PlatForm.szBigiotDevId, 0, PLUG_BIGIOT_DEVID_LEN);
-	memset(g_stPLUG_PlatForm.szBigiotApiKey, 0, PLUG_BIGIOT_APIKEY_LEN);
-	memset(g_stPLUG_PlatForm.szSwitchId, 0, PLUG_BIGIOT_IFID_LEN);
-	memset(g_stPLUG_PlatForm.szTempId, 0, PLUG_BIGIOT_IFID_LEN);
-	memset(g_stPLUG_PlatForm.szHumidityId, 0, PLUG_BIGIOT_IFID_LEN);
+	memset(g_stPLUG_PlatForm.szBigiotDevId, 	0, PLUG_BIGIOT_DEVID_LEN);
+	memset(g_stPLUG_PlatForm.szBigiotApiKey, 	0, PLUG_BIGIOT_APIKEY_LEN);
+	memset(g_stPLUG_PlatForm.szSwitchId, 		0, PLUG_BIGIOT_IFID_LEN);
+	memset(g_stPLUG_PlatForm.szTempId, 			0, PLUG_BIGIOT_IFID_LEN);
+	memset(g_stPLUG_PlatForm.szHumidityId, 		0, PLUG_BIGIOT_IFID_LEN);
+
+	memset(g_stPLUG_PlatForm.szVoltageId, 		0, PLUG_BIGIOT_IFID_LEN);
+	memset(g_stPLUG_PlatForm.szCurrentId, 		0, PLUG_BIGIOT_IFID_LEN);
+	memset(g_stPLUG_PlatForm.szPowerId, 		0, PLUG_BIGIOT_IFID_LEN);
+	memset(g_stPLUG_PlatForm.szElectricityId, 	0, PLUG_BIGIOT_IFID_LEN);
 }
 
 UINT8 PLUG_GetWifiMode( VOID )
@@ -302,6 +308,22 @@ VOID PLUG_SetWifiMode( UINT8 ucWifiMode )
 	    return;
 	}
 	g_stPLUG_SystemSet.ucWifiMode = ucWifiMode;
+	CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
+}
+
+UINT8 PLUG_GetRelayPowerUpStatus( VOID )
+{
+	return g_stPLUG_SystemSet.eRelayPowerUp;
+}
+
+VOID PLUG_SetRelayPowerUpStatus( UINT8 ucStatus )
+{
+	if (ucStatus > PWUP_BUFF)
+	{
+	    LOG_OUT(LOGOUT_ERROR, "eRelayPowerUp error, eRelayPowerUp:%d", ucStatus);
+	    return;
+	}
+	g_stPLUG_SystemSet.eRelayPowerUp = ucStatus;
 	CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
 }
 
@@ -390,6 +412,11 @@ CHAR* PLUG_GetBigiotSwitchId( VOID )
 	return g_stPLUG_PlatForm.szSwitchId;
 }
 
+UINT PLUG_GetBigiotDeviceType( VOID )
+{
+	return g_stPLUG_PlatForm.eDevType;
+}
+
 CHAR* PLUG_GetBigiotTempId( VOID )
 {
 	return g_stPLUG_PlatForm.szTempId;
@@ -398,6 +425,26 @@ CHAR* PLUG_GetBigiotTempId( VOID )
 CHAR* PLUG_GetBigiotHumidityId( VOID )
 {
 	return g_stPLUG_PlatForm.szHumidityId;
+}
+
+CHAR* PLUG_GetBigiotVoltageId( VOID )
+{
+	return g_stPLUG_PlatForm.szVoltageId;
+}
+
+CHAR* PLUG_GetBigiotCurrentId( VOID )
+{
+	return g_stPLUG_PlatForm.szCurrentId;
+}
+
+CHAR* PLUG_GetBigiotPowerId( VOID )
+{
+	return g_stPLUG_PlatForm.szPowerId;
+}
+
+CHAR* PLUG_GetBigiotElectricityId( VOID )
+{
+	return g_stPLUG_PlatForm.szElectricityId;
 }
 
 VOID PLUG_SetBigiotDevId( CHAR* pcDevId )
@@ -789,6 +836,7 @@ UINT PLUG_MarshalJsonSystemSet( CHAR* pcBuf, UINT uiBufLen )
 
 	cJSON_AddBoolToObject( pJson, 	"RelayStatus", 		g_stPLUG_SystemSet.bRelayStatus);
 	cJSON_AddBoolToObject( pJson, 	"SmartConfigFlag", 	g_stPLUG_SystemSet.bSmartConfigFlag);
+	cJSON_AddNumberToObject( pJson, "RelayPowerUp", 	g_stPLUG_SystemSet.eRelayPowerUp);
 	cJSON_AddNumberToObject( pJson, "WifiMode", 		g_stPLUG_SystemSet.ucWifiMode);
 	cJSON_AddStringToObject( pJson, "PlugName", 		g_stPLUG_SystemSet.szPlugName);
 	cJSON_AddStringToObject( pJson, "WifiSSID", 		g_stPLUG_SystemSet.szWifiSSID);
@@ -841,6 +889,11 @@ UINT PLUG_MarshalJsonCloudPlatformSet( CHAR* pcBuf, UINT uiBufLen )
 	cJSON_AddStringToObject( pJson, "SwitchId", 		g_stPLUG_PlatForm.szSwitchId);
 	cJSON_AddStringToObject( pJson, "TempId",	 		g_stPLUG_PlatForm.szTempId);
 	cJSON_AddStringToObject( pJson, "HumidityId", 		g_stPLUG_PlatForm.szHumidityId);
+
+	cJSON_AddStringToObject( pJson, "VoltageId", 		g_stPLUG_PlatForm.szVoltageId);
+	cJSON_AddStringToObject( pJson, "CurrentId", 		g_stPLUG_PlatForm.szCurrentId);
+	cJSON_AddStringToObject( pJson, "PowerId", 			g_stPLUG_PlatForm.szPowerId);
+	cJSON_AddStringToObject( pJson, "ElectricityId", 	g_stPLUG_PlatForm.szElectricityId);
 
 	if ( Bigiot_GetBigioDeviceName() != NULL )
 	{
@@ -945,20 +998,20 @@ UINT PLUG_ParseHtmlData( CHAR* pData )
 	pJsonRoot = cJSON_Parse( pData );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pData);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pData);
 	    goto error;
 	}
 
 	iCount = cJSON_GetArraySize( pJsonRoot );
 	if ( iCount <= 0)
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_GetArraySize failed, iCount:%d.", iCount);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_GetArraySize failed, iCount:%d", iCount);
 	    goto error;
 	}
 
 	if ( iCount > HTTP_FILE_NUM_MAX )
 	{
-		LOG_OUT(LOGOUT_ERROR, "PLUG_ParseHtmlData ArraySize:%d big than %d.", iCount, HTTP_FILE_NUM_MAX);
+		LOG_OUT(LOGOUT_ERROR, "PLUG_ParseHtmlData ArraySize:%d big than %d", iCount, HTTP_FILE_NUM_MAX);
 		goto error;
 	}
 
@@ -1201,7 +1254,7 @@ UINT PLUG_ParseRelayStatus( CHAR* pDataStr )
 	pJsonRoot = cJSON_Parse( pDataStr );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pDataStr);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pDataStr);
 	    goto error;
 	}
 
@@ -1223,13 +1276,13 @@ UINT PLUG_ParseRelayStatus( CHAR* pDataStr )
 		}
 		else
 		{
-		    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse unknow status:%s.", pcTmp);
+		    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse unknow status:%s", pcTmp);
 		    goto error;
 		}
 	}
 	else
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse get \"status\" value failed, pDateStr:%s.", pDataStr);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse get \"status\" value failed, pDateStr:%s", pDataStr);
 	    goto error;
 	}
 
@@ -1259,7 +1312,7 @@ UINT PLUG_ParseDate( CHAR* pDateStr)
 	pJsonRoot = cJSON_Parse( pDateStr );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pDateStr);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pDateStr);
 	    goto error;
 	}
 
@@ -1271,7 +1324,7 @@ UINT PLUG_ParseDate( CHAR* pDateStr)
 		//正确的时间格式如："2018-12-01 00:00:00"
 		if ( strlen(pcTmp) != 19 )
 		{
-			LOG_OUT(LOGOUT_ERROR, "PLUG_ParseDate Invalid time format, date:%s.", pcTmp);
+			LOG_OUT(LOGOUT_ERROR, "PLUG_ParseDate Invalid time format, date:%s", pcTmp);
 			return FAIL;
 		}
 
@@ -1302,7 +1355,7 @@ UINT PLUG_ParseDate( CHAR* pDateStr)
 	}
 	else
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse get \"date\" value failed, pDateStr:%s.", pDateStr);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse get \"date\" value failed, pDateStr:%s", pDateStr);
 	    goto error;
 	}
 
@@ -1335,14 +1388,14 @@ UINT PLUG_ParseTimerData( CHAR* pData )
 	pJsonRoot = cJSON_Parse( pData );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pData);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pData);
 	    goto error;
 	}
 
 	iCount = cJSON_GetArraySize( pJsonRoot );
 	if ( iCount <= 0)
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_GetArraySize failed, iCount:%d.", iCount);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_GetArraySize failed, iCount:%d", iCount);
 	    goto error;
 	}
 
@@ -1423,7 +1476,7 @@ UINT PLUG_ParseTimerData( CHAR* pData )
 			//正确的格式如："00:00"
 			if ( strlen(pcTmp) != 5 )
 			{
-				LOG_OUT(LOGOUT_ERROR, "PLUG_ParseTimerData, Invalid OnTime format, %s.", pcTmp);
+				LOG_OUT(LOGOUT_ERROR, "PLUG_ParseTimerData, Invalid OnTime format, %s", pcTmp);
 				return FAIL;
 			}
 			stTimer.stOnTime.iHour = (pcTmp[0]-'0')*10 + (pcTmp[1]-'0');
@@ -1438,7 +1491,7 @@ UINT PLUG_ParseTimerData( CHAR* pData )
 			//正确的格式如："00:00"
 			if ( strlen(pcTmp) != 5 )
 			{
-				LOG_OUT(LOGOUT_ERROR, "PLUG_ParseTimerData, Invalid OffTime format, %s.", pcTmp);
+				LOG_OUT(LOGOUT_ERROR, "PLUG_ParseTimerData, Invalid OffTime format, %s", pcTmp);
 				return FAIL;
 			}
 			stTimer.stOffTime.iHour = (pcTmp[0]-'0')*10 + (pcTmp[1]-'0');
@@ -1485,14 +1538,14 @@ UINT PLUG_ParseDelayData( CHAR* pData )
 	pJsonRoot = cJSON_Parse( pData );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pData);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pData);
 	    goto error;
 	}
 
 	iCount = cJSON_GetArraySize( pJsonRoot );
 	if ( iCount <= 0)
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_GetArraySize failed, iCount:%d.", iCount);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_GetArraySize failed, iCount:%d", iCount);
 	    goto error;
 	}
 
@@ -1573,7 +1626,7 @@ UINT PLUG_ParseDelayData( CHAR* pData )
 			//正确的格式如："00:00"
 			if ( strlen(pcTmp) != 5 )
 			{
-				LOG_OUT(LOGOUT_ERROR, "PLUG_ParseTimerData, Invalid OnTime format, %s.", pcTmp);
+				LOG_OUT(LOGOUT_ERROR, "PLUG_ParseTimerData, Invalid OnTime format, %s", pcTmp);
 				return FAIL;
 			}
 			stDelay.stOnInterval.iHour = (pcTmp[0]-'0')*10 + (pcTmp[1]-'0');
@@ -1588,7 +1641,7 @@ UINT PLUG_ParseDelayData( CHAR* pData )
 			//正确的格式如："00:00"
 			if ( strlen(pcTmp) != 5 )
 			{
-				LOG_OUT(LOGOUT_ERROR, "PLUG_ParseDelayData, Invalid OffTime format, %s.", pcTmp);
+				LOG_OUT(LOGOUT_ERROR, "PLUG_ParseDelayData, Invalid OffTime format, %s", pcTmp);
 				return FAIL;
 			}
 			stDelay.stOffInterval.iHour = (pcTmp[0]-'0')*10 + (pcTmp[1]-'0');
@@ -1633,7 +1686,7 @@ UINT PLUG_ParseInfraredData( CHAR* pData )
 	pJsonRoot = cJSON_Parse( pData );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pData);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pData);
 	    uiRet = FAIL;
 	    goto exit;
 	}
@@ -1641,7 +1694,7 @@ UINT PLUG_ParseInfraredData( CHAR* pData )
 	iCount = cJSON_GetArraySize( pJsonRoot );
 	if ( iCount <= 0)
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_GetArraySize failed, iCount:%d.", iCount);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_GetArraySize failed, iCount:%d", iCount);
 	    uiRet = FAIL;
 	    goto exit;
 	}
@@ -1719,7 +1772,7 @@ UINT PLUG_ParseSystemData( CHAR* pData )
 	pJsonRoot = cJSON_Parse( pData );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pData);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pData);
 	    goto error;
 	}
 
@@ -1749,6 +1802,12 @@ UINT PLUG_ParseSystemData( CHAR* pData )
 	if (pJsonIteam && pJsonIteam->type == cJSON_Number)
 	{
 		stSys.ucWifiMode = pJsonIteam->valueint;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "RelayPowerUp");
+	if (pJsonIteam && pJsonIteam->type == cJSON_Number)
+	{
+		stSys.eRelayPowerUp = pJsonIteam->valueint;
 	}
 
 	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "PlugName");
@@ -1804,7 +1863,7 @@ UINT PLUG_ParseWebSetData( CHAR* pData )
 	pJsonRoot = cJSON_Parse( pData );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pData:%s.", pData);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pData:%s", pData);
 	    goto error;
 	}
 
@@ -1870,7 +1929,7 @@ UINT PLUG_ParseCloudPlatformData( CHAR* pData )
 	pJsonRoot = cJSON_Parse( pData );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pData);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pData);
 	    goto error;
 	}
 
@@ -1944,6 +2003,34 @@ UINT PLUG_ParseCloudPlatformData( CHAR* pData )
 		stPlatform.szHumidityId[PLUG_BIGIOT_IFID_LEN] = 0;
 	}
 
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "VoltageId");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(stPlatform.szVoltageId, pJsonIteam->valuestring, PLUG_BIGIOT_IFID_LEN);
+		stPlatform.szVoltageId[PLUG_BIGIOT_IFID_LEN] = 0;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "CurrentId");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(stPlatform.szCurrentId, pJsonIteam->valuestring, PLUG_BIGIOT_IFID_LEN);
+		stPlatform.szCurrentId[PLUG_BIGIOT_IFID_LEN] = 0;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "PowerId");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(stPlatform.szPowerId, pJsonIteam->valuestring, PLUG_BIGIOT_IFID_LEN);
+		stPlatform.szPowerId[PLUG_BIGIOT_IFID_LEN] = 0;
+	}
+
+	pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "ElectricityId");
+	if (pJsonIteam && pJsonIteam->type == cJSON_String)
+	{
+		strncpy(stPlatform.szElectricityId, pJsonIteam->valuestring, PLUG_BIGIOT_IFID_LEN);
+		stPlatform.szElectricityId[PLUG_BIGIOT_IFID_LEN] = 0;
+	}
+
 	uiRet = PLUG_SetPlatFormData( &stPlatform);
 	if ( uiRet != OK )
 	{
@@ -1976,7 +2063,7 @@ UINT PLUG_ParseDeviceControlData( CHAR* pData )
 	pJsonRoot = cJSON_Parse( pData );
 	if ( pJsonRoot == NULL )
 	{
-	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s.", pData);
+	    LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pDateStr:%s", pData);
 	    goto error;
 	}
 
@@ -2117,7 +2204,7 @@ static VOID PLUG_TimerCascade( PLUG_TIMER_S *pstTimer )
 
 	if ( NULL == pstTimer )
 	{
-		LOG_OUT(LOGOUT_ERROR, "PLUG_TimerCascade pstTimer = 0x%p.", pstTimer);
+		LOG_OUT(LOGOUT_ERROR, "PLUG_TimerCascade pstTimer = 0x%p", pstTimer);
 	    return;
 	}
 
@@ -2130,7 +2217,7 @@ static VOID PLUG_TimerCascade( PLUG_TIMER_S *pstTimer )
 
 	if ( PLUG_DELAY_MAX < uiMember )
 	{
-		LOG_OUT(LOGOUT_ERROR, "PLUG_TimerCascade uiMember:%u.", uiMember);
+		LOG_OUT(LOGOUT_ERROR, "PLUG_TimerCascade uiMember:%u", uiMember);
 		return;
 	}
 
@@ -2207,7 +2294,7 @@ VOID PLUG_GetNextDelayTime( PLUG_DELAY_S *pstDelay )
 
 	if ( NULL == pstDelay )
 	{
-		LOG_OUT(LOGOUT_ERROR, "PLUG_GetNextDelayTime pstDelay = 0x%p.", pstDelay);
+		LOG_OUT(LOGOUT_ERROR, "PLUG_GetNextDelayTime pstDelay = 0x%p", pstDelay);
 	    return;
 	}
 
@@ -2284,7 +2371,7 @@ VOID PLUG_StartDelayTime( PLUG_DELAY_S *pstDelay )
 
 	if ( NULL == pstDelay )
 	{
-		LOG_OUT(LOGOUT_ERROR, "PLUG_StartDelayTime pstDelay = 0x%p.", pstDelay);
+		LOG_OUT(LOGOUT_ERROR, "PLUG_StartDelayTime pstDelay = 0x%p", pstDelay);
 	    return;
 	}
 
