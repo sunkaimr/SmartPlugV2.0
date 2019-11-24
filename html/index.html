@@ -123,8 +123,8 @@
 				<ul class="breadcrumb">
 					<li><a id="timer">定时</a></li>
 					<li><a id="delay">延时</a></li>
-					<li><a id="infrared">红外控制</a></li>
-					<li><a id="meter">计量计费</a></li>
+					<li><a id="infrared">红外</a></li>
+					<li><a id="meter">电量</a></li>
 					<li><a id="cloudPlatform">云平台</a></li>
 					<li><a id="set">设置</a></li>
 				</ul>
@@ -189,16 +189,48 @@
 						<label class="col-sm-1 control-label">设备类型 :</label>
 						<div class="col-sm-3 ">
 							<select id="BigiotDeviceTypeSelect" class="form-control">
-								<option value=0>灯</option>
-								<option value=1>插座</option>
-								<option value=2>开关</option>
-								<option value=3>电视</option>
-								<option value=4>风扇</option>
-								<option value=5>加湿器</option>
-								<option value=6>取暖器</option>
-								<option value=7>饮水机</option>
-								<option value=8>电热水壶</option>
-								<option value=9>其他</option>
+								<option value=0>默认设备</option >
+								<option value=1>电视</option >
+								<option value=2>灯</option >
+								<option value=3>空调</option >
+								<option value=4>空气净化器</option >
+								<option value=5>插座</option >
+								<option value=6>开关</option >
+								<option value=7>扫地机器人</option >
+								<option value=8>窗帘</option >
+								<option value=9>加湿器</option >
+								<option value=10>风扇</option >
+								<option value=11>暖奶器</option >
+								<option value=12>豆浆机</option >
+								<option value=13>电热水壶</option >
+								<option value=14>饮水机</option >
+								<option value=15>摄像头</option >
+								<option value=16>路由器</option >
+								<option value=17>电饭煲</option >
+								<option value=18>热水器</option >
+								<option value=19>烤箱</option >
+								<option value=20>净水器</option >
+								<option value=21>冰箱</option >
+								<option value=22>机顶盒</option >
+								<option value=23>传感器</option >
+								<option value=24>洗衣机</option >
+								<option value=25>智能床</option >
+								<option value=26>香薰机</option >
+								<option value=27>窗</option >
+								<option value=28>抽油烟机</option >
+								<option value=29>指纹锁</option >
+								<option value=30>万能遥控器</option >
+								<option value=31>洗碗机</option >
+								<option value=32>除湿机</option >
+								<option value=33>干衣机</option >
+								<option value=34>壁挂炉</option >
+								<option value=35>微波炉</option >
+								<option value=36>取暖器</option >
+								<option value=37>驱蚊器</option >
+								<option value=38>跑步机</option >
+								<option value=39>智能门控(门锁)</option >
+								<option value=40>智能手环</option >
+								<option value=41>晾衣架</option >
 							</select>
 						</div>
 						<span class="help-block col-sm-6">选择贝壳物联的设备类型</span>
@@ -222,23 +254,50 @@
 						<div class="col-sm-3 ">
 							<input id="BigiotIfSwitchStatus" class="form-control" type="text" placeholder="开关接口ID">
 						</div>
-						<span class="help-block col-sm-5">设备开关状态的接口ID, 用于上报设备的开关状态</span>
+						<span class="help-block col-sm-5">开关接口ID, 用于上报设备的开关状态</span>
 					</div>
 					<div id="BigiotIfTempClass" class="form-group hidden">
 						<label class="col-sm-1 control-label">温度接口 :</label>
 						<div class="col-sm-3 ">
 							<input id="BigiotIfTemp" class="form-control" type="text" placeholder="温度接口ID">
 						</div>
-						<span class="help-block col-sm-5">设备温度的接口ID， 用于上报设备的温度</span>
+						<span class="help-block col-sm-5">温度接口ID， 用于上报设备的温度</span>
 					</div>
-					<div id="BigiotIfumidityClass" class="form-group hidden">
+					<div id="BigiotIfHumidityClass" class="form-group hidden">
 						<label class="col-sm-1 control-label">湿度接口 :</label>
 						<div class="col-sm-3 ">
 							<input id="BigiotIfHumidity" class="form-control" type="text" placeholder="湿度接口ID">
 						</div>
-						<span class="help-block col-sm-5">设备湿度的接口ID， 用于上报设备的湿度</span>
+						<span class="help-block col-sm-5">湿度接口ID， 用于上报设备的湿度</span>
 					</div>
-
+					<div id="BigiotIfVoltageClass" class="form-group hidden">
+						<label class="col-sm-1 control-label">电压接口 :</label>
+						<div class="col-sm-3 ">
+							<input id="BigiotIfVoltage" class="form-control" type="text" placeholder="电压接口ID">
+						</div>
+						<span class="help-block col-sm-5">电压接口ID， 用于上报设备的电压</span>
+					</div>
+                    <div id="BigiotIfCurrentClass" class="form-group hidden">
+                        <label class="col-sm-1 control-label">电流接口 :</label>
+                        <div class="col-sm-3 ">
+                            <input id="BigiotIfCurrent" class="form-control" type="text" placeholder="电流接口ID">
+                        </div>
+                        <span class="help-block col-sm-5">电流接口ID， 用于上报设备的电流</span>
+                    </div>
+                    <div id="BigiotIfPowerClass" class="form-group hidden">
+                        <label class="col-sm-1 control-label">功率接口 :</label>
+                        <div class="col-sm-3 ">
+                            <input id="BigiotIfPower" class="form-control" type="text" placeholder="功率接口ID">
+                        </div>
+                        <span class="help-block col-sm-5">功率接口ID， 用于上报设备的功率</span>
+                    </div>
+                    <div id="BigiotIfElectricityClass" class="form-group hidden">
+                        <label class="col-sm-1 control-label">电量接口 :</label>
+                        <div class="col-sm-3 ">
+                            <input id="BigiotIfElectricity" class="form-control" type="text" placeholder="电量接口ID">
+                        </div>
+                        <span class="help-block col-sm-5">电量接口ID， 用于上报设备的电量</span>
+                    </div>
 					<div class="form-group">
 						<label class="col-sm-1 control-label"></label>
 						<div class="col-sm-3">
@@ -271,16 +330,18 @@
 						</div>
 						<span class="help-block col-sm-6">热点模式：设备将发射WIFI信号；客户端模式：设备需要连接路由器</span>
 					</div>
-					<div id="wifiClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">WIFI :</label>
-						<div class="col-sm-2 ">
-							<select id="wifiList" class="form-control"></select>
-						</div>
-						<div class="col-sm-1 ">
-							<button id="scanWifi" class="btn btn-info btn-block" type="button">扫描</button>
-						</div>
-						<span class="help-block col-sm-5">点击“扫描”，选择需要连接的WIFI名称</span>
-					</div>
+
+                    <div id="wifiClass" class="row form-group">
+                        <label class="col-sm-1 control-label">WIFI :</label>
+                        <div class="col-sm-3">
+                            <div class="input-group">
+                                <select id="wifiList" class="form-control"></select>
+                                <span class="input-group-btn">
+                                    <button id="scanWifi" class="btn btn-primary btn-block" type="button">扫描</button>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
 					<div id="wifiCustomClass" class="form-group hidden">
 						<label class="col-sm-1 control-label">WIFI :</label>
 						<div class="col-sm-3 ">
@@ -295,6 +356,17 @@
 						</div>
 						<span class="help-block col-sm-5">请输入要连接的WIFI密码</span>
 					</div>
+                    <div class="form-group">
+                        <label class="col-sm-1 control-label">上电状态 :</label>
+                        <div class="col-sm-3 ">
+                            <select id="relayPowerUp" class="form-control">
+                                <option value=0>上次状态</option>
+                                <option value=1>关闭</option>
+                                <option value=2>打开</option>
+                            </select>
+                        </div>
+                        <span class="help-block col-sm-6">关闭：上电时关闭；打开：上电时打开；上次状态：记忆上次的状态</span>
+                    </div>
 					<div class="form-group">
 						<label class="col-sm-1 control-label"></label>
 						<div class="col-sm-3">
@@ -303,16 +375,18 @@
 						<span class="help-block col-sm-5">修改后重启生效</span>
 					</div>
 					<br/>
-					<div class="form-group">
-						<label class="col-sm-1 control-label">升级 :</label>
-						<div class="col-sm-2">
-							<input id="file" type="file" accept=".bin" style="display:none">
-							<input id="binFile" class="form-control" type="text" placeholder="请选择固件">
-						</div>
-						<div class="col-sm-1">
-							<button id="upload" class="btn btn-primary btn-block" type="button">升级</button>
-						</div>
-					</div>
+                    <div class="row form-group">
+                        <label class="col-sm-1 control-label">升级 :</label>
+                        <div class="col-sm-3">
+                            <div class="input-group">
+                                <input id="file" type="file" accept=".bin" style="display:none">
+                                <input id="binFile" class="form-control" type="text" placeholder="请选择固件">
+                                <span class="input-group-btn">
+                                    <button id="upload" class="btn btn-primary btn-block" type="button">升级</button>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
 					<div class="form-group">
 						<label class="col-sm-1 control-label">重启 :</label>
 						<div class="col-sm-3">
@@ -329,7 +403,7 @@
 					</div>
 			</form>
 
-			<form id="meterInfo" class="form-horizontal hidden" action="#" method="POST">
+			    <form id="meterInfo" class="form-horizontal hidden" action="#" method="POST">
 				<div class="form-group">
 					<label class="col-sm-1 control-label">自动刷新 :</label>
 					<div class="col-sm-2 ">
@@ -351,28 +425,28 @@
 					<div class="col-sm-2 ">
 						<input id="meterVoltage" class="form-control" type="text">
 					</div>
-					<span class="help-block col-sm-5">单位：伏/V</span>
+					<span class="help-block col-sm-5">单位：V</span>
 				</div>
 				<div class="form-group">
 					<label class="col-sm-1 control-label">电流 :</label>
 					<div class="col-sm-2 ">
 						<input id="meterCurrent" class="form-control" type="text">
 					</div>
-					<span class="help-block col-sm-5">单位：安培/A</span>
+					<span class="help-block col-sm-5">单位：A</span>
 				</div>
 				<div class="form-group">
 					<label class="col-sm-1 control-label">功率 :</label>
 					<div class="col-sm-2 ">
 						<input id="meterPower" class="form-control" type="text">
 					</div>
-					<span class="help-block col-sm-5">单位：瓦/W</span>
+					<span class="help-block col-sm-5">单位：W</span>
 				</div>
 				<div class="form-group">
 					<label class="col-sm-1 control-label">视在功率 :</label>
 					<div class="col-sm-2 ">
 						<input id="meterApparentPower" class="form-control" type="text">
 					</div>
-					<span class="help-block col-sm-5">单位：瓦/W</span>
+					<span class="help-block col-sm-5">单位：W</span>
 				</div>
 				<div class="form-group">
 					<label class="col-sm-1 control-label">功率因数 :</label>
@@ -385,22 +459,88 @@
 					<div class="col-sm-2 ">
 						<input id="meterElectricity" class="form-control" type="text">
 					</div>
-					<span class="help-block col-sm-5">单位：度/W·h</span>
+					<span class="help-block col-sm-5">单位：W·h</span>
 				</div>
 				<div class="form-group">
 					<label class="col-sm-1 control-label">运行时间 :</label>
 					<div class="col-sm-2 ">
 						<input id="meterRunTime" class="form-control" type="text">
 					</div>
-					<span class="help-block col-sm-5">单位：小时/h</span>
+					<span class="help-block col-sm-5">单位：小时</span>
 				</div>
 				<div class="form-group">
 					<label class="col-sm-1 control-label"></label>
 					<div class="col-sm-2">
 						<button id="meterClear" class="btn btn-primary btn-block" type="button">清零数据</button>
 					</div>
-					<span class="help-block col-sm-5">计量数据清零</span>
 				</div>
+				<div class="row form-group">
+					<label class="col-sm-1 control-label">欠压保护：</label>
+					<div class="col-sm-2">
+						<div class="input-group">
+							<input id="underVoltage" type="text" class="form-control" aria-label="欠压保护">
+							<span class="input-group-addon">
+        						<input id="underVoltageEnable" type="checkbox" aria-label="欠压保护">
+      						</span>
+                        </div>
+                    </div>
+                    <span class="help-block col-sm-5">单位：V，检测到电压低于设定电压时将关闭设备</span>
+                </div>
+				<div class="row form-group">
+					<label class="col-sm-1 control-label">过压保护：</label>
+					<div class="col-sm-2">
+						<div class="input-group">
+							<input id="overVoltage" type="text" class="form-control" aria-label="过压保护">
+							<span class="input-group-addon">
+        						<input id="overVoltageEnable" type="checkbox" aria-label="过压保护">
+      						</span>
+                        </div>
+					</div>
+                    <span class="help-block col-sm-5">单位：V，检测到电压高于设定电压时将关闭设备</span>
+                </div>
+				<div class="row form-group">
+					<label class="col-sm-1 control-label">过流保护：</label>
+					<div class="col-sm-2">
+						<div class="input-group">
+							<input id="overCurrent" type="text" class="form-control" aria-label="过流保护">
+							<span class="input-group-addon">
+        						<input id="overCurrentEnable" type="checkbox" aria-label="过流保护">
+      						</span>
+						</div>
+					</div>
+                    <span class="help-block col-sm-5">单位：A，检测到通过的电流大于设定电流时将关闭设备</span>
+				</div>
+                <div class="row form-group">
+					<label class="col-sm-1 control-label">过载保护：</label>
+					<div class="col-sm-2">
+						<div class="input-group">
+							<input id="overPower" type="text" class="form-control" aria-label="过载保护">
+							<span class="input-group-addon">
+        						<input id="overPowerEnable" type="checkbox" aria-label="过载保护">
+      						</span>
+						</div>
+					</div>
+                    <span class="help-block col-sm-5">单位：W，检测到功率大于设定的功率时将关闭设备</span>
+				</div>
+                <div class="row form-group">
+                    <label class="col-sm-1 control-label">充电保护：</label>
+                    <div class="col-sm-2">
+                        <div class="input-group">
+                            <input id="underPower" type="text" class="form-control" aria-label="充电保护">
+                            <span class="input-group-addon">
+        						<input id="underPowerEnable" type="checkbox" aria-label="...">
+      						</span>
+                        </div>
+                    </div>
+                    <span class="help-block col-sm-5">单位：W，检测到功率小于设定的功率时在5分钟之后将关闭设备</span>
+                </div>
+				<div class="form-group">
+					<label class="col-sm-1 control-label"></label>
+					<div class="col-sm-2">
+						<button id="meterButton" class="btn btn-primary btn-block" type="button">确定</button>
+					</div>
+				</div>
+
 			</form>
 
 			</div>
@@ -450,20 +590,20 @@
 		</div>
 	</div>
 
-		<div class="modal fade" id="meterClearModal" tabindex="1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-			<div class="modal-dialog">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h4>提示</h4>
-					</div>
-					<div id="meterCleartBody" class="modal-body">确认将计量清零数据</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-						<button id="meterClearModalButton" type="submit" class="btn btn-primary">确定</button>
-					</div>
-				</div>
-			</div>
-		</div>
+    <div class="modal fade" id="meterClearModal" tabindex="1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4>提示</h4>
+                </div>
+                <div id="meterCleartBody" class="modal-body">确认将计量清零数据</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button id="meterClearModalButton" type="submit" class="btn btn-primary">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 	<div class="modal fade" id="resetModal" tabindex="1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 		<div class="modal-dialog">
@@ -488,51 +628,51 @@
 						<h4 id="timerModalHead">定时</h4>
 					</div>
 					<div class="modal-body">
-						<div class="form-group">
-							<label class="col-sm-3 control-label">名称：</label>
-							<div class="col-sm-4">
-								<input id="timeName" name="timeName" type="text" class="form-control input-inline">
-							</div>
-							<label class="col-sm-2 control-label">启用：</label>
-							<div class="col-sm-3 checkbox">
-								<input id="timeEnable" type="checkbox" checked="true">
-							</div>
-						</div>
-
-						<div class="form-group">
-							<label class="col-sm-3 control-label">开启时间：</label>
-							<div class="col-sm-4">
-								<input id="onTime" name="onTime" type="time" class="form-control input-inline form_time">
-							</div>
-							<label class="col-sm-2 control-label">启用：</label>
-							<div class="col-sm-3 checkbox">
-								<input id="onTimeEnable" type="checkbox" checked="true">
-							</div>
-						</div>
-
-						<div class="form-group">
-							<label class="col-sm-3 control-label">关闭时间：</label>
-							<div class="col-sm-4">
-								<input id="offTime" name="offTime" type="time" class="form-control input-inline form_time">
-							</div>
-							<label class="col-sm-2 control-label">启用：</label>
-							<div class="col-sm-3 checkbox">
-								<input id="offTimeEnable" type="checkbox" value="">
-							</div>
-						</div>
-
-						<div class="form-group">
-							<label class="col-sm-3 control-label">关联延时：</label>
-							<div class="col-sm-4">
-								<input id="timerCascodeNum" name="timerCascodeNum" type="number" min="1" max="10" class="form-control input-inline">
-							</div>
-							<label class="col-sm-2 control-label">启用：</label>
-							<div class="col-sm-3 checkbox">
-								<input id="timerCascodeEnable" type="checkbox" value="">
-							</div>
-						</div>
-
-						<div class="form-group">
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">名称：</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="timeName" type="text" class="form-control">
+                                    <span class="input-group-addon">
+        						        <input id="timeEnable" type="checkbox">
+      						        </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">开启时间：</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="onTime" type="time" class="form-control">
+                                    <span class="input-group-addon">
+        						        <input id="onTimeEnable" type="checkbox">
+      						        </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">关闭时间：</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="offTime" type="time" class="form-control form_time">
+                                    <span class="input-group-addon">
+        						        <input id="offTimeEnable" type="checkbox">
+      						        </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">关联延时：</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="timerCascodeNum" type="number" class="form-control">
+                                    <span class="input-group-addon">
+        						        <input id="timerCascodeEnable" type="checkbox">
+      						        </span>
+                                </div>
+                            </div>
+                        </div>
+    						<div class="form-group">
 							<label class="col-sm-3 control-label">重&nbsp;&nbsp;复：</label>
 							<div class="col-sm-7">
 									<label class="checkbox-inline"><input id="week1" type="checkbox">周一</label>
@@ -565,56 +705,63 @@
 						<h4 id="delayModalHead">延时</h4>
 					</div>
 					<div class="modal-body">
-						<div class="form-group">
-							<label class="col-sm-3 control-label">名称：</label>
-							<div class="col-sm-4">
-								<input id="delayName" name="delayName" type="text" class="form-control input-inline">
-							</div>
-							<label class="col-sm-2 control-label">启用：</label>
-							<div class="col-sm-3 checkbox">
-								<input id="delayEnable" type="checkbox" checked="true">
-							</div>
-						</div>
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">名称：</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="delayName" type="text" class="form-control">
+                                    <span class="input-group-addon">
+        						        <input id="delayEnable" type="checkbox">
+      						        </span>
+                                </div>
+                            </div>
+                        </div>
 
-						<div class="form-group">
-							<label class="col-sm-3 control-label">开启间隔：</label>
-							<div class="col-sm-4">
-								<input id="onInterval" name="onInterval" type="time" class="form-control input-inline form_time">
-							</div>
-							<label class="col-sm-2 control-label">启用：</label>
-							<div class="col-sm-3 checkbox">
-								<input id="onIntervalEnable" type="checkbox" checked="true">
-							</div>
-						</div>
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">开启间隔：</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="onInterval" type="time" class="form-control input-inline form_time">
+                                    <span class="input-group-addon">
+        						        <input id="onIntervalEnable" type="checkbox">
+      						        </span>
+                                </div>
+                            </div>
+                        </div>
 
-						<div class="form-group">
-							<label class="col-sm-3 control-label">关闭间隔：</label>
-							<div class="col-sm-4">
-								<input id="offInterval" name="offInterval" type="time" class="form-control input-inline form_time">
-							</div>
-							<label class="col-sm-2 control-label">启用：</label>
-							<div class="col-sm-3 checkbox">
-								<input id="offIntervalEnable" type="checkbox" value="">
-							</div>
-						</div>
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">关闭间隔：</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="offInterval" type="time" class="form-control input-inline form_time">
+                                    <span class="input-group-addon">
+        						        <input id="offIntervalEnable" type="checkbox">
+      						        </span>
+                                </div>
+                            </div>
+                        </div>
 
-						<div class="form-group">
-							<label class="col-sm-3 control-label">关联延时：</label>
-							<div class="col-sm-4">
-								<input id="delayCascodeNum" name="delayCascodeNum" type="number" min="1" max="10" class="form-control input-inline">
-							</div>
-							<label class="col-sm-2 control-label">启用：</label>
-							<div class="col-sm-3 checkbox">
-								<input id="delayCascodeEnable" type="checkbox" value="">
-							</div>
-						</div>
-
-						<div class="form-group">
-							<label class="col-sm-3 control-label">重复次数：</label>
-							<div class="col-sm-4">
-								<input id="cycleTimes" name="cycleTimes" type="number" min="1" max="9999" class="form-control input-inline">
-							</div>
-						</div>
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">关联延时：</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="delayCascodeNum" type="number" class="form-control">
+                                    <span class="input-group-addon">
+        						        <input id="delayCascodeEnable" type="checkbox">
+      						        </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">重复次数：</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="cycleTimes" type="number" class="form-control">
+                                    <span class="input-group-addon">
+      						        </span>
+                                </div>
+                            </div>
+                        </div>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
@@ -624,7 +771,6 @@
 			</div>
 		</div>
 	</form>
-	</div>
 
 	<form id="infraredSubmitForm" class="form-horizontal" role="form" action="infrared" method="post">
 		<div class="modal fade" id="infraredSubmitModal" tabindex="2" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -634,34 +780,40 @@
 						<h4 id="infraredModalHead">红外控制</h4>
 					</div>
 					<div class="modal-body">
-						<div class="form-group">
-							<label class="col-sm-3 control-label">名称：</label>
-							<div class="col-sm-4">
-								<input id="infraredName" name="infraredName" type="text" class="form-control input-inline">
-							</div>
-							<label class="col-sm-2 control-label">启用：</label>
-							<div class="col-sm-3 checkbox">
-								<input id="infraredEnable" type="checkbox" checked="true">
-							</div>
-						</div>
-						<div class="form-group">
-							<label class="col-sm-3 control-label">开启值：</label>
-							<div class="col-sm-4">
-								<input id="infraredOnValue" name="infraredOnValue" type="text" class="form-control input-inline form_time">
-							</div>
-							<div class="col-sm-3">
-								<button id="infraredOnBtn" class="form-control" type="button" onclick="infraredOnClick()">重新学习</button>
-							</div>
-						</div>
-						<div class="form-group">
-							<label class="col-sm-3 control-label">关闭值：</label>
-							<div class="col-sm-4">
-								<input id="infraredOffValue" name="infraredOffValue" type="text" class="form-control input-inline form_time">
-							</div>
-							<div class="col-sm-3">
-								<button id="infraredOffBtn" class="form-control" type="button" onclick="infraredOffClick()">重新学习</button>
-							</div>
-						</div>
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">名称：</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="infraredName" type="text" class="form-control">
+                                    <span class="input-group-addon">
+        						        <input id="infraredEnable" type="checkbox">
+      						        </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">开启值 :</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="infraredOnValue"  type="text" class="form-control input-inline">
+                                    <span class="input-group-btn">
+								        <button id="infraredOnBtn" class="form-control" type="button" onclick="infraredOnClick()">重新学习</button>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label class="col-sm-3 control-label">关闭值 :</label>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input id="infraredOffValue"  type="text" class="form-control input-inline">
+                                    <span class="input-group-btn">
+								        <button id="infraredOffBtn" class="form-control" type="button" onclick="infraredOffClick()">重新学习</button>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 						</br><p class="text-center text-info">提示: 请将遥控器对准红外设备按下要学习的按键，并在30s内完成学习</p>
 					</div>
 					<div class="modal-footer">
@@ -672,7 +824,7 @@
 			</div>
 		</div>
 	</form>
-	</div>
+    </div>
 
 	<nav id="delayTaskClass" class="navbar navbar-default navbar-fixed-bottom">
 		<div class="container">

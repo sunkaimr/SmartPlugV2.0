@@ -44,6 +44,7 @@ $(document).ready(function () {
 	$("#resetModalButton").click(reset);
     $("#meterClearModalButton").click(meterClear);
     $("#meterRefreshSelect").change(meterRefreshChange);
+    $("#meterButton").click(meterSubmit);
 
 	$("#content").click(function () {
 		$("#navBar").collapse('hide');
@@ -346,16 +347,20 @@ function PlatformSelectChange(){
 		$("#ProductKeyClass, #DeviceNameClass, #DeviceSecretClass").removeClass("hidden");
 
 		$("#BigiotDeviceIdClass, #BigiotApiKeyClass, #BigiotDeviceTypeClass, #BigiotDeviceNameClass").addClass("hidden");
-		$("#BigiotDeviceTypeClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfumidityClass").addClass("hidden");
+		$("#BigiotDeviceTypeClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfHumidityClass").addClass("hidden");
+        $("#BigiotIfVoltageClass, #BigiotIfCurrentClass, #BigiotIfPowerClass, #BigiotIfElectricityClass").addClass("hidden");
+
 	}else if (  $("#PlatformSelect").val() == 2 ){
 
 		$("#ProductKeyClass, #DeviceNameClass, #DeviceSecretClass").addClass("hidden");
         $("#BigiotDeviceNameClass, #BigiotApiKeyClass, #BigiotDeviceTypeClass").removeClass("hidden");
-        $("#BigiotDeviceIdClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfumidityClass").removeClass("hidden");
+        $("#BigiotDeviceIdClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfHumidityClass").removeClass("hidden");
+        $("#BigiotIfVoltageClass, #BigiotIfCurrentClass, #BigiotIfPowerClass, #BigiotIfElectricityClass").removeClass("hidden");
 	}else{
         $("#ProductKeyClass, #DeviceNameClass, #DeviceSecretClass").addClass("hidden");
         $("#BigiotDeviceNameClass, #BigiotApiKeyClass, #BigiotDeviceTypeClass").addClass("hidden");
-        $("#BigiotDeviceIdClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfumidityClass").addClass("hidden");
+        $("#BigiotDeviceIdClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfHumidityClass").addClass("hidden");
+        $("#BigiotIfVoltageClass, #BigiotIfCurrentClass, #BigiotIfPowerClass, #BigiotIfElectricityClass").addClass("hidden");
 	}
 }
 
@@ -844,6 +849,10 @@ function CloudPlatformClick(){
             $("#BigiotIfTemp").val(data.TempId)
             $("#BigiotIfHumidity").val(data.HumidityId)
             $("#BigiotDeviceTypeSelect").val(data.DevType);
+            $("#BigiotIfVoltage").val(data.VoltageId);
+            $("#BigiotIfCurrent").val(data.CurrentId);
+            $("#BigiotIfPower").val(data.PowerId);
+            $("#BigiotIfElectricity").val(data.ElectricityId);
 
             var str = "";
             if ( data.ConnectSta == "connected" ){
@@ -880,7 +889,7 @@ function SetClick(){
             SysData = data;
 
             $("#modeSelect").val(data.WifiMode);
-
+            $("#relayPowerUp").val(data.RelayPowerUp);
             $("#wifiList").empty();
 			var opt = $("<option>").val(1).text(data.WifiSSID);
 			opt.selected = true;
@@ -907,26 +916,57 @@ function MeterClick(){
     $("#meterRefreshSelect").val(parseInt(webSet.MeterRefresh))
     ModelTab = "meter"
     meterRefreshChange();
-    getMeterInfo();
+    getMeterAllInfo();
 }
 
 function getMeterInfo(){
     $.get("/meter",function(data, status){
         if (status == "success"){
             MeterData = data;
-            $("#meterVoltage").val(data.Voltage)
-            $("#meterCurrent").val(data.Current)
-            $("#meterPower").val(data.Power)
-            $("#meterApparentPower").val(data.ApparentPower)
-            $("#meterPowerFactor").val(data.PowerFactor)
-            $("#meterElectricity").val(data.Electricity)
-            $("#meterRunTime").val(data.RunTime)
+            $("#meterVoltage").val(MeterData.Voltage)
+            $("#meterCurrent").val(MeterData.Current)
+            $("#meterPower").val(MeterData.Power)
+            $("#meterApparentPower").val(MeterData.ApparentPower)
+            $("#meterPowerFactor").val(MeterData.PowerFactor)
+            $("#meterElectricity").val(MeterData.Electricity)
+            $("#meterRunTime").val(MeterData.RunTime)
         }else{
             alert("Data: " + data + "\nStatus: " + status);
         }
     });
 }
 
+function getMeterAllInfo(){
+    $.get("/meter",function(data, status){
+        if (status == "success"){
+            MeterData = data;
+            refreshMeterInfo();
+        }else{
+            alert("Data: " + data + "\nStatus: " + status);
+        }
+    });
+}
+
+function refreshMeterInfo() {
+    $("#meterVoltage").val(MeterData.Voltage)
+    $("#meterCurrent").val(MeterData.Current)
+    $("#meterPower").val(MeterData.Power)
+    $("#meterApparentPower").val(MeterData.ApparentPower)
+    $("#meterPowerFactor").val(MeterData.PowerFactor)
+    $("#meterElectricity").val(MeterData.Electricity)
+    $("#meterRunTime").val(MeterData.RunTime)
+
+    $("#underVoltage").val(MeterData.UnderVoltage)
+    $('#underVoltageEnable').prop('checked', MeterData.UnderVoltageEnable);
+    $("#overVoltage").val(MeterData.OverVoltage)
+    $('#overVoltageEnable').prop('checked', MeterData.OverVoltageEnable);
+    $("#overCurrent").val(MeterData.OverCurrent)
+    $('#overCurrentEnable').prop('checked', MeterData.OverCurrentEnable);
+    $("#overPower").val(MeterData.OverPower)
+    $('#overPowerEnable').prop('checked', MeterData.OverPowerEnable);
+    $("#underPower").val(MeterData.UnderPower)
+    $('#underPowerEnable').prop('checked', MeterData.UnderPowerEnable);
+}
 
 function chooseBinClick(){
 	$('#file').click();
@@ -981,13 +1021,7 @@ function meterClear(){
         data: '{"Electricity":"0","RunTime":"0"}',
         success: function (data) {
             MeterData = data;
-            $("#meterVoltage").val(data.Voltage)
-            $("#meterCurrent").val(data.Current)
-            $("#meterPower").val(data.Power)
-            $("#meterApparentPower").val(data.ApparentPower)
-            $("#meterPowerFactor").val(data.PowerFactor)
-            $("#meterElectricity").val(data.Electricity)
-            $("#meterRunTime").val(data.RunTime)
+            refreshMeterInfo();
         }
     });
     $('#meterClearModal').modal("toggle")
@@ -1125,6 +1159,7 @@ function setCommitClick(){
 		ShowInfo("名称超过长度限制");
 		return;
 	}
+    data.RelayPowerUp=parseInt($("#relayPowerUp").val());
 
 	$("#devName").text("智能插座 （" + data.PlugName + "）");
 	$("#title").text(data.PlugName);
@@ -1196,6 +1231,11 @@ function cloudPlatformCommitClick(){
         data.SwitchId = $("#BigiotIfSwitchStatus").val();
         data.TempId = $("#BigiotIfTemp").val();
         data.HumidityId = $("#BigiotIfHumidity").val();
+
+        data.VoltageId = $("#BigiotIfVoltage").val();
+        data.CurrentId = $("#BigiotIfCurrent").val();
+        data.PowerId = $("#BigiotIfPower").val();
+        data.ElectricityId = $("#BigiotIfElectricity").val();
     }
 
     $.ajax({
@@ -1296,3 +1336,34 @@ function infraredOffClick(){
     });
 }
 
+
+function meterSubmit(){
+    var data = {};
+    data.UnderVoltage=$("#underVoltage").val();
+    data.OverVoltage=$("#overVoltage").val();
+    data.OverCurrent=$("#overCurrent").val();
+    data.OverPower=$("#overPower").val();
+    data.UnderPower=$("#underPower").val();
+
+    data.UnderVoltageEnable=$("#underVoltageEnable").is(':checked');
+    data.OverVoltageEnable=$("#overVoltageEnable").is(':checked');
+    data.OverCurrentEnable=$("#overCurrentEnable").is(':checked');
+    data.OverPowerEnable=$("#overPowerEnable").is(':checked');
+    data.UnderPowerEnable=$("#underPowerEnable").is(':checked');
+
+    $.ajax({
+        type: "POST",
+        url: "/meter",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(data),
+        success: function (data) {
+            MeterData = data;
+            refreshMeterInfo();
+            ShowInfo("设置成功");
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            ShowInfo(jqXHR.responseText);
+        }
+    });
+}
