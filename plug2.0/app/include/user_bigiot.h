@@ -22,8 +22,7 @@
 #define BIGIOT_EVENT_NUM  	10
 #define BIGIOT_CBNAME_NUM  	64
 
-typedef int (*TriggerFun)(void);
-typedef int (*CallbackFun)(void * para);
+typedef char* (*CallbackFun)(void *para);
 
 typedef struct tagBigiotEvent
 {
@@ -32,7 +31,6 @@ typedef struct tagBigiotEvent
 	CallbackFun 	cb;									//回调函数
 	void* 			cbPara;								//回调函数入参
 	void* 			pstCtx;								//BIGIOT_Ctx_S
-	long 			lNextTime;							//下一次接口数据的上报时间
 
 }BIGIOT_Event_S;
 

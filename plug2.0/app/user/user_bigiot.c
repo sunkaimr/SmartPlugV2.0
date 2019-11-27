@@ -27,7 +27,11 @@
 #define BIGIOT_LOGIN		"login"
 #define BIGIOT_LOGOUT		"logout"
 
-#define BIGIOT_TIME_DEFAULT  6
+// 两次发送间隔不得小于5s
+#define BIGIOT_MIN_INTERVAL  5
+
+//每40s发送一次，如果两次没有应答（即在80s内没有向服务器发送有效数据），服务将自动与客户端断开连接。
+#define BIGIOT_MAX_INTERVAL  40
 
 
 static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDevId, char* pcApiKey );
@@ -37,22 +41,23 @@ static int Write( BIGIOT_Ctx_S* pstCtx, const unsigned char* buffer, unsigned in
 static int Read(BIGIOT_Ctx_S* pstCtx, unsigned char* buffer, unsigned int len, unsigned int timeout_s);
 static int Bigiot_EventRegister( BIGIOT_Ctx_S *pstCtx, BIGIOT_Event_S* pstEvent );
 static void Bigiot_EventCallBack( BIGIOT_Ctx_S *pstCtx );
-static int Bigiot_SendMessage( BIGIOT_Ctx_S *pstCtx, char* pcIfId, char* pcValue );
+static int Bigiot_SendIfMsg( BIGIOT_Ctx_S *pstCtx, char* pcIfId, char* pcValue );
+static int Bigiot_SendMultipleIfMsg( BIGIOT_Ctx_S *pstCtx, char* pcIf );
 static int Bigiot_StartEventTask( BIGIOT_Ctx_S *pstCtx );
 
 static char* BigiotParseString( const char* pcData, const char* pcKey, char*pcValue, unsigned int uiLen );
 static int BigiotParseInt( const char* pcData, const char* pcKey );
 
 static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx );
-static int Bigiot_HeartBeatCallBack( void * para );
-static int Bigiot_RelayStatusCallBack( void * para );
-static int Bigiot_UploadTempCallBack( void * para );
-static int Bigiot_UploadHumidityCallBack( void * para );
-static int Bigiot_UploadVoltageCallBack( void * para );
-static int Bigiot_UploadCurrentCallBack( void * para );
-static int Bigiot_UploadPowerCallBack( void * para );
-static int Bigiot_UploadElectricityCallBack( void * para );
-
+static int Bigiot_HeartBeat( void * para );
+static char*  Bigiot_GenerateRelayStatus( void * para );
+static char*  Bigiot_GenerateTemp( void * para );
+static char*  Bigiot_GenerateHumidity( void * para );
+static char*  Bigiot_GenerateVoltage( void * para );
+static char*  Bigiot_GenerateCurrent( void * para );
+static char*  Bigiot_GeneratePower( void * para );
+static char*  Bigiot_GenerateElectricity( void * para );
+static int Bigiot_UploadAllIfData( BIGIOT_Ctx_S *pstCtx );
 
 BIGIOT_Ctx_S* pstCli = NULL;
 
@@ -194,7 +199,7 @@ static void Bigiot_EventHanderTask( void* para )
 	{
 		Bigiot_EventCallBack( pstCtx );
 
-		vTaskDelay( BIGIOT_TIME_DEFAULT * 1000 / portTICK_RATE_MS );
+		vTaskDelay( 1000 / portTICK_RATE_MS );
 	}
 }
 
@@ -204,7 +209,7 @@ static int Bigiot_StartEventTask( BIGIOT_Ctx_S *pstCtx )
 								"Bigiot_EventHanderTask",
 								512,
 								(void*)pstCtx,
-								uxTaskPriorityGet(NULL),
+								6,
 								&(pstCtx->xEventHandle)))
 	{
 		return 1;
@@ -323,6 +328,7 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
 			if ( 0 != pcContent )
 			{
 				BIGIOT_LOG(BIGIOT_INFO, "%s has login", pcContent);
+				Bigiot_UploadAllIfData( pstCtx );
 			}
 		}
 		//有用户离线通知
@@ -355,7 +361,6 @@ int Bigiot_EventRegister( BIGIOT_Ctx_S *pstCtx, BIGIOT_Event_S* pstEvent )
 		{
 			strncpy(pstCtx->astEvent[i].szCbName, pstEvent->szCbName, BIGIOT_CBNAME_NUM);
 
-			pstCtx->astEvent[i].lNextTime 	= 0;
 			pstCtx->astEvent[i].pcIfId		= pstEvent->pcIfId;
 			pstCtx->astEvent[i].cb 			= pstEvent->cb;
 			pstCtx->astEvent[i].cbPara 		= &pstCtx->astEvent[i];
@@ -380,33 +385,26 @@ void Bigiot_EventCallBack( BIGIOT_Ctx_S *pstCtx )
 	UINT8 i = 0;
 	int iRet = 0;
 	sntp_time_t NowTime;
-	static UINT8 ucEventNum = 0;
+	static sntp_time_t lLastTime = 0;
+	char *pcBuf = NULL;
+	UINT uiPos = 0;
+	char szMsg[200] = {};
 
-	if ( ucEventNum == 0 )
+	NowTime = sntp_get_current_timestamp();
+
+	if ( (NowTime - lLastTime) > BIGIOT_MAX_INTERVAL )
 	{
-		for ( i = 0; i < BIGIOT_EVENT_NUM; i++ )
+		Bigiot_HeartBeat( pstCtx );
+		lLastTime = NowTime;
+	}
+	else if ( (NowTime - lLastTime) > BIGIOT_MIN_INTERVAL )
+	{
+		iRet = Bigiot_UploadAllIfData( pstCtx );
+		if ( !iRet )
 		{
-			if ( pstCtx->astEvent[i].cb != NULL )
-			{
-				ucEventNum++;
-			}
+			lLastTime = NowTime;
 		}
 	}
-
-	for ( i = 0; i < BIGIOT_EVENT_NUM; i++ )
-	{
-		NowTime = sntp_get_current_timestamp();
-		if ( pstCtx->astEvent[i].cb != NULL && NowTime > pstCtx->astEvent[i].lNextTime )
-		{
-			iRet = pstCtx->astEvent[i].cb( pstCtx->astEvent[i].cbPara );
-			if ( !iRet )
-			{
-				pstCtx->astEvent[i].lNextTime = NowTime + ucEventNum * BIGIOT_TIME_DEFAULT;
-				return;
-			}
-		}
-	}
-	return;
 }
 
 static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx )
@@ -417,21 +415,10 @@ static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx )
 
 	uiDevType = PLUG_GetBigiotDeviceType();
 
-	//心跳事件注册
-	stEvent.pcIfId = NULL;
-	stEvent.cb = Bigiot_HeartBeatCallBack;
-	strncpy(stEvent.szCbName, "Bigiot_HeartBeatCallBack", BIGIOT_CBNAME_NUM);
-	iRet = Bigiot_EventRegister( pstCtx, &stEvent );
-	if ( iRet )
-	{
-		BIGIOT_LOG(BIGIOT_ERROR, "Registe %s failed", stEvent.szCbName);
-		return 1;
-	}
-
 	//开关状态事件注册
 	stEvent.pcIfId = PLUG_GetBigiotSwitchId();
-	stEvent.cb = Bigiot_RelayStatusCallBack;
-	strncpy(stEvent.szCbName, "Bigiot_RelayStatusCallBack", BIGIOT_CBNAME_NUM);
+	stEvent.cb = Bigiot_GenerateRelayStatus;
+	strncpy(stEvent.szCbName, "Bigiot_GenerateRelayStatus", BIGIOT_CBNAME_NUM);
 	if ( strlen(stEvent.pcIfId) != 0 )
 	{
 		iRet = Bigiot_EventRegister( pstCli, &stEvent );
@@ -445,8 +432,8 @@ static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx )
 	if ( uiDevType == DEVTYPE_humidifier )
 	{
 		stEvent.pcIfId = PLUG_GetBigiotHumidityId();
-		stEvent.cb = Bigiot_UploadHumidityCallBack;
-		strncpy(stEvent.szCbName, "Bigiot_UploadHumidityCallBack", BIGIOT_CBNAME_NUM);
+		stEvent.cb = Bigiot_GenerateHumidity;
+		strncpy(stEvent.szCbName, "Bigiot_GenerateHumidity", BIGIOT_CBNAME_NUM);
 		if ( strlen(stEvent.pcIfId) != 0 )
 		{
 			iRet = Bigiot_EventRegister( pstCli, &stEvent );
@@ -460,8 +447,8 @@ static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx )
 	else if ( uiDevType == DEVTYPE_socket )
 	{
 		stEvent.pcIfId = PLUG_GetBigiotTempId();
-		stEvent.cb = Bigiot_UploadTempCallBack;
-		strncpy(stEvent.szCbName, "Bigiot_UploadTempCallBack", BIGIOT_CBNAME_NUM);
+		stEvent.cb = Bigiot_GenerateTemp;
+		strncpy(stEvent.szCbName, "Bigiot_GenerateTemp", BIGIOT_CBNAME_NUM);
 		if ( strlen(stEvent.pcIfId) != 0 )
 		{
 			iRet = Bigiot_EventRegister( pstCli, &stEvent );
@@ -473,8 +460,8 @@ static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx )
 		}
 
 		stEvent.pcIfId = PLUG_GetBigiotVoltageId();
-		stEvent.cb = Bigiot_UploadVoltageCallBack;
-		strncpy(stEvent.szCbName, "Bigiot_UploadVoltageCallBack", BIGIOT_CBNAME_NUM);
+		stEvent.cb = Bigiot_GenerateVoltage;
+		strncpy(stEvent.szCbName, "Bigiot_GenerateVoltage", BIGIOT_CBNAME_NUM);
 		if ( strlen(stEvent.pcIfId) != 0 )
 		{
 			iRet = Bigiot_EventRegister( pstCli, &stEvent );
@@ -486,8 +473,8 @@ static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx )
 		}
 
 		stEvent.pcIfId = PLUG_GetBigiotCurrentId();
-		stEvent.cb = Bigiot_UploadCurrentCallBack;
-		strncpy(stEvent.szCbName, "Bigiot_UploadCurrentCallBack", BIGIOT_CBNAME_NUM);
+		stEvent.cb = Bigiot_GenerateCurrent;
+		strncpy(stEvent.szCbName, "Bigiot_GenerateCurrent", BIGIOT_CBNAME_NUM);
 		if ( strlen(stEvent.pcIfId) != 0 )
 		{
 			iRet = Bigiot_EventRegister( pstCli, &stEvent );
@@ -499,8 +486,8 @@ static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx )
 		}
 
 		stEvent.pcIfId = PLUG_GetBigiotPowerId();
-		stEvent.cb = Bigiot_UploadPowerCallBack;
-		strncpy(stEvent.szCbName, "Bigiot_UploadPowerCallBack", BIGIOT_CBNAME_NUM);
+		stEvent.cb = Bigiot_GeneratePower;
+		strncpy(stEvent.szCbName, "Bigiot_GeneratePower", BIGIOT_CBNAME_NUM);
 		if ( strlen(stEvent.pcIfId) != 0 )
 		{
 			iRet = Bigiot_EventRegister( pstCli, &stEvent );
@@ -512,8 +499,8 @@ static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx )
 		}
 
 		stEvent.pcIfId = PLUG_GetBigiotElectricityId();
-		stEvent.cb = Bigiot_UploadElectricityCallBack;
-		strncpy(stEvent.szCbName, "Bigiot_UploadElectricityCallBack", BIGIOT_CBNAME_NUM);
+		stEvent.cb = Bigiot_GenerateElectricity;
+		strncpy(stEvent.szCbName, "Bigiot_GenerateElectricity", BIGIOT_CBNAME_NUM);
 		if ( strlen(stEvent.pcIfId) != 0 )
 		{
 			iRet = Bigiot_EventRegister( pstCli, &stEvent );
@@ -637,7 +624,7 @@ int Bigiot_Logout( BIGIOT_Ctx_S *pstCtx )
 	return 0;
 }
 
-static int Bigiot_SendMessage( BIGIOT_Ctx_S *pstCtx, char* pcIfId, char* pcValue )
+static int Bigiot_SendIfMsg( BIGIOT_Ctx_S *pstCtx, char* pcIfId, char* pcValue )
 {
 	char szMsg[100] = { 0 };
 	int iLen = 0;
@@ -646,24 +633,49 @@ static int Bigiot_SendMessage( BIGIOT_Ctx_S *pstCtx, char* pcIfId, char* pcValue
 	iLen = snprintf(szMsg, sizeof(szMsg), "{\"M\":\"update\",\"ID\":\"%s\",\"V\":{\"%s\":\"%s\"}}\n",
 					pstCtx->pcDeviceId, pcIfId, pcValue);
 
-	//BIGIOT_LOG(BIGIOT_INFO, "msg: %s", szMsg);
+	BIGIOT_LOG(BIGIOT_DEBUG, "msg: %s", szMsg);
 	iRet = pstCtx->Write( pstCtx, szMsg, iLen, pstCtx->iTimeOut );
 	if ( iRet != iLen )
 	{
-    	BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_SendMessage failed, msg:%s", szMsg);
+    	BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_SendIfMsg failed, msg:%s", szMsg);
     	return 1;
 	}
 
 	return 0;
 }
 
-static int Bigiot_HeartBeatCallBack( void * para )
+static int Bigiot_SendMultipleIfMsg( BIGIOT_Ctx_S *pstCtx, char* pcIf )
 {
-	BIGIOT_Event_S *pstEvn = para;
-	BIGIOT_Ctx_S *pstCtx = pstEvn->pstCtx;
+	char szMsg[300] = { 0 };
+	int iLen = 0;
+	int iRet = 0;
+
+	iLen = snprintf(szMsg, sizeof(szMsg), "{\"M\":\"update\",\"ID\":\"%s\",\"V\":{%s}}\n",
+					pstCtx->pcDeviceId, pcIf);
+
+	BIGIOT_LOG(BIGIOT_DEBUG, "msg: %s", szMsg);
+	iRet = pstCtx->Write( pstCtx, szMsg, iLen, pstCtx->iTimeOut );
+	if ( iRet != iLen )
+	{
+    	BIGIOT_LOG(BIGIOT_ERROR, "send multiple interface msg failed, msg:%s", szMsg);
+    	return 1;
+	}
+
+	return 0;
+}
+
+static int Bigiot_HeartBeat( void * para )
+{
+	BIGIOT_Ctx_S *pstCtx = para;
 	const char* pcMsg = "{\"M\":\"beat\"}\n";
 	static int iFailedCnt = 0;
 	int iRet = 0;
+
+	if ( pstCtx == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstCtx is NULL");
+		return 1;
+	}
 
 	iRet = pstCtx->Write( pstCtx, pcMsg, strlen(pcMsg), pstCtx->iTimeOut );
 	if ( iRet != strlen(pcMsg) )
@@ -674,7 +686,7 @@ static int Bigiot_HeartBeatCallBack( void * para )
 			BIGIOT_LOG(BIGIOT_ERROR, "HeartBeat send failed");
 			pstCtx->iAlived = 0;
 			iFailedCnt = 0;
-			return 1;
+			return 2;
 		}
 	}
 
@@ -685,135 +697,145 @@ static int Bigiot_HeartBeatCallBack( void * para )
 	return 0;
 }
 
-static int Bigiot_RelayStatusCallBack( void * para )
+static char* Bigiot_GenerateRelayStatus( void * para )
 {
 	BIGIOT_Event_S *pstEvn = para;
-	unsigned int uiRelayStatus = 0;
-	static unsigned int uiLastRelayStatus = 0xFF;
-	int iRet = 0;
+	static char szBuf[20];
 
-	uiRelayStatus = PLUG_GetRelayStatus();
-	if ( uiRelayStatus != uiLastRelayStatus )
+	if ( pstEvn == NULL || pstEvn->pcIfId == NULL )
 	{
-		uiLastRelayStatus = uiRelayStatus;
+		BIGIOT_LOG(BIGIOT_ERROR, "pstEvn or pstEvn.pcIfId is NULL");
+		return NULL;
+	}
 
-		iRet = Bigiot_SendMessage( pstEvn->pstCtx, pstEvn->pcIfId, (uiRelayStatus ? "1" : "0" ));
+	snprintf(szBuf, sizeof(szBuf), "\"%s\":\"%s\"", pstEvn->pcIfId, (PLUG_GetRelayStatus() ? "1" : "0" ));
+	return szBuf;
+}
+
+static char* Bigiot_GenerateTemp( void * para )
+{
+	BIGIOT_Event_S *pstEvn = para;
+	static char szBuf[20] = {0};
+
+	if ( pstEvn == NULL || pstEvn->pcIfId == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstEvn or pstEvn.pcIfId is NULL");
+		return NULL;
+	}
+
+	snprintf(szBuf, sizeof(szBuf), "\"%s\":\"%2.1f\"", pstEvn->pcIfId, TEMP_GetTemperature());
+	return szBuf;
+}
+
+static char* Bigiot_GenerateHumidity( void * para )
+{
+	BIGIOT_Event_S *pstEvn = para;
+	static char szBuf[20] = {0};
+
+	if ( pstEvn == NULL || pstEvn->pcIfId == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstEvn or pstEvn.pcIfId is NULL");
+		return NULL;
+	}
+
+	snprintf(szBuf, sizeof(szBuf), "\"%s\":\"%2.1f\"", pstEvn->pcIfId, 50.0);
+	return szBuf;
+}
+
+static char* Bigiot_GenerateVoltage( void * para )
+{
+	BIGIOT_Event_S *pstEvn = para;
+	static char szBuf[20] = {0};
+
+	if ( pstEvn == NULL || pstEvn->pcIfId == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstEvn or pstEvn.pcIfId is NULL");
+		return NULL;
+	}
+
+	snprintf(szBuf, sizeof(szBuf), "\"%s\":\"%3.1f\"", pstEvn->pcIfId, METER_GetMeterVoltage());
+	return szBuf;
+}
+
+static char* Bigiot_GenerateCurrent( void * para )
+{
+	BIGIOT_Event_S *pstEvn = para;
+	static char szBuf[20] = {0};
+
+	if ( pstEvn == NULL || pstEvn->pcIfId == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstEvn or pstEvn.pcIfId is NULL");
+		return NULL;
+	}
+
+	snprintf(szBuf, sizeof(szBuf), "\"%s\":\"%3.1f\"", pstEvn->pcIfId, METER_GetMeterCurrent());
+	return szBuf;
+}
+
+static char* Bigiot_GeneratePower( void * para )
+{
+	BIGIOT_Event_S *pstEvn = para;
+	static char szBuf[20] = {0};
+
+	if ( pstEvn == NULL || pstEvn->pcIfId == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstEvn or pstEvn.pcIfId is NULL");
+		return NULL;
+	}
+
+	snprintf(szBuf, sizeof(szBuf), "\"%s\":\"%3.1f\"", pstEvn->pcIfId, METER_GetMeterPower());
+	return szBuf;
+}
+
+static char* Bigiot_GenerateElectricity( void * para )
+{
+	BIGIOT_Event_S *pstEvn = para;
+	static char szBuf[20] = {0};
+
+	if ( pstEvn == NULL || pstEvn->pcIfId == NULL )
+	{
+		BIGIOT_LOG(BIGIOT_ERROR, "pstEvn or pstEvn.pcIfId is NULL");
+		return NULL;
+	}
+
+	snprintf(szBuf, sizeof(szBuf), "\"%s\":\"%3.1f\"", pstEvn->pcIfId, METER_GetMeterElectricity());
+	return szBuf;
+}
+
+static int Bigiot_UploadAllIfData( BIGIOT_Ctx_S *pstCtx )
+{
+    int iRet = -1;
+    int i = 0;
+	char *pcBuf = NULL;
+	UINT uiPos = 0;
+	char szMsg[200] = {};
+
+	for ( i = 0; i < BIGIOT_EVENT_NUM; i++ )
+	{
+		if ( pstCtx->astEvent[i].cb != NULL )
+		{
+			pcBuf = pstCtx->astEvent[i].cb( pstCtx->astEvent[i].cbPara );
+			if ( pcBuf != NULL )
+			{
+				uiPos += snprintf( szMsg+uiPos, sizeof(szMsg)-uiPos, "%s,", pcBuf);
+			}
+		}
+	}
+
+	if ( uiPos != 0 )
+	{
+		//去掉最后结尾的","
+		szMsg[uiPos-1] = '\0';
+		iRet = Bigiot_SendMultipleIfMsg( pstCtx, szMsg);
 		if ( iRet )
 		{
-	    	BIGIOT_LOG(BIGIOT_ERROR, "send uiRelayStatus(%d) failed", uiRelayStatus);
-	    	return 1;
+			BIGIOT_LOG(BIGIOT_ERROR, "SendMultipleIfMsg failed, msg: %s", szMsg);
+			return 1;
 		}
-		BIGIOT_LOG(BIGIOT_DEBUG, "send uiRelayStatus(%d)", uiRelayStatus);
 		return 0;
 	}
 
 	return 1;
-}
-
-static int Bigiot_UploadTempCallBack( void * para )
-{
-	BIGIOT_Event_S *pstEvn = para;
-	char szBuf[20] = {0};
-	int iRet = 0;
-
-	snprintf(szBuf, sizeof(szBuf), "%2.1f", TEMP_GetTemperature());
-
-	iRet = Bigiot_SendMessage( pstEvn->pstCtx, pstEvn->pcIfId, szBuf );
-	if ( iRet )
-	{
-    	BIGIOT_LOG(BIGIOT_ERROR, "send Temperature(%s) failed", szBuf);
-    	return 1;
-	}
-	BIGIOT_LOG(BIGIOT_DEBUG, "send Temperature(%s)", szBuf);
-	return 0;
-}
-
-static int Bigiot_UploadHumidityCallBack( void * para )
-{
-	BIGIOT_Event_S *pstEvn = para;
-	int iRet = 0;
-
-	iRet = Bigiot_SendMessage( pstEvn->pstCtx, pstEvn->pcIfId, "50");
-	if ( iRet )
-	{
-    	BIGIOT_LOG(BIGIOT_ERROR, "send Humidity(%d) failed", "50");
-    	return 1;
-	}
-	BIGIOT_LOG(BIGIOT_DEBUG, "send Humidity(%d)", "50");
-	return 0;
-}
-
-static int Bigiot_UploadVoltageCallBack( void * para )
-{
-	BIGIOT_Event_S *pstEvn = para;
-	char szBuf[20] = {0};
-	int iRet = 0;
-
-	snprintf(szBuf, sizeof(szBuf), "%3.1f", METER_GetMeterVoltage());
-	iRet = Bigiot_SendMessage( pstEvn->pstCtx, pstEvn->pcIfId, szBuf );
-	if ( iRet )
-	{
-    	BIGIOT_LOG(BIGIOT_ERROR, "send Voltage(%s) failed", szBuf);
-    	return 1;
-	}
-	BIGIOT_LOG(BIGIOT_DEBUG, "send Voltage(%s)", szBuf);
-	return 0;
-}
-
-static int Bigiot_UploadCurrentCallBack( void * para )
-{
-	BIGIOT_Event_S *pstEvn = para;
-	char szBuf[20] = {0};
-	float fData = 0;
-	int iRet = 0;
-
-	fData = METER_GetMeterCurrent();
-	snprintf(szBuf, sizeof(szBuf), "%3.1f", fData);
-
-	iRet = Bigiot_SendMessage( pstEvn->pstCtx, pstEvn->pcIfId, szBuf );
-	if ( iRet )
-	{
-    	BIGIOT_LOG(BIGIOT_ERROR, "send Current(%s) failed", szBuf);
-    	return 1;
-	}
-	BIGIOT_LOG(BIGIOT_DEBUG, "send Current(%s)", szBuf);
-	return 0;
-}
-
-static int Bigiot_UploadPowerCallBack( void * para )
-{
-	BIGIOT_Event_S *pstEvn = para;
-	char szBuf[20] = {0};
-	int iRet = 0;
-
-	snprintf(szBuf, sizeof(szBuf), "%3.1f", METER_GetMeterPower());
-
-	iRet = Bigiot_SendMessage( pstEvn->pstCtx, pstEvn->pcIfId, szBuf );
-	if ( iRet )
-	{
-    	BIGIOT_LOG(BIGIOT_ERROR, "send Power(%s) failed", szBuf);
-    	return 1;
-	}
-	BIGIOT_LOG(BIGIOT_DEBUG, "send Power(%s)", szBuf);
-	return 0;
-}
-
-static int Bigiot_UploadElectricityCallBack( void * para )
-{
-	BIGIOT_Event_S *pstEvn = para;
-	char szBuf[20] = {0};
-	int iRet = 0;
-
-	snprintf(szBuf, sizeof(szBuf), "%3.1f", METER_GetMeterElectricity());
-
-	iRet = Bigiot_SendMessage( pstEvn->pstCtx, pstEvn->pcIfId, szBuf );
-	if ( iRet )
-	{
-    	BIGIOT_LOG(BIGIOT_ERROR, "send Electricity(%s) failed", szBuf);
-    	return 1;
-	}
-	BIGIOT_LOG(BIGIOT_DEBUG, "send Electricity(%s)", szBuf);
-	return 0;
 }
 
 static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDevId, char* pcApiKey )
