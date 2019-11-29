@@ -291,6 +291,8 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
 
 	if ( iRet > 0 )
 	{
+		//BIGIOT_LOG(BIGIOT_DEBUG, "szMess:%s", szMess);
+
 		//有指令发送过来
 		pcMethod = BigiotParseString(szMess, "M", szValue, sizeof(szValue));
 		if ( 0 != pcMethod && 0 == strcmp(pcMethod, BIGIOT_SAY) )
@@ -429,86 +431,81 @@ static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx )
 		}
 	}
 
-	if ( uiDevType == DEVTYPE_humidifier )
+	stEvent.pcIfId = PLUG_GetBigiotHumidityId();
+	stEvent.cb = Bigiot_GenerateHumidity;
+	strncpy(stEvent.szCbName, "Bigiot_GenerateHumidity", BIGIOT_CBNAME_NUM);
+	if ( strlen(stEvent.pcIfId) != 0 )
 	{
-		stEvent.pcIfId = PLUG_GetBigiotHumidityId();
-		stEvent.cb = Bigiot_GenerateHumidity;
-		strncpy(stEvent.szCbName, "Bigiot_GenerateHumidity", BIGIOT_CBNAME_NUM);
-		if ( strlen(stEvent.pcIfId) != 0 )
+		iRet = Bigiot_EventRegister( pstCli, &stEvent );
+		if ( iRet )
 		{
-			iRet = Bigiot_EventRegister( pstCli, &stEvent );
-			if ( iRet )
-			{
-				BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
-				return 1;
-			}
+			BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
+			return 1;
 		}
 	}
-	else if ( uiDevType == DEVTYPE_socket )
+
+	stEvent.pcIfId = PLUG_GetBigiotTempId();
+	stEvent.cb = Bigiot_GenerateTemp;
+	strncpy(stEvent.szCbName, "Bigiot_GenerateTemp", BIGIOT_CBNAME_NUM);
+	if ( strlen(stEvent.pcIfId) != 0 )
 	{
-		stEvent.pcIfId = PLUG_GetBigiotTempId();
-		stEvent.cb = Bigiot_GenerateTemp;
-		strncpy(stEvent.szCbName, "Bigiot_GenerateTemp", BIGIOT_CBNAME_NUM);
-		if ( strlen(stEvent.pcIfId) != 0 )
+		iRet = Bigiot_EventRegister( pstCli, &stEvent );
+		if ( iRet )
 		{
-			iRet = Bigiot_EventRegister( pstCli, &stEvent );
-			if ( iRet )
-			{
-				BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
-				return 1;
-			}
+			BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
+			return 1;
 		}
+	}
 
-		stEvent.pcIfId = PLUG_GetBigiotVoltageId();
-		stEvent.cb = Bigiot_GenerateVoltage;
-		strncpy(stEvent.szCbName, "Bigiot_GenerateVoltage", BIGIOT_CBNAME_NUM);
-		if ( strlen(stEvent.pcIfId) != 0 )
+	stEvent.pcIfId = PLUG_GetBigiotVoltageId();
+	stEvent.cb = Bigiot_GenerateVoltage;
+	strncpy(stEvent.szCbName, "Bigiot_GenerateVoltage", BIGIOT_CBNAME_NUM);
+	if ( strlen(stEvent.pcIfId) != 0 )
+	{
+		iRet = Bigiot_EventRegister( pstCli, &stEvent );
+		if ( iRet )
 		{
-			iRet = Bigiot_EventRegister( pstCli, &stEvent );
-			if ( iRet )
-			{
-				BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
-				return 1;
-			}
+			BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
+			return 1;
 		}
+	}
 
-		stEvent.pcIfId = PLUG_GetBigiotCurrentId();
-		stEvent.cb = Bigiot_GenerateCurrent;
-		strncpy(stEvent.szCbName, "Bigiot_GenerateCurrent", BIGIOT_CBNAME_NUM);
-		if ( strlen(stEvent.pcIfId) != 0 )
+	stEvent.pcIfId = PLUG_GetBigiotCurrentId();
+	stEvent.cb = Bigiot_GenerateCurrent;
+	strncpy(stEvent.szCbName, "Bigiot_GenerateCurrent", BIGIOT_CBNAME_NUM);
+	if ( strlen(stEvent.pcIfId) != 0 )
+	{
+		iRet = Bigiot_EventRegister( pstCli, &stEvent );
+		if ( iRet )
 		{
-			iRet = Bigiot_EventRegister( pstCli, &stEvent );
-			if ( iRet )
-			{
-				BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
-				return 1;
-			}
+			BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
+			return 1;
 		}
+	}
 
-		stEvent.pcIfId = PLUG_GetBigiotPowerId();
-		stEvent.cb = Bigiot_GeneratePower;
-		strncpy(stEvent.szCbName, "Bigiot_GeneratePower", BIGIOT_CBNAME_NUM);
-		if ( strlen(stEvent.pcIfId) != 0 )
+	stEvent.pcIfId = PLUG_GetBigiotPowerId();
+	stEvent.cb = Bigiot_GeneratePower;
+	strncpy(stEvent.szCbName, "Bigiot_GeneratePower", BIGIOT_CBNAME_NUM);
+	if ( strlen(stEvent.pcIfId) != 0 )
+	{
+		iRet = Bigiot_EventRegister( pstCli, &stEvent );
+		if ( iRet )
 		{
-			iRet = Bigiot_EventRegister( pstCli, &stEvent );
-			if ( iRet )
-			{
-				BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
-				return 1;
-			}
+			BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
+			return 1;
 		}
+	}
 
-		stEvent.pcIfId = PLUG_GetBigiotElectricityId();
-		stEvent.cb = Bigiot_GenerateElectricity;
-		strncpy(stEvent.szCbName, "Bigiot_GenerateElectricity", BIGIOT_CBNAME_NUM);
-		if ( strlen(stEvent.pcIfId) != 0 )
+	stEvent.pcIfId = PLUG_GetBigiotElectricityId();
+	stEvent.cb = Bigiot_GenerateElectricity;
+	strncpy(stEvent.szCbName, "Bigiot_GenerateElectricity", BIGIOT_CBNAME_NUM);
+	if ( strlen(stEvent.pcIfId) != 0 )
+	{
+		iRet = Bigiot_EventRegister( pstCli, &stEvent );
+		if ( iRet )
 		{
-			iRet = Bigiot_EventRegister( pstCli, &stEvent );
-			if ( iRet )
-			{
-				BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
-				return 1;
-			}
+			BIGIOT_LOG(BIGIOT_ERROR, "Register %s failed", stEvent.szCbName);
+			return 1;
 		}
 	}
 
