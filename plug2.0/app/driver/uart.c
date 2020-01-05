@@ -364,9 +364,15 @@ void user_uart1_init(void)
 	uart_config.flow_ctrl    =  USART_HardwareFlowControl_None;
 	uart_config.UART_RxFlowThresh = 0;
 	uart_config.UART_InverseMask = UART_None_Inverse;
-	UART_ParamConfig(UART1, &uart_config);
 
+#if IS_CHANG_XIN
+	UART_ParamConfig(UART1, &uart_config);
 	UART_SetPrintPort( UART1 );
+#else
+	UART_ParamConfig(UART0, &uart_config);
+	UART_SetPrintPort( UART0 );
+#endif
+
 	printf("\r\n\r\n");
 }
 

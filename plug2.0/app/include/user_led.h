@@ -11,6 +11,37 @@
 #include "user_type.h"
 
 
+/* 接口说明
+
+总共有四钟类型的插座，插座不同IO接口不同，编译不同的插座程序时请将对应的宏打开
+若都不打开默认编译机智云固件调试用
+	IS_PHILIPS		: 飞利浦的插座改装
+	IS_CHANG_XIN	: 常新定时插座改装
+	IS_JI_ZHI_YUN	: 机智云wifi模块(调试用)
+
+IS_PHILIPS:
+	wifi状态指示	:IO_13	 【0:on 1:off】
+	继电器控制		:IO_14	 【1:on 0:off】
+	继电器状态指示	:无
+	按键输入		:IO_4 	 【按下为低电平】
+
+IS_CHANG_XIN:
+	wifi状态指示	:IO_13	 【1:on 0:off】
+	继电器控制		:IO_14	 【1:on 0:off】
+	继电器状态指示	:IO_12	 【1:on 0:off】
+	按键输入		:IO_4    【按下为低电平】
+
+IS_JI_ZHI_YUN:
+	wifi状态指示	:IO_13	 【1:on 0:off】
+	继电器控制		:无
+	继电器状态指示	:IO_12	 【1:on 0:off】
+	继电器按键输入	:IO_4    【按下为低电平】
+*/
+
+#define IS_PHILIPS     	0
+#define IS_CHANG_XIN    0
+
+
 typedef enum tagLED_WIFI_STATUS
 {
 	LED_WIFI_STATUS_OFF				= 0,	/* wifi连接失败，常灭 */

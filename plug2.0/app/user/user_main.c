@@ -105,7 +105,9 @@ void user_init(void)
 	KEY_StartKeyHanderTimer();
 	PLUG_StartJudgeTimeHanderTimer();
 	WIFI_StartWifiModeTheard();
-	METER_Init();
 
+#if IS_CHANG_XIN
+	METER_Init();
+#endif
 }
 

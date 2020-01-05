@@ -174,7 +174,7 @@ VOID UPGRADE_Reset()
 	PLUG_DelayDataDeInit();
 	INFRARED_InfraredDataDeInit();
 	PLUG_SystemSetDataDeInit();
-	HTTP_FileListInit();
+	//HTTP_FileListInit();
 	PLUG_PlatformDeInit();
 	METER_DeinitData();
 	CONFIG_SaveConfig(PLUG_MOUDLE_BUFF);

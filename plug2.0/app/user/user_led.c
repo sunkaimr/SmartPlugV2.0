@@ -9,36 +9,6 @@
 #include "esp_common.h"
 
 
-/* 接口说明
-
-总共有四钟类型的插座，插座不同IO接口不同，编译不同的插座程序时请将对应的宏打开
-若都不打开默认编译机智云固件调试用
-	IS_PHILIPS		: 飞利浦的插座改装
-	IS_CHANG_XIN	: 常新定时插座改装
-	IS_JI_ZHI_YUN	: 机智云wifi模块(调试用)
-
-IS_PHILIPS:
-	wifi状态指示	:IO_13	 【0:on 1:off】
-	继电器控制		:IO_14	 【1:on 0:off】
-	继电器状态指示	:无
-	按键输入		:IO_4 	 【按下为低电平】
-
-IS_CHANG_XIN:
-	wifi状态指示	:IO_13	 【1:on 0:off】
-	继电器控制		:IO_14	 【1:on 0:off】
-	继电器状态指示	:IO_12	 【1:on 0:off】
-	按键输入		:IO_4    【按下为低电平】
-
-IS_JI_ZHI_YUN:
-	wifi状态指示	:IO_13	 【1:on 0:off】
-	继电器控制		:无
-	继电器状态指示	:IO_12	 【1:on 0:off】
-	继电器按键输入	:IO_4    【按下为低电平】
-*/
-
-#define IS_PHILIPS     	0
-#define IS_CHANG_XIN    1
-
 
 #if IS_PHILIPS
 	/* wifi状态指示 */
@@ -155,9 +125,12 @@ VOID LED_GpioInit( VOID )
 	GPIO_OUTPUT_SET(GPIO_ID_PIN(LED_GPIO_RELAY_STATUS_NUM), GPIO_RELAY_STATUS_OFF);
 
 	/* 按键输入 */
+#if IS_CHANG_XIN
 	gpio16_input_conf();
-	//PIN_FUNC_SELECT(LED_GPIO_KEY_MUX, LED_GPIO_KEY_FUNC);
-	//GPIO_AS_INPUT(GPIO_ID_PIN(LED_GPIO_KEY_NUM));
+#else
+	PIN_FUNC_SELECT(LED_GPIO_KEY_MUX, LED_GPIO_KEY_FUNC);
+	GPIO_AS_INPUT(GPIO_ID_PIN(LED_GPIO_KEY_NUM));
+#endif
 }
 
 
@@ -189,7 +162,11 @@ VOID LED_RelayOff( VOID )
 
 UINT32 LED_GetKeyStatus( VOID )
 {
+#if IS_CHANG_XIN
 	return gpio16_input_get();
+#else
+	return GPIO_INPUT_GET(GPIO_ID_PIN(LED_GPIO_KEY_NUM));
+#endif
 }
 
 STATIC VOID USER_LedLinkTimerCallbak( VOID *Para)
