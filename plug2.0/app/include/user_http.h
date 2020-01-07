@@ -13,6 +13,7 @@
 #define HTTP_HANDLE_MAX_LEN 	50
 
 #define HTTP_ROUTER_MAP_MAX 	50
+#define HTTP_HRADER_NUM_MAX 	20
 
 #define HTTP_FILE_NAME_MAX_LEN	50
 #define HTTP_FILE_NUM_MAX		20
@@ -129,12 +130,20 @@ typedef struct tagHttpResponseHead
 
 }HTTP_RESP_S;
 
+typedef struct tagHttpCtxHeader
+{
+	CHAR*		pcKey;
+	CHAR*		pcValue;
+
+}HTTP_HEADER;
+
 typedef struct tagHttpRequest
 {
 	HTTP_METHOD_E 		eMethod;						// GET, POST PUT DELETE
 	CHAR 				szURL[HTTP_URL_MAX_LEN];       	// /index.html
 	HTTP_USERAGENT_E 	eUserAgent;	    				// windows, Android,
 	CHAR 				szHost[HTTP_HOST_MAX_LEN];     	// 192.168.0.102:8080
+	HTTP_HEADER			stHeader[HTTP_HRADER_NUM_MAX]; // http header
 
 	CHAR*               pcRouter;						//Æ¥Åäµ½µÄRouter
 
@@ -214,6 +223,8 @@ VOID HTTP_RouterInit( VOID );
 //extern INT32 HTTP_ParsingHttpHead( CHAR * pcData, UINT32 uiLen,  HTTP_CTX *pstCtx );
 HTTP_FILE_LIST_S* HTTP_GetFileList( CHAR* pcName );
 UINT32 HTTP_GetFileListLength();
+UINT HTTP_SetReqHeader( HTTP_CTX *pstCtx, CHAR* pcKey, CHAR*pcValue );
+CHAR* HTTP_GetReqHeader( HTTP_CTX *pstCtx, CHAR* pcKey );
 
 
 #endif /* __USER_HTTP_H__ */

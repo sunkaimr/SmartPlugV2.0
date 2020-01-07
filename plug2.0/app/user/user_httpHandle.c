@@ -537,8 +537,6 @@ UINT HTTP_GetHome( HTTP_CTX *pstCtx )
 	pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Html;
 	pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 
-	WIFI_INFO_S stWifiInfo = WIFI_GetIpInfo();
-
 	HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
 	uiRet = HTTP_SetHeader( pstCtx );
@@ -551,15 +549,11 @@ UINT HTTP_GetHome( HTTP_CTX *pstCtx )
 	pstFile = HTTP_GetFileList( "index.html" );
 	if ( pstFile != NULL )
 	{
-		uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%d.%d.%d.%d/index.html",
-	    		stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
-	    		(stWifiInfo.uiIp>>16)&0xFF,(stWifiInfo.uiIp>>24)&0xFF);
+		uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%s/index.html", HTTP_GetReqHeader(pstCtx, "Host"));
 	}
 	else
 	{
-		uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%d.%d.%d.%d/upload",
-	    		stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
-	    		(stWifiInfo.uiIp>>16)&0xFF,(stWifiInfo.uiIp>>24)&0xFF);
+		uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%s/upload", HTTP_GetReqHeader(pstCtx, "Host"));
 	}
 
 	if ( uiRet != OK )

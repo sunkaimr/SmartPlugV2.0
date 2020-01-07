@@ -101,6 +101,7 @@ const CHAR aGzipSuffix[HTTP_ENCODING_Buff+1][5] = {".gz",""};
 
 UINT HTTP_RequestInit( HTTP_CTX *pstCtx );
 
+
 INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
 {
 	CHAR *pcCurPos = NULL;
@@ -224,25 +225,6 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
 				return FAIL;
 			}
 		}
-		/* Host */
-		else if ( NULL != (pcTmpPos = strstr( pcCurPos, "Host: " )))
-		{
-		    pcTmpPos = pcTmpPos + 6;
-			strncpy( pstCtx->stReq.szHost, pcTmpPos, sizeof(pstCtx->stReq.szHost));
-		}
-		/* eUserAgent */
-		else if ( strstr( pcCurPos, "User-Agent: " ))
-		{
-			//LOG_OUT(LOGOUT_DEBUG, "eUserAgent：[%s]", pcCurPos);
-			for ( iLoop = HTTP_USERAGENT_WINDOWNS; iLoop < HTTP_USERAGENT_BUFF; iLoop++ )
-			{
-				if ( strstr( pcCurPos, szHttpUserAgentStringmap[iLoop]) )
-				{
-					pstCtx->stReq.eUserAgent = iLoop;
-					break;
-				}
-			}
-		}
 		//curl命令等工具 发送的字段内容长度字段是大写字母开头"Content-Length"
 		else if ( NULL != (pcTmpPos = strstr( pcCurPos, "Content-Length: " )))
 		{
@@ -257,12 +239,84 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
 		    //LOG_OUT(LOGOUT_DEBUG, "Content-Length:[%s]", pcTmpPos);
 		    pstCtx->stReq.uiRecvTotalLen = atoi(pcTmpPos);
 		}
+		else if ( NULL != (pcTmpPos = strstr( pcCurPos, ":" )))
+		{
+			// 跳过空白字符
+			while( isspace(*pcCurPos) )
+			{
+				pcCurPos++;
+			}
+
+			*pcTmpPos = 0;
+			pcTmpPos++;
+			// 跳过空白字符
+			while( isspace(*pcTmpPos) )
+			{
+				pcTmpPos++;
+			}
+
+			HTTP_SetReqHeader( pstCtx, pcCurPos, pcTmpPos );
+
+			while( !isspace(*pcTmpPos) )
+			{
+				pcTmpPos++;
+			}
+			*pcTmpPos = 0;
+		}
 	}
 	//LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_GotHeader.");
 	pstCtx->stReq.eProcess = HTTP_PROCESS_GotHeader;
 	return OK;
 }
 
+UINT HTTP_SetReqHeader( HTTP_CTX *pstCtx, CHAR* pcKey, CHAR*pcValue )
+{
+	UINT i = 0;
+
+	if ( pstCtx == NULL ||  pcKey == NULL || pcValue == NULL)
+	{
+		LOG_OUT(LOGOUT_ERROR, "pstCtx, pcKey or pcValue is NULL, pstCtx:%p pcKey:%p pcValue:%p",
+				pstCtx, pcKey, pcValue);
+		return FAIL;
+	}
+
+	for ( i = 0; i < sizeof(pstCtx->stReq.stHeader)/sizeof(pstCtx->stReq.stHeader[0]); i++ )
+	{
+		if ( pstCtx->stReq.stHeader[i].pcKey == NULL )
+		{
+			pstCtx->stReq.stHeader[i].pcKey = pcKey;
+			pstCtx->stReq.stHeader[i].pcValue = pcValue;
+
+			//LOG_OUT(LOGOUT_DEBUG, "pcKey:%s, pcValue:%s", pcKey, pcValue);
+			return OK;
+		}
+	}
+
+	LOG_OUT(LOGOUT_ERROR, "stHeader num is full %d, pcKey:%s pcValue:%s",
+			sizeof(pstCtx->stReq.stHeader)/sizeof(pstCtx->stReq.stHeader[0]), pcKey, pcValue);
+	return FAIL;
+}
+
+CHAR* HTTP_GetReqHeader( HTTP_CTX *pstCtx, CHAR* pcKey )
+{
+	UINT i = 0;
+
+	if ( pstCtx == NULL ||  pcKey == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pstCtx, pcKey is NULL, pstCtx:%p pcKey:%p",pstCtx, pcKey);
+		return NULL;
+	}
+
+	for ( i = 0; i < sizeof(pstCtx->stReq.stHeader)/sizeof(pstCtx->stReq.stHeader[0]); i++ )
+	{
+		if ( pstCtx->stReq.stHeader[i].pcKey != NULL && strcmp(pstCtx->stReq.stHeader[i].pcKey, pcKey) == 0 )
+		{
+			return pstCtx->stReq.stHeader[i].pcValue;
+		}
+	}
+
+	return NULL;
+}
 
 VOID HTTP_RouterMapInit( VOID )
 {
