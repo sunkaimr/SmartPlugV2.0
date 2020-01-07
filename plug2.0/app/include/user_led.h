@@ -15,45 +15,45 @@
 
 总共有四钟类型的插座，插座不同IO接口不同，编译不同的插座程序时请将对应的宏打开
 若都不打开默认编译机智云固件调试用
-	IS_PHILIPS		: 飞利浦的插座改装
-	IS_CHANG_XIN	: 常新定时插座改装
-	IS_JI_ZHI_YUN	: 机智云wifi模块(调试用)
+    IS_PHILIPS        : 飞利浦的插座改装
+    IS_CHANG_XIN    : 常新定时插座改装
+    IS_JI_ZHI_YUN    : 机智云wifi模块(调试用)
 
 IS_PHILIPS:
-	wifi状态指示	:IO_13	 【0:on 1:off】
-	继电器控制		:IO_14	 【1:on 0:off】
-	继电器状态指示	:无
-	按键输入		:IO_4 	 【按下为低电平】
+    wifi状态指示    :IO_13     【0:on 1:off】
+    继电器控制        :IO_14     【1:on 0:off】
+    继电器状态指示    :无
+    按键输入        :IO_4      【按下为低电平】
 
 IS_CHANG_XIN:
-	wifi状态指示	:IO_13	 【1:on 0:off】
-	继电器控制		:IO_14	 【1:on 0:off】
-	继电器状态指示	:IO_12	 【1:on 0:off】
-	按键输入		:IO_4    【按下为低电平】
+    wifi状态指示    :IO_13     【1:on 0:off】
+    继电器控制        :IO_14     【1:on 0:off】
+    继电器状态指示    :IO_12     【1:on 0:off】
+    按键输入        :IO_4    【按下为低电平】
 
 IS_JI_ZHI_YUN:
-	wifi状态指示	:IO_13	 【1:on 0:off】
-	继电器控制		:无
-	继电器状态指示	:IO_12	 【1:on 0:off】
-	继电器按键输入	:IO_4    【按下为低电平】
+    wifi状态指示    :IO_13     【1:on 0:off】
+    继电器控制        :无
+    继电器状态指示    :IO_12     【1:on 0:off】
+    继电器按键输入    :IO_4    【按下为低电平】
 */
 
-#define IS_PHILIPS     	0
+#define IS_PHILIPS         0
 #define IS_CHANG_XIN    0
 
 
 typedef enum tagLED_WIFI_STATUS
 {
-	LED_WIFI_STATUS_OFF				= 0,	/* wifi连接失败，常灭 */
-	LED_WIFI_STATUS_ON				= 1, 	/* wifi已连接/AP模式下时间已同步，常亮 */
-	LED_WIFI_STATUS_FIND_WIFI		= 2, 	/* 寻找wifi热点,闪烁间隔2s */
-	LED_WIFI_STATUS_SYNC_TIME		= 3, 	/* AP模式下等待同步时间,闪烁间隔2s */
-	LED_WIFI_STATUS_CONNECTTING		= 4, 	/* 正在连接wifi热点,闪烁间隔1s*/
-	LED_WIFI_STATUS_SET_AP			= 5,    /* 通过按键将wifi模式设置为AP模式，闪烁间隔0.2s */
-	LED_WIFI_STATUS_SET_STA			= 6,    /* 通过按键将wifi模式设置为station模式，常亮  */
+    LED_WIFI_STATUS_OFF                = 0,    /* wifi连接失败，常灭 */
+    LED_WIFI_STATUS_ON                = 1,     /* wifi已连接/AP模式下时间已同步，常亮 */
+    LED_WIFI_STATUS_FIND_WIFI        = 2,     /* 寻找wifi热点,闪烁间隔2s */
+    LED_WIFI_STATUS_SYNC_TIME        = 3,     /* AP模式下等待同步时间,闪烁间隔2s */
+    LED_WIFI_STATUS_CONNECTTING        = 4,     /* 正在连接wifi热点,闪烁间隔1s*/
+    LED_WIFI_STATUS_SET_AP            = 5,    /* 通过按键将wifi模式设置为AP模式，闪烁间隔0.2s */
+    LED_WIFI_STATUS_SET_STA            = 6,    /* 通过按键将wifi模式设置为station模式，常亮  */
 
 
-	LED_WIFI_STATUS_BUFF          	= 0xFF
+    LED_WIFI_STATUS_BUFF              = 0xFF
 }LED_WIFI_STATUS_E;
 
 

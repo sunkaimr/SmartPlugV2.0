@@ -27,42 +27,42 @@
 
 #include "user_type.h"
 
-#define FLASH_SIZE_1K		(1024)
-#define FLASH_SIZE_2K		(FLASH_SIZE_1K * 2)
-#define FLASH_SIZE_4K		(FLASH_SIZE_1K * 4)
-#define FLASH_SIZE_8K		(FLASH_SIZE_1K * 8)
-#define FLASH_SIZE_10K		(FLASH_SIZE_1K * 10)
-#define FLASH_SIZE_16K		(FLASH_SIZE_1K * 16)
-#define FLASH_SIZE_20K		(FLASH_SIZE_1K * 20)
-#define FLASH_SIZE_100K		(FLASH_SIZE_1K * 100)
-#define FLASH_SIZE_1M		(FLASH_SIZE_1K * 1024)
+#define FLASH_SIZE_1K        (1024)
+#define FLASH_SIZE_2K        (FLASH_SIZE_1K * 2)
+#define FLASH_SIZE_4K        (FLASH_SIZE_1K * 4)
+#define FLASH_SIZE_8K        (FLASH_SIZE_1K * 8)
+#define FLASH_SIZE_10K        (FLASH_SIZE_1K * 10)
+#define FLASH_SIZE_16K        (FLASH_SIZE_1K * 16)
+#define FLASH_SIZE_20K        (FLASH_SIZE_1K * 20)
+#define FLASH_SIZE_100K        (FLASH_SIZE_1K * 100)
+#define FLASH_SIZE_1M        (FLASH_SIZE_1K * 1024)
 
 
-#define FLASH_BASE_ADDR   	 	0x200000
-#define FLASH_TIMER_ADDR  		(FLASH_BASE_ADDR)
-#define FLASH_DELAY_ADDR  		(FLASH_TIMER_ADDR + FLASH_SIZE_4K)
-#define FLASH_INGRAED_ADDR 		(FLASH_DELAY_ADDR + FLASH_SIZE_4K)
-#define FLASH_SYSSET_ADDR  		(FLASH_INGRAED_ADDR + FLASH_SIZE_4K)
-#define FLASH_PLATFORM_ADDR 	(FLASH_SYSSET_ADDR + FLASH_SIZE_4K)
-#define FLASH_HTML_ADDR  		(FLASH_PLATFORM_ADDR + FLASH_SIZE_4K)
-#define FLASH_METER_ADDR  		(FLASH_HTML_ADDR + FLASH_SIZE_4K)
-#define FLASH_METER_BK_ADDR  	(FLASH_METER_ADDR + FLASH_SIZE_4K)
+#define FLASH_BASE_ADDR            0x200000
+#define FLASH_TIMER_ADDR          (FLASH_BASE_ADDR)
+#define FLASH_DELAY_ADDR          (FLASH_TIMER_ADDR + FLASH_SIZE_4K)
+#define FLASH_INGRAED_ADDR         (FLASH_DELAY_ADDR + FLASH_SIZE_4K)
+#define FLASH_SYSSET_ADDR          (FLASH_INGRAED_ADDR + FLASH_SIZE_4K)
+#define FLASH_PLATFORM_ADDR     (FLASH_SYSSET_ADDR + FLASH_SIZE_4K)
+#define FLASH_HTML_ADDR          (FLASH_PLATFORM_ADDR + FLASH_SIZE_4K)
+#define FLASH_METER_ADDR          (FLASH_HTML_ADDR + FLASH_SIZE_4K)
+#define FLASH_METER_BK_ADDR      (FLASH_METER_ADDR + FLASH_SIZE_4K)
 
-#define FLASH_USER_ADDR     	(FLASH_METER_BK_ADDR + FLASH_SIZE_4K)
+#define FLASH_USER_ADDR         (FLASH_METER_BK_ADDR + FLASH_SIZE_4K)
 
 
 typedef enum tagPLUG_MOUDLE
 {
-	PLUG_MOUDLE_NONE			= (1<<0),	/* нч */
-	PLUG_MOUDLE_TIMER			= (1<<1), 	/* timer */
-	PLUG_MOUDLE_DELAY			= (1<<2), 	/* delay */
-	PLUG_MOUDLE_INFRARED		= (1<<3), 	/* delay */
-	PLUG_MOUDLE_SYSSET			= (1<<4), 	/* system */
-	PLUG_MOUDLE_PLATFORM		= (1<<5), 	/* cloudPlatform */
-	PLUG_MOUDLE_FILELIST		= (1<<6), 	/* file */
-	PLUG_MOUDLE_METER			= (1<<7), 	/* meter */
+    PLUG_MOUDLE_NONE            = (1<<0),    /* нч */
+    PLUG_MOUDLE_TIMER            = (1<<1),     /* timer */
+    PLUG_MOUDLE_DELAY            = (1<<2),     /* delay */
+    PLUG_MOUDLE_INFRARED        = (1<<3),     /* delay */
+    PLUG_MOUDLE_SYSSET            = (1<<4),     /* system */
+    PLUG_MOUDLE_PLATFORM        = (1<<5),     /* cloudPlatform */
+    PLUG_MOUDLE_FILELIST        = (1<<6),     /* file */
+    PLUG_MOUDLE_METER            = (1<<7),     /* meter */
 
-	PLUG_MOUDLE_BUFF         	= 0xFFFF
+    PLUG_MOUDLE_BUFF             = 0xFFFF
 }PLUG_MOUDLE_E;
 
 

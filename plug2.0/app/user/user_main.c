@@ -85,29 +85,29 @@ uint32 user_rf_cal_sector_set(void)
 *******************************************************************************/
 void user_init(void)
 {
-	//vTaskDelay(3000/portTICK_RATE_MS );
-	user_uart1_init();
-	LOG_LogInit();
-	LOG_SetLogLevel( LOGOUT_INFO );
+    //vTaskDelay(3000/portTICK_RATE_MS );
+    user_uart1_init();
+    LOG_LogInit();
+    LOG_SetLogLevel( LOGOUT_INFO );
 
-	LOG_OUT(LOGOUT_INFO, "git commit:%s, build date:%s %s", GIT_COMMIT_SHA1, __DATE__, __TIME__);
-	LOG_OUT(LOGOUT_INFO, "SDK version:%s, FlashMap:%d, user%d.bin",
-			system_get_sdk_version(),
-			system_get_flash_size_map(),
-			system_upgrade_userbin_check()+1);
+    LOG_OUT(LOGOUT_INFO, "git commit:%s, build date:%s %s", GIT_COMMIT_SHA1, __DATE__, __TIME__);
+    LOG_OUT(LOGOUT_INFO, "SDK version:%s, FlashMap:%d, user%d.bin",
+            system_get_sdk_version(),
+            system_get_flash_size_map(),
+            system_upgrade_userbin_check()+1);
 
-	LED_GpioInit();
-	KEY_Restore();
-	COMM_ExtiIntInit();
-	INFRA_InfraredInit();
-	CONFIG_ReadConfig(PLUG_MOUDLE_BUFF);
+    LED_GpioInit();
+    KEY_Restore();
+    COMM_ExtiIntInit();
+    INFRA_InfraredInit();
+    CONFIG_ReadConfig(PLUG_MOUDLE_BUFF);
 
-	KEY_StartKeyHanderTimer();
-	PLUG_StartJudgeTimeHanderTimer();
-	WIFI_StartWifiModeTheard();
+    KEY_StartKeyHanderTimer();
+    PLUG_StartJudgeTimeHanderTimer();
+    WIFI_StartWifiModeTheard();
 
 #if IS_CHANG_XIN
-	METER_Init();
+    METER_Init();
 #endif
 }
 

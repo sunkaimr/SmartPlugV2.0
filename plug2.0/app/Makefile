@@ -29,9 +29,9 @@ GEN_IMAGES= eagle.app.v6.out
 GEN_BINS= eagle.app.v6.bin
 SPECIAL_MKTARGETS=$(APP_MKTARGETS)
 SUBDIRS=    \
-	user    \
-	driver
-	   
+    user    \
+    driver
+       
 
 endif # } PDIR
 
@@ -39,11 +39,11 @@ LDDIR = $(SDK_PATH)/ld
 
 CCFLAGS += -Os
 
-TARGET_LDFLAGS =		\
-	-nostdlib		\
-	-Wl,-EL \
-	--longcalls \
-	--text-section-literals
+TARGET_LDFLAGS =        \
+    -nostdlib        \
+    -Wl,-EL \
+    --longcalls \
+    --text-section-literals
 
 ifeq ($(FLAVOR),debug)
     TARGET_LDFLAGS += -g -O2
@@ -54,43 +54,43 @@ ifeq ($(FLAVOR),release)
 endif
 
 COMPONENTS_eagle.app.v6 = \
-	user/libuser.a \
-	driver/libdriver.a
+    user/libuser.a \
+    driver/libdriver.a
 
 LINKFLAGS_eagle.app.v6 = \
-	-L$(SDK_PATH)/lib        \
-	-Wl,--gc-sections   \
-	-nostdlib	\
+    -L$(SDK_PATH)/lib        \
+    -Wl,--gc-sections   \
+    -nostdlib    \
     -T$(LD_FILE)   \
-	-Wl,--no-check-sections	\
-    -u call_user_start	\
-	-Wl,-static						\
-	-Wl,--start-group					\
-	-lcirom \
-	-lcrypto	\
-	-lespconn	\
-	-lespnow	\
-	-lfreertos	\
-	-lgcc					\
-	-lhal					\
-	-ljson	\
-	-lmqtt	\
-	-llwip	\
-	-lmain	\
-	-lmirom	\
-	-lnet80211	\
-	-lnopoll	\
-	-lphy	\
-	-lpp	\
-	-lpwm	\
-	-lsmartconfig	\
-	-lspiffs	\
-	-lssl	\
-	-lwpa	\
-	-lwps		\
-	-lupgrade \
-	$(DEP_LIBS_eagle.app.v6)					\
-	-Wl,--end-group
+    -Wl,--no-check-sections    \
+    -u call_user_start    \
+    -Wl,-static                        \
+    -Wl,--start-group                    \
+    -lcirom \
+    -lcrypto    \
+    -lespconn    \
+    -lespnow    \
+    -lfreertos    \
+    -lgcc                    \
+    -lhal                    \
+    -ljson    \
+    -lmqtt    \
+    -llwip    \
+    -lmain    \
+    -lmirom    \
+    -lnet80211    \
+    -lnopoll    \
+    -lphy    \
+    -lpp    \
+    -lpwm    \
+    -lsmartconfig    \
+    -lspiffs    \
+    -lssl    \
+    -lwpa    \
+    -lwps        \
+    -lupgrade \
+    $(DEP_LIBS_eagle.app.v6)                    \
+    -Wl,--end-group
 
 DEPENDS_eagle.app.v6 = \
                 $(LD_FILE) \
@@ -104,21 +104,21 @@ DEPENDS_eagle.app.v6 = \
 #   for a subtree within the makefile rooted therein
 #
 
-#UNIVERSAL_TARGET_DEFINES =		\
+#UNIVERSAL_TARGET_DEFINES =        \
 
 # Other potential configuration flags include:
-#	-DTXRX_TXBUF_DEBUG
-#	-DTXRX_RXBUF_DEBUG
-#	-DWLAN_CONFIG_CCX
-CONFIGURATION_DEFINES =	-DICACHE_FLASH
+#    -DTXRX_TXBUF_DEBUG
+#    -DTXRX_RXBUF_DEBUG
+#    -DWLAN_CONFIG_CCX
+CONFIGURATION_DEFINES =    -DICACHE_FLASH
 
-DEFINES +=				\
-	$(UNIVERSAL_TARGET_DEFINES)	\
-	$(CONFIGURATION_DEFINES)
+DEFINES +=                \
+    $(UNIVERSAL_TARGET_DEFINES)    \
+    $(CONFIGURATION_DEFINES)
 
-DDEFINES +=				\
-	$(UNIVERSAL_TARGET_DEFINES)	\
-	$(CONFIGURATION_DEFINES)
+DDEFINES +=                \
+    $(UNIVERSAL_TARGET_DEFINES)    \
+    $(CONFIGURATION_DEFINES)
 
 
 #############################################################

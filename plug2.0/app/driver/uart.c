@@ -45,8 +45,8 @@ typedef struct _os_event_ {
 xTaskHandle xUartTaskHandle;
 xQueueHandle xQueueUart;
 
-#define UART_RECVMAXCNT          (100)      	//接收缓冲区的最大值
-#define UART_SENDMAXCNT 		 (1024*3)
+#define UART_RECVMAXCNT          (100)          //接收缓冲区的最大值
+#define UART_SENDMAXCNT          (1024*3)
 
 uint8_t  Uart_RecvBuf[UART_RECVMAXCNT+1];
 uint8_t  Uart_SendBuf[UART_SENDMAXCNT+1];
@@ -356,23 +356,23 @@ UART_IntrConfig(UART_Port uart_no,  UART_IntrConfTypeDef *pUARTIntrConf)
 
 void user_uart1_init(void)
 {
-	UART_ConfigTypeDef uart_config;
-	uart_config.baud_rate    = BIT_RATE_115200;
-	uart_config.data_bits    = UART_WordLength_8b;
-	uart_config.parity       = USART_Parity_None;
-	uart_config.stop_bits    = USART_StopBits_1;
-	uart_config.flow_ctrl    =  USART_HardwareFlowControl_None;
-	uart_config.UART_RxFlowThresh = 0;
-	uart_config.UART_InverseMask = UART_None_Inverse;
+    UART_ConfigTypeDef uart_config;
+    uart_config.baud_rate    = BIT_RATE_115200;
+    uart_config.data_bits    = UART_WordLength_8b;
+    uart_config.parity       = USART_Parity_None;
+    uart_config.stop_bits    = USART_StopBits_1;
+    uart_config.flow_ctrl    =  USART_HardwareFlowControl_None;
+    uart_config.UART_RxFlowThresh = 0;
+    uart_config.UART_InverseMask = UART_None_Inverse;
 
 #if IS_CHANG_XIN
-	UART_ParamConfig(UART1, &uart_config);
-	UART_SetPrintPort( UART1 );
+    UART_ParamConfig(UART1, &uart_config);
+    UART_SetPrintPort( UART1 );
 #else
-	UART_ParamConfig(UART0, &uart_config);
-	UART_SetPrintPort( UART0 );
+    UART_ParamConfig(UART0, &uart_config);
+    UART_SetPrintPort( UART0 );
 #endif
 
-	printf("\r\n\r\n");
+    printf("\r\n\r\n");
 }
 

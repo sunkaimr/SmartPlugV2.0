@@ -54,33 +54,33 @@ read input
 
 if [ -z "$input" ]; then
     if [ $boot != none ]; then
-    	boot=none
-	echo "ignore boot"
+        boot=none
+    echo "ignore boot"
     fi
     app=0
     echo "generate bin: eagle.flash.bin+eagle.irom0text.bin"
 elif [ $input == 1 ]; then
     if [ $boot == none ]; then
-    	app=0
-	echo "choose no boot before"
-	echo "generate bin: eagle.flash.bin+eagle.irom0text.bin"
+        app=0
+    echo "choose no boot before"
+    echo "generate bin: eagle.flash.bin+eagle.irom0text.bin"
     else
-	app=1
+    app=1
         echo "generate bin: user1.bin"
     fi
 elif [ $input == 2 ]; then
     if [ $boot == none ]; then
-    	app=0
-	echo "choose no boot before"
-	echo "generate bin: eagle.flash.bin+eagle.irom0text.bin"
+        app=0
+    echo "choose no boot before"
+    echo "generate bin: eagle.flash.bin+eagle.irom0text.bin"
     else
-    	app=2
-    	echo "generate bin: user2.bin"
+        app=2
+        echo "generate bin: user2.bin"
     fi
 else
     if [ $boot != none ]; then
-    	boot=none
-	echo "ignore boot"
+        boot=none
+    echo "ignore boot"
     fi
     app=0
     echo "generate bin: eagle.flash.bin+eagle.irom0text.bin"
