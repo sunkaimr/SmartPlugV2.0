@@ -706,30 +706,36 @@ UINT PLUG_MarshalJsonTimer( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum )
         }
 
         pJsonsub=cJSON_CreateObject();
-        cJSON_AddNumberToObject( pJsonsub,     "Num",                 pstData->uiNum);
-        cJSON_AddStringToObject( pJsonsub,    "Name",             pstData->szName);
-        cJSON_AddBoolToObject( pJsonsub,     "Enable",             pstData->bEnable);
-        cJSON_AddBoolToObject( pJsonsub,     "OnEnable",         pstData->bOnEnable);
-        cJSON_AddBoolToObject( pJsonsub,     "OffEnable",         pstData->bOffEnable);
-        cJSON_AddBoolToObject( pJsonsub,     "Cascode",             pstData->bCascode);
+        cJSON_AddNumberToObject( pJsonsub,     "Num",              pstData->uiNum);
+        cJSON_AddStringToObject( pJsonsub,     "Name",             pstData->szName);
+        cJSON_AddBoolToObject( pJsonsub,       "Enable",           pstData->bEnable);
+        cJSON_AddBoolToObject( pJsonsub,       "OnEnable",         pstData->bOnEnable);
+        cJSON_AddBoolToObject( pJsonsub,       "OffEnable",        pstData->bOffEnable);
+        cJSON_AddBoolToObject( pJsonsub,       "Cascode",          pstData->bCascode);
         cJSON_AddNumberToObject( pJsonsub,     "Week",             pstData->eWeek);
-        cJSON_AddNumberToObject( pJsonsub,     "CascodeNum",         pstData->uiCascodeNum);
+        cJSON_AddNumberToObject( pJsonsub,     "CascodeNum",       pstData->uiCascodeNum);
 
-        snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d", pstData->stOnTime.iHour, pstData->stOnTime.iMinute );
-        cJSON_AddStringToObject( pJsonsub,    "OnTime",             szTimerPoint);
+        snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d",  pstData->stOnTime.iHour, pstData->stOnTime.iMinute );
+        cJSON_AddStringToObject( pJsonsub,           "OnTime",     szTimerPoint);
 
-        snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d", pstData->stOffTime.iHour, pstData->stOffTime.iMinute );
-        cJSON_AddStringToObject( pJsonsub,    "OffTime",             szTimerPoint);
+        snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d",  pstData->stOffTime.iHour, pstData->stOffTime.iMinute );
+        cJSON_AddStringToObject( pJsonsub,           "OffTime",    szTimerPoint);
 
         cJSON_AddItemToArray(pJsonArry, pJsonsub);
 
     }
 
     pJsonStr = cJSON_PrintUnformatted(pJsonArry);
+	if ( pJsonStr == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "cJSON_PrintUnformatted failed");
+		 cJSON_Delete(pJsonArry);
+		return 0;
+	}
+
     strncpy(pcBuf, pJsonStr, uiBufLen);
     cJSON_Delete(pJsonArry);
     FREE_MEM(pJsonStr);
-
     return strlen(pcBuf);
 }
 

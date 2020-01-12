@@ -49,26 +49,26 @@ COMPONENTS_eagle.app.v6 = \
 	spiffs/libspiffs.a \
 	driver/libdriver.a
 
-LINKFLAGS_eagle.app.v6 = \
-	-L$(SDK_PATH)/lib        \
-	-Wl,--gc-sections   \
-	-nostdlib	\
-    -T$(LD_FILE)   \
+LINKFLAGS_eagle.app.v6 =    \
+	-L$(SDK_PATH)/lib       \
+	-Wl,--gc-sections       \
+	-nostdlib               \
+    -T$(LD_FILE)            \
 	-Wl,--no-check-sections	\
-    -u call_user_start	\
-	-Wl,-static						\
-	-Wl,--start-group					\
-	-lcirom \
+    -u call_user_start	    \
+	-Wl,-static	            \
+	-Wl,--start-group       \
+	-lcirom                 \
 	-lgcc					\
 	-lhal					\
-	-lphy	\
-	-lpp	\
-	-lnet80211	\
-	-lwpa	\
-	-lmain	\
-	-lfreertos	\
-	-llwip	\
-	$(DEP_LIBS_eagle.app.v6)					\
+	-lphy	                \
+	-lpp	                \
+	-lnet80211	            \
+	-lwpa	                \
+	-lmain	                \
+	-lfreertos	            \
+	-llwip	                \
+	$(DEP_LIBS_eagle.app.v6) \
 	-Wl,--end-group
 
 DEPENDS_eagle.app.v6 = \

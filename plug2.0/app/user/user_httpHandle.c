@@ -206,7 +206,7 @@ UINT HTTP_SendFile( HTTP_CTX *pstCtx, HTTP_FILE_S* pstFile )
             pstCtx->stResp.eContentType  = pstFile->eType;
             pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_MaxAge_1y;
 
-            HTTP_SetHeader( pstCtx );
+            HTTP_SetRespHeader( pstCtx );
 
             if ( pstFile->eEncode != HTTP_ENCODING_Buff )
             {
@@ -291,7 +291,7 @@ UINT HTTP_SendMultiple( HTTP_CTX *pstCtx, const CHAR* pcContent )
             pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Html;
             pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_MaxAge_1y;
 
-            uiRet = HTTP_SetHeader( pstCtx );
+            uiRet = HTTP_SetRespHeader( pstCtx );
             if ( uiRet != OK )
             {
                 LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -435,7 +435,7 @@ UINT HTTP_NotFound( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed" );
@@ -470,7 +470,7 @@ UINT HTTP_BadRequest( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -504,7 +504,7 @@ UINT HTTP_InternalServerError( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -539,7 +539,7 @@ UINT HTTP_GetHome( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -590,7 +590,7 @@ UINT HTTP_GetHealth( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -624,7 +624,7 @@ UINT HTTP_GetInfo( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -684,7 +684,7 @@ UINT HTTP_GetTimerData( HTTP_CTX *pstCtx )
     goto succ;
 
 err:
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -708,7 +708,7 @@ err:
     return OK;
 
 succ:
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -775,7 +775,7 @@ UINT HTTP_GetDelayData( HTTP_CTX *pstCtx )
     goto succ;
 
 err:
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -799,7 +799,7 @@ err:
     return OK;
 
 succ:
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -859,7 +859,7 @@ UINT HTTP_GetInfraredData( HTTP_CTX *pstCtx )
     goto succ;
 
 err:
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -883,7 +883,7 @@ err:
     return OK;
 
 succ:
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -969,7 +969,7 @@ UINT HTTP_GetInfraredValue( HTTP_CTX *pstCtx )
     goto succ;
 
 err:
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -993,7 +993,7 @@ err:
     return OK;
 
 succ:
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1029,7 +1029,7 @@ UINT HTTP_GetSystemData( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1060,7 +1060,7 @@ UINT HTTP_GetCloudPlatformData( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1093,7 +1093,7 @@ UINT HTTP_GetTemperature( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1129,7 +1129,7 @@ UINT HTTP_GetHtmlHeader( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_2K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1170,11 +1170,11 @@ UINT HTTP_PostHtmlHeader( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_2K);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1235,7 +1235,7 @@ UINT HTTP_PutHtml( HTTP_CTX *pstCtx )
     }
     else if ( uiRet == RESULT_Finish )
     {
-        pstCtx->stReq.eProcess = HTTP_PROCESS_Finished;
+        pstCtx->stReq.eProcess = RES_Process_Finished;
         pstCtx->stResp.eHttpCode = HTTP_CODE_Created;
     }
 
@@ -1246,7 +1246,7 @@ UINT HTTP_PutHtml( HTTP_CTX *pstCtx )
                 pstCtx->stReq.uiRecvLen*100 / pstCtx->stReq.uiRecvTotalLen);
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
 
         uiRet = HTTP_FileClose( &pstFile );
@@ -1258,7 +1258,7 @@ UINT HTTP_PutHtml( HTTP_CTX *pstCtx )
 
         HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1320,7 +1320,7 @@ UINT HTTP_GetDate( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1360,11 +1360,11 @@ UINT HTTP_PostTimerData( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1406,11 +1406,11 @@ UINT HTTP_PostDelayData( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1453,11 +1453,11 @@ UINT HTTP_PostInfraredData( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_2K);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1501,11 +1501,11 @@ UINT HTTP_PostSystemData( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1537,7 +1537,7 @@ UINT HTTP_GetWebSet( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1577,11 +1577,11 @@ UINT HTTP_PostWebSet( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1621,11 +1621,11 @@ UINT HTTP_PostCloudPlatformData( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1667,11 +1667,11 @@ UINT HTTP_PostDeviceControl( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1704,7 +1704,7 @@ UINT HTTP_GetScanWifi( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_4K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1739,11 +1739,11 @@ UINT HTTP_PostDate( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1822,7 +1822,7 @@ UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx )
     uiPos = pstCtx->stReq.uiRecvLen;
 
     //bin数据接收完成
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         uiPos = 0;
         uiAddr = 0;
@@ -1833,7 +1833,7 @@ UINT HTTP_PutUpgrade( HTTP_CTX *pstCtx )
 
         HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1871,7 +1871,7 @@ UINT HTTP_GetRelayStatus( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1911,11 +1911,11 @@ UINT HTTP_PostRelayStatus( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_512);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1952,7 +1952,7 @@ UINT HTTP_GetMeter( HTTP_CTX *pstCtx )
 
     HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-    uiRet = HTTP_SetHeader( pstCtx );
+    uiRet = HTTP_SetRespHeader( pstCtx );
     if ( uiRet != OK )
     {
         LOG_OUT( LOGOUT_ERROR, "set header failed");
@@ -1987,11 +1987,11 @@ UINT HTTP_PostMeter( HTTP_CTX *pstCtx )
         return HTTP_InternalServerError( pstCtx );
     }
 
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_Finished )
+    if ( pstCtx->stReq.eProcess == RES_Process_Finished )
     {
         HTTP_Malloc(pstCtx, HTTP_BUF_1K);
 
-        uiRet = HTTP_SetHeader( pstCtx );
+        uiRet = HTTP_SetRespHeader( pstCtx );
         if ( uiRet != OK )
         {
             LOG_OUT( LOGOUT_ERROR, "set header failed");

@@ -8,17 +8,18 @@ extern "C" {
 
 /* user define */
 typedef unsigned int     UINT32;
+typedef unsigned long    UINT64;
 typedef unsigned int     UINT;
-typedef int             INT32;
-typedef unsigned short     UINT16;
-typedef short             INT16;
-typedef int             INT;
-typedef unsigned char   UINT8;
-typedef signed char       INT8;
-typedef char               CHAR;
+typedef int              INT32;
+typedef unsigned short   UINT16;
+typedef short            INT16;
+typedef int              INT;
+typedef unsigned char    UINT8;
+typedef signed char      INT8;
+typedef char             CHAR;
 
 #ifndef BOOL
-typedef unsigned char    BOOL;
+	typedef unsigned char    BOOL;
 #endif
 
 #ifndef NULL

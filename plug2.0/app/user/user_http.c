@@ -23,6 +23,7 @@ HTTP_ROUTER_MAP_S stHttpRouterMap[HTTP_ROUTER_MAP_MAX];
 
 const CHAR szHttpCodeMap[][5] =
 {
+	"101",
     "200",
     "201",
     "302",
@@ -35,6 +36,7 @@ const CHAR szHttpCodeMap[][5] =
 
 const CHAR szHttpStatusMap[][20] =
 {
+	"Switching Protocols",
     "OK",
     "Created",
     "Found",
@@ -116,29 +118,36 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
         return FAIL;
     }
 
-    //正在接收body体
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_GetBody ||
-         pstCtx->stReq.eProcess == HTTP_PROCESS_GotHeader )
+    //header已经解析完成，正在接收body体
+    if ( pstCtx->stReq.eProcess == RES_Process_GetBody ||
+         pstCtx->stReq.eProcess == RES_Process_GotHeader )
     {
         //LOG_OUT(LOGOUT_DEBUG, "Getting Body...");
-        if ( pstCtx->stReq.eProcess == HTTP_PROCESS_GotHeader )
-        {
-            pstCtx->stReq.eProcess = HTTP_PROCESS_GetBody;
-        }
-
         pstCtx->stReq.uiRecvCurLen = uiLen;
         pstCtx->stReq.pcResqBody = pcData;
         pstCtx->stReq.uiRecvLen += uiLen;
+
+        if ( pstCtx->stReq.eProtocol == HTTP_websocket )
+        {
+        	//LOG_OUT(LOGOUT_DEBUG, "Getting Body...");
+        	return OK;
+        }
+
+        if ( pstCtx->stReq.eProcess == RES_Process_GotHeader )
+        {
+            pstCtx->stReq.eProcess = RES_Process_GetBody;
+        }
+
         if ( pstCtx->stReq.uiRecvLen >= pstCtx->stReq.uiRecvTotalLen )
         {
-            pstCtx->stReq.eProcess = HTTP_PROCESS_Finished;
-            //LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_Finished.");
+            pstCtx->stReq.eProcess = RES_Process_Finished;
+            //LOG_OUT(LOGOUT_DEBUG, "RES_Process_Finished.");
             return OK;
         }
-        //LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_Finished.");
+        //LOG_OUT(LOGOUT_DEBUG, "RES_Process_Finished.");
         return OK;
     }
-    else if ( pstCtx->stReq.eProcess != HTTP_PROCESS_None )
+    else if ( pstCtx->stReq.eProcess != RES_Process_None )
     {
         HTTP_RequestInit( pstCtx );
         return FAIL;
@@ -149,7 +158,7 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
     pcData[uiLen+2] = 0;
     pcPos = pcCurPos = pcData;
 
-    //LOG_OUT(LOGOUT_DEBUG, "\ndata:[%s]\n", pcData);
+    //LOG_OUT(LOGOUT_DEBUG, "\n%s\n", pcData);
     HTTP_RequestInit( pstCtx );
 
     /* 逐行解析 */
@@ -176,19 +185,19 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
 
             if ( pstCtx->stReq.uiRecvCurLen == 0 )
             {
-                //LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_GotHeader.");
-                pstCtx->stReq.eProcess = HTTP_PROCESS_GotHeader;
+                //LOG_OUT(LOGOUT_DEBUG, "RES_Process_GotHeader.");
+                pstCtx->stReq.eProcess = RES_Process_GotHeader;
                 return OK;
             }
 
             if ( pstCtx->stReq.uiRecvLen >= pstCtx->stReq.uiRecvTotalLen )
             {
-                //LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_Finished.");
-                pstCtx->stReq.eProcess = HTTP_PROCESS_Finished;
+                //LOG_OUT(LOGOUT_DEBUG, "RES_Process_Finished.");
+                pstCtx->stReq.eProcess = RES_Process_Finished;
                 return OK;
             }
-            pstCtx->stReq.eProcess = HTTP_PROCESS_GetBody;
-            //LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_GetBody.");
+            pstCtx->stReq.eProcess = RES_Process_GetBody;
+            //LOG_OUT(LOGOUT_DEBUG, "RES_Process_GetBody.");
             return OK;
         }
 
@@ -209,11 +218,8 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
             /* 解析URL */
             if ( pstCtx->stReq.eMethod != HTTP_METHOD_BUFF && NULL != (pcTmpPos = strstr( pcCurPos, "/" )))
             {
-                while( *pcTmpPos != ' ' )
-                {
-                    pcTmpPos++;
-                }
-                pcTmpPos[0] = 0;
+                for ( ; !isspace(*pcTmpPos); pcTmpPos++){}
+                *pcTmpPos = 0;
                 //LOG_OUT(LOGOUT_DEBUG, "pcTmpPos:[%s]", strstr( pcCurPos, "/" ));
                 strncpy( pstCtx->stReq.szURL, strstr( pcCurPos, "/" ), sizeof(pstCtx->stReq.szURL));
             }
@@ -225,47 +231,29 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
                 return FAIL;
             }
         }
-        //curl命令等工具 发送的字段内容长度字段是大写字母开头"Content-Length"
-        else if ( NULL != (pcTmpPos = strstr( pcCurPos, "Content-Length: " )))
+        //curl命令等工具 发送的字段内容长度字段是大写字母开头"Content-Length", postman 发送的字段内容长度字段是小写字母"content-length"
+        else if ( NULL != (pcTmpPos = strstr( pcCurPos, "ontent-Length: " )))
         {
-            pcTmpPos = pcTmpPos + 16;
-            //LOG_OUT(LOGOUT_DEBUG, "Content-Length:[%s]", pcTmpPos);
-            pstCtx->stReq.uiRecvTotalLen = atoi(pcTmpPos);
-        }
-        //postman 发送的字段内容长度字段是小写字母"content-length"
-        else if ( NULL != (pcTmpPos = strstr( pcCurPos, "content-length: " )))
-        {
-            pcTmpPos = pcTmpPos + 16;
+            pcTmpPos += 15;
             //LOG_OUT(LOGOUT_DEBUG, "Content-Length:[%s]", pcTmpPos);
             pstCtx->stReq.uiRecvTotalLen = atoi(pcTmpPos);
         }
         else if ( NULL != (pcTmpPos = strstr( pcCurPos, ":" )))
         {
             // 跳过空白字符
-            while( isspace(*pcCurPos) )
-            {
-                pcCurPos++;
-            }
-
+        	for ( ; isspace(*pcCurPos); pcCurPos++){}
             *pcTmpPos = 0;
             pcTmpPos++;
             // 跳过空白字符
-            while( isspace(*pcTmpPos) )
-            {
-                pcTmpPos++;
-            }
-
+            for ( ; isspace(*pcTmpPos); pcTmpPos++ ){}
             HTTP_SetReqHeader( pstCtx, pcCurPos, pcTmpPos );
-
-            while( !isspace(*pcTmpPos) )
-            {
-                pcTmpPos++;
-            }
+            for ( ; !isspace(*pcTmpPos); pcTmpPos++ ){}
             *pcTmpPos = 0;
         }
     }
-    //LOG_OUT(LOGOUT_DEBUG, "HTTP_PROCESS_GotHeader.");
-    pstCtx->stReq.eProcess = HTTP_PROCESS_GotHeader;
+    //LOG_OUT(LOGOUT_DEBUG, "RES_Process_GotHeader.");
+
+    pstCtx->stReq.eProcess = RES_Process_GotHeader;
     return OK;
 }
 
@@ -297,7 +285,7 @@ UINT HTTP_SetReqHeader( HTTP_CTX *pstCtx, CHAR* pcKey, CHAR*pcValue )
     return FAIL;
 }
 
-CHAR* HTTP_GetReqHeader( HTTP_CTX *pstCtx, CHAR* pcKey )
+CHAR* HTTP_GetReqHeader( HTTP_CTX *pstCtx, const CHAR* pcKey )
 {
     UINT i = 0;
 
@@ -382,48 +370,51 @@ VOID HTTP_RouterInit( VOID )
 {
     HTTP_RouterMapInit();
 
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/",                 HTTP_GetHome,         "home");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/",                 HTTP_GetHome,       "HTTP_GetHome");
 
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/health",         HTTP_GetHealth,     "HTTP_GetHealth");
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/info",             HTTP_GetInfo,         "info");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/health",           HTTP_GetHealth,     "HTTP_GetHealth");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/info",             HTTP_GetInfo,       "HTTP_GetInfo");
 
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/timer/:timer",    HTTP_GetTimerData,    "HTTP_GetTimerData");
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/delay/:delay",    HTTP_GetDelayData,    "HTTP_GetDelayData");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/timer/:timer",     HTTP_GetTimerData,  "HTTP_GetTimerData");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/delay/:delay",     HTTP_GetDelayData,  "HTTP_GetDelayData");
     HTTP_RouterRegiste(HTTP_METHOD_GET,  "/infrared/:infrared",
-                                                            HTTP_GetInfraredData,"HTTP_GetInfraredData");
+                                                              HTTP_GetInfraredData,"HTTP_GetInfraredData");
     HTTP_RouterRegiste(HTTP_METHOD_GET,  "/infrared/:infrared/switch/:switch",
-                                                            HTTP_GetInfraredValue,"HTTP_GetInfraredValue");
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/system",            HTTP_GetSystemData,    "HTTP_GetSystemData");
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/cloudplatform",    HTTP_GetCloudPlatformData,    "HTTP_GetCloudPlatformData");
+                                                              HTTP_GetInfraredValue,"HTTP_GetInfraredValue");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/system",           HTTP_GetSystemData,   "HTTP_GetSystemData");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/cloudplatform",    HTTP_GetCloudPlatformData, "HTTP_GetCloudPlatformData");
 
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/temperature",    HTTP_GetTemperature,    "HTTP_GetTemperature");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/temperature",      HTTP_GetTemperature, "HTTP_GetTemperature");
 
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/html/header",    HTTP_GetHtmlHeader,    "HTTP_GetHtmlHeader");
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/html/header",    HTTP_PostHtmlHeader,"HTTP_PostHtmlHeader");
-    HTTP_RouterRegiste(HTTP_METHOD_PUT,  "/html/:html",        HTTP_PutHtml,        "HTTP_PutHtml");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/html/header",      HTTP_GetHtmlHeader,  "HTTP_GetHtmlHeader");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/html/header",      HTTP_PostHtmlHeader, "HTTP_PostHtmlHeader");
+    HTTP_RouterRegiste(HTTP_METHOD_PUT,  "/html/:html",       HTTP_PutHtml,        "HTTP_PutHtml");
 
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/timer",               HTTP_PostTimerData,    "HTTP_PostTimerData");
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/delay",               HTTP_PostDelayData,    "HTTP_PostDelayData");
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/infrared",        HTTP_PostInfraredData,    "HTTP_PostInfraredData");
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/system",               HTTP_PostSystemData,    "HTTP_PostSystemData");
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/cloudplatform",    HTTP_PostCloudPlatformData,    "HTTP_PostCloudPlatformData");
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/webset",            HTTP_PostWebSet,        "HTTP_PostWebSet");
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/webset",            HTTP_GetWebSet,            "HTTP_GetWebSet");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/timer",            HTTP_PostTimerData,  "HTTP_PostTimerData");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/delay",            HTTP_PostDelayData,  "HTTP_PostDelayData");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/infrared",         HTTP_PostInfraredData, "HTTP_PostInfraredData");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/system",           HTTP_PostSystemData, "HTTP_PostSystemData");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/cloudplatform",    HTTP_PostCloudPlatformData, "HTTP_PostCloudPlatformData");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/webset",           HTTP_PostWebSet,      "HTTP_PostWebSet");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/webset",           HTTP_GetWebSet,       "HTTP_GetWebSet");
 
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/control",           HTTP_PostDeviceControl,    "HTTP_PostDeviceControl");
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/scanwifi",           HTTP_GetScanWifi,        "HTTP_GetScanWifi");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/control",          HTTP_PostDeviceControl, "HTTP_PostDeviceControl");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/scanwifi",         HTTP_GetScanWifi,     "HTTP_GetScanWifi");
 
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/relaystatus",    HTTP_GetRelayStatus,    "HTTP_GetRelayStatus");
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/relaystatus",    HTTP_PostRelayStatus,    "HTTP_PostRelayStatus");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/relaystatus",      HTTP_GetRelayStatus,  "HTTP_GetRelayStatus");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/relaystatus",      HTTP_PostRelayStatus, "HTTP_PostRelayStatus");
 
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/date",            HTTP_GetDate,        "HTTP_GetDate");
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/date",            HTTP_PostDate,        "HTTP_PostDate");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/date",             HTTP_GetDate,         "HTTP_GetDate");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/date",             HTTP_PostDate,        "HTTP_PostDate");
 
     HTTP_RouterRegiste(HTTP_METHOD_GET,  "/meter",            HTTP_GetMeter,        "HTTP_GetMeter");
-    HTTP_RouterRegiste(HTTP_METHOD_POST, "/meter",            HTTP_PostMeter,        "HTTP_PostMeter");
+    HTTP_RouterRegiste(HTTP_METHOD_POST, "/meter",            HTTP_PostMeter,       "HTTP_PostMeter");
 
-    HTTP_RouterRegiste(HTTP_METHOD_PUT,  "/upgrade",        HTTP_PutUpgrade,    "HTTP_PutUpgrade");
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/upload",            HTTP_GetUploadHtml,        "HTTP_GetUploadHtml");
+    HTTP_RouterRegiste(HTTP_METHOD_PUT,  "/upgrade",          HTTP_PutUpgrade,      "HTTP_PutUpgrade");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/upload",           HTTP_GetUploadHtml,   "HTTP_GetUploadHtml");
+
+    // websocket
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/console",           HTTP_GetConsole,     "HTTP_GetConsole");
 
     HTTP_FileListRegiste();
 }
@@ -543,6 +534,7 @@ UINT HTTP_ResponInit( HTTP_CTX *pstCtx )
 
     FREE_MEM(pstCtx->stResp.pcResponBody);
     memset(&pstCtx->stResp, 0, sizeof(pstCtx->stResp));
+    pstCtx->stResp.eHttpCode = HTTP_CODE_Buff;
 
     return OK;
 }
@@ -557,10 +549,8 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
         return FAIL;
     }
 
-    HTTP_ResponInit(pstCtx);
-
-    if ( pstCtx->stReq.eProcess == HTTP_PROCESS_None ||
-         pstCtx->stReq.eProcess == HTTP_PROCESS_Invalid )
+    if ( pstCtx->stReq.eProcess == RES_Process_None ||
+         pstCtx->stReq.eProcess == RES_Process_Invalid )
     {
         LOG_OUT(LOGOUT_ERROR, "eProcess:%d", pstCtx->stReq.eProcess);
         return FAIL;
@@ -568,7 +558,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 
     if ( (pstCtx->stReq.eMethod == HTTP_METHOD_POST ||
           pstCtx->stReq.eMethod == HTTP_METHOD_PUT ) &&
-          pstCtx->stReq.eProcess == HTTP_PROCESS_GotHeader )
+          pstCtx->stReq.eProcess == RES_Process_GotHeader )
     {
         //LOG_OUT( LOGOUT_DEBUG, "got header");
         return OK;
@@ -580,6 +570,28 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
         return FAIL;
     }
 
+    if ( pstCtx->stReq.pfHandler != NULL )
+    {
+    	//LOG_OUT( LOGOUT_DEBUG, "handle...");
+    	return pstCtx->stReq.pfHandler(pstCtx);
+    }
+
+    // websocket 协议的特殊处理
+	CHAR* pcHeader = NULL;
+    pcHeader = HTTP_GetReqHeader(pstCtx, "Upgrade");
+    if ( pcHeader != NULL && strcmp(pcHeader, "websocket") == 0 )
+    {
+    	//3600s无数据交互则断开连接
+    	pstCtx->uiTimeOut = 3600;
+    	pstCtx->stReq.eProtocol = HTTP_websocket;
+    }
+    else
+    {
+    	pstCtx->stReq.eProtocol = HTTP_1_1;
+    }
+
+    HTTP_ResponInit(pstCtx);
+
     for ( uiLoop = 0; uiLoop < HTTP_ROUTER_MAP_MAX; uiLoop++ )
     {
         if ( stHttpRouterMap[uiLoop].eMethod == pstCtx->stReq.eMethod &&
@@ -587,83 +599,88 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
         {
             if ( pstCtx->stReq.uiRecvCurLen == pstCtx->stReq.uiRecvLen )
             {
-                LOG_OUT(LOGOUT_INFO, "[Request] Method:%s URL:%s",
-                        szHttpMethodStr[pstCtx->stReq.eMethod],
-                        pstCtx->stReq.szURL);
+                LOG_OUT(LOGOUT_INFO, "[Request] Method:%s URL:%s", szHttpMethodStr[pstCtx->stReq.eMethod], pstCtx->stReq.szURL);
             }
             pstCtx->stReq.pcRouter = stHttpRouterMap[uiLoop].szURL;
+            pstCtx->stReq.pfHandler = stHttpRouterMap[uiLoop].pfHttpHandler;
+
             return stHttpRouterMap[uiLoop].pfHttpHandler(pstCtx);
         }
     }
     if ( uiLoop >= HTTP_ROUTER_MAP_MAX )
     {
-        LOG_OUT(LOGOUT_INFO, "[Request] Method:%s URL:%s",
-                szHttpMethodStr[pstCtx->stReq.eMethod],
-                pstCtx->stReq.szURL);
+        LOG_OUT(LOGOUT_INFO, "[Request] Method:%s URL:%s", szHttpMethodStr[pstCtx->stReq.eMethod], pstCtx->stReq.szURL);
 
         return HTTP_NotFound( pstCtx );
     }
 
-    if ( HTTP_IS_SEND_FINISH( pstCtx ) )
-    {
-        HTTP_RequestInit( pstCtx );
-    }
+    //if ( HTTP_IS_SEND_FINISH( pstCtx ) )
+    //{
+    //    HTTP_RequestInit( pstCtx );
+    //}
 
     return OK;
 }
 
-UINT HTTP_SetHeader( HTTP_CTX *pstCtx )
+UINT HTTP_SetRespHeader( HTTP_CTX *pstCtx )
 {
-    if ( pstCtx->stResp.eHttpCode >= HTTP_CODE_Buff )
+    if ( pstCtx->stResp.eHttpCode < HTTP_CODE_Buff )
     {
-        LOG_OUT(LOGOUT_ERROR, "uiHttpCode unknown, %d", pstCtx->stResp.eHttpCode);
-        return FAIL;
+        pstCtx->stResp.uiPos += snprintf(
+                pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+                pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+                "HTTP/1.1 %s %s \r\n",
+                szHttpCodeMap[pstCtx->stResp.eHttpCode],
+                szHttpStatusMap[pstCtx->stResp.eHttpCode] );
     }
 
-    if ( pstCtx->stResp.eContentType >= HTTP_CONTENT_TYPE_Buff )
+    // websocket协议
+    if ( pstCtx->stReq.eProtocol == HTTP_websocket )
     {
-        LOG_OUT(LOGOUT_ERROR, "ContentType unknown, %d", pstCtx->stResp.eContentType);
-        return FAIL;
-    }
+		pstCtx->stResp.uiPos += snprintf(
+				pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+				pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+				"Upgrade: websocket \r\n");
 
-    if (pstCtx->stResp.eCacheControl >= HTTP_CACHE_CTL_TYPE_Buff )
+		pstCtx->stResp.uiPos += snprintf(
+				pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+				pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+				"Connection: Upgrade \r\n\r\n");
+    }
+    // http协议
+    else
     {
-        LOG_OUT(LOGOUT_ERROR, "CacheControl unknown, %d", pstCtx->stResp.eCacheControl);
-        return FAIL;
+		if ( pstCtx->stResp.eContentType < HTTP_CONTENT_TYPE_Buff )
+		{
+			pstCtx->stResp.uiPos += snprintf(
+					pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+					pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+					"Content-Type: %s \r\n", szHttpContentTypeStr[pstCtx->stResp.eContentType]);
+		}
+
+		if (pstCtx->stResp.eCacheControl >= HTTP_CACHE_CTL_TYPE_Buff )
+		{
+			pstCtx->stResp.uiPos += snprintf(
+					pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+					pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+					"Cache-Control: %s \r\n", szHttpCacheControlStr[pstCtx->stResp.eCacheControl]);
+		}
+
+		pstCtx->stResp.uiPos += snprintf(
+				pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+				pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+				"Accept-Ranges: bytes \r\n");
+
+		pstCtx->stResp.uiPos += snprintf(
+				pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+				pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+				"Connection: Keep-Alive \r\n");
+
+		pstCtx->stResp.uiPos += snprintf(
+				pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
+				pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
+					"Content-Length:           \r\n\r\n");
     }
-
-    pstCtx->stResp.uiPos += snprintf(
-            pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
-            pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
-            "HTTP/1.1 %s %s \r\n",
-            szHttpCodeMap[pstCtx->stResp.eHttpCode],
-            szHttpStatusMap[pstCtx->stResp.eHttpCode] );
-
-    pstCtx->stResp.uiPos += snprintf(
-            pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
-            pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
-            "Accept-Ranges: bytes \r\n");
-
-    pstCtx->stResp.uiPos += snprintf(
-            pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
-            pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
-            "Content-Type: %s \r\n", szHttpContentTypeStr[pstCtx->stResp.eContentType]);
-
-    pstCtx->stResp.uiPos += snprintf(
-            pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
-            pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
-            "Cache-Control: %s \r\n", szHttpCacheControlStr[pstCtx->stResp.eCacheControl]);
-
-    pstCtx->stResp.uiPos += snprintf(
-            pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
-            pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
-            "Connection: Keep-Alive \r\n");
-
-    pstCtx->stResp.uiPos += snprintf(
-            pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
-            pstCtx->stResp.uiSendBufLen - pstCtx->stResp.uiPos,
-                "Content-Length:           \r\n\r\n");
-
     pstCtx->stResp.uiHeaderLen = pstCtx->stResp.uiPos;
     return OK;
 }
@@ -755,8 +772,10 @@ UINT HTTP_SendOnce( HTTP_CTX *pstCtx )
         *(pcLength + uiLen) = ' ';
     }
 
-    pstCtx->stResp.uiSendCurLen        = pstCtx->stResp.uiPos;
-    pstCtx->stResp.uiSendTotalLen    = pstCtx->stResp.uiSendCurLen;
+    pstCtx->stResp.uiSendCurLen   = pstCtx->stResp.uiPos;
+    pstCtx->stResp.uiSendTotalLen = pstCtx->stResp.uiSendCurLen;
+
+    //LOG_OUT(LOGOUT_DEBUG, "[%s]", pstCtx->stResp.pcResponBody);
 
     uiRet = WEB_WebSend(pstCtx);
     if ( uiRet != OK )
@@ -765,18 +784,6 @@ UINT HTTP_SendOnce( HTTP_CTX *pstCtx )
         return FAIL;
     }
 
-#if 0
-    LOG_OUT( LOGOUT_INFO, "eHttpCode:%d",         pstCtx->stResp.eHttpCode);
-    LOG_OUT( LOGOUT_INFO, "eContentType:%d",     pstCtx->stResp.eContentType);
-    LOG_OUT( LOGOUT_INFO, "eCacheControl:%d",     pstCtx->stResp.eCacheControl);
-    LOG_OUT( LOGOUT_INFO, "uiBodyLen;%d",         pstCtx->stResp.uiBodyLen);
-    LOG_OUT( LOGOUT_INFO, "uiHeaderLen:%d",     pstCtx->stResp.uiHeaderLen);
-    LOG_OUT( LOGOUT_INFO, "uiSendCurLen:%d",     pstCtx->stResp.uiSendCurLen);
-    LOG_OUT( LOGOUT_INFO, "uiPos:%d",             pstCtx->stResp.uiPos);
-    LOG_OUT( LOGOUT_INFO, "uiSendBufLen:%d",     pstCtx->stResp.uiSendBufLen);
-    LOG_OUT( LOGOUT_INFO, "uiSendTotalLen:%d", pstCtx->stResp.uiSendTotalLen);
-    LOG_OUT( LOGOUT_INFO, "uiSentLen:%d",         pstCtx->stResp.uiSentLen);
-#endif
     return OK;
 }
 

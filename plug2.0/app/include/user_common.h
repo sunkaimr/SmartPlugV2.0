@@ -32,6 +32,7 @@
 #include "user_bigiot.h"
 #include "user_infrared.h"
 #include "user_meter.h"
+#include "user_websocket.h"
 
 #ifndef GIT_COMMIT_SHA1
     #define GIT_COMMIT_SHA1 "NULL"
