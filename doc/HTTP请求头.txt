@@ -167,3 +167,28 @@ HTTP/1.1 400 Bad Request
 
 
 
+// websocket
+
+GET /websocket HTTP/1.1
+Host: localhost:8080
+Connection: Upgrade
+Pragma: no-cache
+Cache-Control: no-cache
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36
+Upgrade: websocket
+Origin: file://
+Sec-WebSocket-Version: 13
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
+Sec-WebSocket-Key: j5KbyBbKF42ndhu4hcojlg==
+Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+
+
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+Sec-WebSocket-Protocol: chat
+
+
+

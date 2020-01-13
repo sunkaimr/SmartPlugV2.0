@@ -1,0 +1,228 @@
+</html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>log</title>
+	<script src="jquery-1.11.1.min.js"></script>
+<style>
+html, body{
+	margin:0px;
+	padding:0px;
+	background-color: #FFF;
+	font-size:14px;
+	font: "courier";
+}
+#main {
+	height:100%;
+	background-color: #FFF;
+    outline:none;
+}
+#output {	
+	height:80%;
+	overflow:auto;
+    outline:none;
+}
+#input {
+	padding-top:0;
+	height:20%;
+	background-color: #444;
+    font-size:16px;
+}
+
+ul{
+	margin: 0px;
+	padding: 0px;
+	font-size:14px;
+	list-style: none;
+	color:#000;
+	font-family: "courier";
+    word-wrap: break-word;
+    word-break:break-all;
+}
+pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+input {
+	background-color: #444;
+	border: 0;
+	outline: none;
+	font-size:16px;
+	font-family: "courier";	
+	color:#7CFC00;
+	width: 99%;
+}
+</style>
+ 
+<script>
+var ws = null;
+var wsUrl = `${document.location.host}`;
+var historyCmd = [""];
+
+$(function(){
+    var index = 0;
+	$("#cmd").keydown(function(event) {
+		if (event.keyCode == 13) {
+			var msg = $("#cmd").val();
+            writeOutput(msg);
+            msg = msg.substring(2, msg.length)
+			sendToServer(msg);
+			$("#cmd").val(">>");
+
+            if(msg != historyCmd[historyCmd.length-1]){
+                historyCmd.push(msg);
+            }
+
+            index = historyCmd.length;
+		}
+		//上箭头
+        else if (event.keyCode == 38) {
+            index--;
+            if (index <= 0){
+                index = 0;
+            }
+            $("#cmd").val(">>" + historyCmd[index]);
+            $("#cmd")[0].focus();
+        }
+        //下箭头
+        else if (event.keyCode == 40) {
+            index++;
+            if (index >= historyCmd.length){
+                index = historyCmd.length;
+                $("#cmd").val(">>");
+            }else{
+                $("#cmd").val(">>" + historyCmd[index-1]);
+            }
+            $("#cmd")[0].focus();
+        }
+	});
+
+	$("#main").keydown(function(event) {
+		// Alt + H
+		if(event.altKey && event.which == 72){
+			writeOutput("Esc     : exit");
+			writeOutput("Alt + Q : Closes connection");
+			writeOutput("Alt + R : Reconnects");
+			writeOutput("Alt + C : clear input");
+			writeOutput("Alt + W : clear window");
+			writeOutput("Alt + H : show this help");
+			writeOutput("</br>");
+		}
+		// Esc
+		else if(event.which == 27){			
+			if( confirm("是否断开连接并退出？") ){
+				return;
+			}
+            closeWebSocket();
+		}
+		// Alt + Q
+		else if(event.altKey && event.which == 81){
+			writeOutput("Close connection...");
+            closeWebSocket();
+		}
+		// Alt + R
+		else if(event.altKey && event.which == 82){
+            closeWebSocket();
+			writeOutput("Reconnects...");
+            openWebSocket();
+		}
+		// Alt + C
+		else if(event.altKey && event.which == 67){
+			$("#cmd").val(">>");
+		}
+		// Alt + W
+		else if(event.altKey && event.which == 87){
+			$("#output li").remove();
+		}		
+	});
+ 
+	$('#input').click(function(){
+		$("#cmd")[0].focus();
+	});	
+
+	$("#cmd").val(">>");
+	$("#cmd")[0].focus();
+	
+	openWebSocket();
+});
+	
+	
+function writeOutput(str){
+    $("#output ul").append("<li>" + str + "</li>");
+	$('#output')[0].scrollTop =$('#output')[0].scrollHeight;
+}
+
+//关闭WebSocket连接
+function openWebSocket() {
+	//判断当前浏览器是否支持WebSocket
+	if ('WebSocket' in window){
+		if ( ws == null) {
+			ws = new WebSocket("ws://"+wsUrl+"/console");
+            if(ws.readyState == 0){
+                writeOutput("Connecting to \'"+ wsUrl + "\'...");
+            }
+
+			//连接发生错误的回调方法
+			ws.onerror = function () {
+				writeOutput("Could not connect to \'"+ wsUrl + "\', ( Alt + R ) reconnects");
+			};
+
+			//连接成功建立的回调方法
+			ws.onopen = function () {
+				writeOutput("Connected \'"+ wsUrl+"\'");
+			}
+
+			//接收到消息的回调方法
+			ws.onmessage = function (event) {
+				writeOutput(event.data);
+			}
+
+			//连接关闭的回调方法
+			ws.onclose = function () {
+				writeOutput("Disconnect \'"+ wsUrl + "\'");
+				ws = null;
+			}
+		}
+	}else {
+		writeOutput('Not support websocket')
+	}
+}
+
+//关闭WebSocket连接
+function closeWebSocket() {
+    if ( ws != null ){
+        ws.onclose();
+	}
+}
+
+//监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+window.onbeforeunload = function () {
+	closeWebSocket();
+	ws = null;
+}
+ 
+//发送消息
+function sendToServer(str) {
+    if(ws != null && ws.readyState == 1){
+        ws.send(str);
+        return;
+    }
+    writeOutput("websocket not connect, ( Alt + R ) reconnect");
+
+}
+
+</script>
+</head> 
+<body>
+<div id="main" tabIndex="-1">
+	<div id="output">
+        <pre><ul></ul></pre>
+	</div>
+	<div id="input">
+        </br>
+		<ul><li style="color:#FFF;">Input "Alt + H" to for more information.</li></ul>
+		</br>
+		<input type="text" id='cmd'>
+	</div>
+</div> 
+</body>
+</html>

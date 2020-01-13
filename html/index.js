@@ -21,6 +21,7 @@ $(document).ready(function () {
 
 	$("#relay").click(setRelay);
 	$("#date").click(getDate);
+    $("#console").click(openConsole);
 	$("#timer").click(TimerClick);
     $("#temperature").click(GetTemperaturer);
 	$("#delay").click(DelayClick);
@@ -436,6 +437,11 @@ function getDate(){
 			alert("Data: " + data + "\nStatus: " + status);
 		}
 	});
+}
+
+function openConsole(){
+    var url = "http://"+`${document.location.host}`+"/console.html";
+    window.open(url, "_blank");
 }
 
 function getDevName(){
