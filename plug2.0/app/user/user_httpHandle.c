@@ -187,17 +187,16 @@ UINT HTTP_SendFile( HTTP_CTX *pstCtx, HTTP_FILE_S* pstFile )
     while ( !HTTP_IS_SEND_FINISH(pstCtx) )
     {
         //申请内存
-        //申请内存
-        if ( system_get_free_heap_size() > HTTP_BUF_4K*10 )
-        {
-            HTTP_Malloc(pstCtx, HTTP_BUF_4K);
+        //if ( system_get_free_heap_size() > HTTP_BUF_4K*10 )
+        //{
+        //    HTTP_Malloc(pstCtx, HTTP_BUF_4K);
             //LOG_OUT(LOGOUT_INFO, "%d, 4K %s", system_get_free_heap_size(), pstFile->pcName);
-        }
-        else
-        {
+       // }
+       // else
+        //{
             HTTP_Malloc(pstCtx, WEB_SENDBUF_SIZE);
             //LOG_OUT(LOGOUT_INFO, "%d, 1K %s", system_get_free_heap_size(), pstFile->pcName);
-        }
+       // }
 
         //首次发送时发送http头部
         if ( pstCtx->stResp.uiSentLen == 0 )
@@ -275,14 +274,14 @@ UINT HTTP_SendMultiple( HTTP_CTX *pstCtx, const CHAR* pcContent )
     while ( !HTTP_IS_SEND_FINISH(pstCtx) )
     {
         //申请内存
-        if ( system_get_free_heap_size() > 4096*5 )
-        {
-            HTTP_Malloc(pstCtx, 4096);
-        }
-        else
-        {
+        //if ( system_get_free_heap_size() > 4096*5 )
+        //{
+         //   HTTP_Malloc(pstCtx, 4096);
+        //}
+        //else
+        //{
             HTTP_Malloc(pstCtx, WEB_SENDBUF_SIZE);
-        }
+        //}
 
         //首次发送时发送http头部
         if ( pstCtx->stResp.uiSentLen == 0 )

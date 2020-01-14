@@ -541,19 +541,22 @@ UINT HTTP_ResponInit( HTTP_CTX *pstCtx )
 
 UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 {
+	UINT uiRet = 0;
     UINT uiLoop = 0;
 
     if ( NULL == pstCtx )
     {
         LOG_OUT( LOGOUT_ERROR, "pstCtx:%p", pstCtx);
-        return FAIL;
+        uiRet = FAIL;
+        goto end;
     }
 
     if ( pstCtx->stReq.eProcess == RES_Process_None ||
          pstCtx->stReq.eProcess == RES_Process_Invalid )
     {
         LOG_OUT(LOGOUT_ERROR, "eProcess:%d", pstCtx->stReq.eProcess);
-        return FAIL;
+        uiRet = FAIL;
+        goto end;
     }
 
     if ( (pstCtx->stReq.eMethod == HTTP_METHOD_POST ||
@@ -561,19 +564,22 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
           pstCtx->stReq.eProcess == RES_Process_GotHeader )
     {
         //LOG_OUT( LOGOUT_DEBUG, "got header");
-        return OK;
+        uiRet = OK;
+        goto end;
     }
 
     if ( pstCtx->stReq.szURL[0] == 0 )
     {
         LOG_OUT(LOGOUT_INFO, "szURL is NULL");
-        return FAIL;
+        uiRet = FAIL;
+        goto end;
     }
 
     if ( pstCtx->stReq.pfHandler != NULL )
     {
     	//LOG_OUT( LOGOUT_DEBUG, "handle...");
-    	return pstCtx->stReq.pfHandler(pstCtx);
+    	uiRet = pstCtx->stReq.pfHandler(pstCtx);
+        goto end;
     }
 
     // websocket 协议的特殊处理
@@ -604,22 +610,30 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
             pstCtx->stReq.pcRouter = stHttpRouterMap[uiLoop].szURL;
             pstCtx->stReq.pfHandler = stHttpRouterMap[uiLoop].pfHttpHandler;
 
-            return stHttpRouterMap[uiLoop].pfHttpHandler(pstCtx);
+            uiRet = stHttpRouterMap[uiLoop].pfHttpHandler(pstCtx);
+            goto end;
         }
     }
     if ( uiLoop >= HTTP_ROUTER_MAP_MAX )
     {
         LOG_OUT(LOGOUT_INFO, "[Request] Method:%s URL:%s", szHttpMethodStr[pstCtx->stReq.eMethod], pstCtx->stReq.szURL);
 
-        return HTTP_NotFound( pstCtx );
+        uiRet = HTTP_NotFound( pstCtx );
+        goto end;
     }
 
-    //if ( HTTP_IS_SEND_FINISH( pstCtx ) )
-    //{
-    //    HTTP_RequestInit( pstCtx );
-    //}
+end:
+    if ( HTTP_IS_SEND_FINISH( pstCtx ) )
+    {
+    	pstCtx->uiTimeOut = WEB_CONTINUE_TMOUT;
+        LOG_OUT(LOGOUT_INFO, "[Response] Method:%s URL:%s Code:%s",
+                szHttpMethodStr[pstCtx->stReq.eMethod],
+                pstCtx->stReq.szURL,
+                szHttpCodeMap[pstCtx->stResp.eHttpCode]);
+        HTTP_RequestInit( pstCtx );
+    }
 
-    return OK;
+    return uiRet;
 }
 
 UINT HTTP_SetRespHeader( HTTP_CTX *pstCtx )

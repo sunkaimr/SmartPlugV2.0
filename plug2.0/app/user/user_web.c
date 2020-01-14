@@ -48,12 +48,11 @@ UINT WEB_CloseWebCtx( HTTP_CTX *pstCtx )
         LOG_OUT(LOGOUT_ERROR, "pstCtx:%p", pstCtx);
         return FAIL;
     }
-
-    if ( pstConsoleCtx == pstCtx )
-    {
-    	printf("%d:pstCtx:0x%p\r\n", __LINE__, pstCtx);
-    	pstConsoleCtx = NULL;
-    }
+//
+//    if ( pstConsoleCtx == pstCtx )
+//    {
+//    	pstConsoleCtx = NULL;
+//    }
 
     if( pstCtx->iClientFd > 0 )
     {
@@ -95,7 +94,9 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
     INT32 iClientFd = -1;
     INT32 iRet = 0;
     INT32 Reuseaddr = 1;
-    INT32 iLoop = 0;
+    INT8 iLoop = 0;
+    INT8 iCount = 0;
+    INT8 ucRetry = 0;
     fd_set stFdRead;
     struct timeval stSelectTimeOut = {1, 0};
     struct timeval stRecvTimeOut = {1, 0};
@@ -156,6 +157,7 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
 
     for ( ;; )
     {
+retry:
         if ( bWebServerTaskTerminate == TRUE )
         {
             goto end;
@@ -180,22 +182,41 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
         //LOG_OUT(LOGOUT_DEBUG, "WEB_WebServerTask, select ok, iRet:%d", iRet);
 
         //客户端已满，等待释放
-        while (1)
+        for( ucRetry = 0; ; ucRetry++)
         {
-            for ( iLoop = 0; iLoop < WEB_MAX_FD; iLoop++ )
+            for ( iCount = 0, iLoop = 0; iLoop < WEB_MAX_FD; iLoop++ )
             {
-                if ( stWebCtx[iLoop].iClientFd < 0 )
+                if ( stWebCtx[iLoop].iClientFd >= 0 )
                 {
-                    break;
+                	iCount++;
                 }
             }
 
-            if ( system_get_free_heap_size() > HTTP_BUF_30K  && iLoop < WEB_MAX_FD)
+            //限制客户端并发连接数目
+            if ( iCount < WEB_MAX_FD)
             {
-                break;
+            	//预留一定的内存后边读取Flash时会申请内存若预留内存不足会导致malloc失败导致响应失败
+            	if ( system_get_free_heap_size() > HTTP_BUF_30K )
+            	{
+            		break;
+            	}
+            	else
+            	{
+                    LOG_OUT(LOGOUT_DEBUG, "heap not enough, free heap:%d, connecting:%d, max:%d", system_get_free_heap_size(), iCount, WEB_MAX_FD);
+            	}
+            }
+            else
+            {
+                LOG_OUT(LOGOUT_DEBUG, "client full, free heap:%d, connecting:%d, max:%d", system_get_free_heap_size(), iCount, WEB_MAX_FD);
             }
 
-            LOG_OUT(LOGOUT_DEBUG, "connect full or heap insufficient, max free heap size: %d", WEB_MAX_FD, system_get_free_heap_size());
+            // 重试100次失败拒绝本次连接
+            if ( ucRetry > 100 )
+            {
+            	LOG_OUT(LOGOUT_ERROR, "maximum retry, free heap:%d, connecting:%d, max:%d", system_get_free_heap_size(), iCount, WEB_MAX_FD);
+            	goto retry;
+            }
+
             vTaskDelay(100/portTICK_RATE_MS);
         }
 
@@ -321,19 +342,7 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
             LOG_OUT(LOGOUT_INFO, "Router handle failed");
             goto end;
         }
-        //LOG_OUT(LOGOUT_DEBUG, "HTTP_RouterHandle");
         //LOG_OUT(LOGOUT_INFO, "uiSentLen:%d, uiSendTotalLen:%d", pstCtx->stResp.uiSentLen, pstCtx->stResp.uiSendTotalLen);
-
-        printf("%s:%d[%x]# pstConsoleCtx:0x%p\r\n", __func__, __LINE__, xTaskGetCurrentTaskHandle(),pstCtx);
-
-        if ( HTTP_IS_SEND_FINISH( pstCtx ) )
-        {
-            LOG_OUT(LOGOUT_INFO, "[Response] Method:%s URL:%s Code:%s",
-                    szHttpMethodStr[pstCtx->stReq.eMethod],
-                    pstCtx->stReq.szURL,
-                    szHttpCodeMap[pstCtx->stResp.eHttpCode]);
-            HTTP_RequestInit( pstCtx );
-        }
     }
 
 end:
@@ -346,7 +355,7 @@ end:
 
 VOID WEB_StartHandleTheard( VOID *Para )
 {
-    xTaskCreate(WEB_WebHandleTask, "WEB_WebHandleTask", 2048, Para, 3, &xWebHandle);
+    xTaskCreate(WEB_WebHandleTask, "WEB_WebHandleTask", 512, Para, 3, &xWebHandle);
 }
 
 
@@ -407,7 +416,7 @@ retry:
     if ( iRet < 0 )
     {
     	FREE_MEM( pstCtx->stResp.pcResponBody );
-        LOG_OUT(LOGOUT_ERROR, "send error, pstCtx:%p,fd:%d, iRet:%d, errno:%d", pstCtx, pstCtx->iClientFd, iRet, errno);
+        LOG_OUT(LOGOUT_ERROR, "send error, pstCtx:%p, fd:%d, iRet:%d, errno:%d", pstCtx, pstCtx->iClientFd, iRet, errno);
         return FAIL;
     }
     else if ( iRet != pstCtx->stResp.uiSendCurLen )
@@ -421,8 +430,6 @@ retry:
     pstCtx->stResp.uiSentLen += pstCtx->stResp.uiSendCurLen;
     //LOG_OUT(LOGOUT_INFO, "send process:%d",
     //        pstCtx->stResp.uiSentLen * 100 / pstCtx->stResp.uiSendTotalLen);
-
-    //LOG_OUT(LOGOUT_DEBUG, "WEB_WebSend over", pstCtx->iClientFd);
     FREE_MEM( pstCtx->stResp.pcResponBody );
     return OK;
 }

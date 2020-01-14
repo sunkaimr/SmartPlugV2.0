@@ -87,6 +87,11 @@ VOID LOG_Logout(UINT uiLevel, CHAR *pcFileName, INT iLine, CHAR *pcfunc, CHAR *p
             return;
     }
 
+    if ( (pcPos - pcBuf) >  LOG_PREFIX_BUF_SIZE )
+    {
+    	pcPos = pcBuf + LOG_PREFIX_BUF_SIZE;
+    }
+
     va_start(Arg, pcFamt);
     pcPos += vsnprintf(pcPos, LOG_BUF_SIZE, pcFamt, Arg);
     va_end(Arg);

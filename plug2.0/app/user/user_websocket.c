@@ -16,10 +16,10 @@ HTTP_CTX *pstConsoleCtx = NULL;
 UINT HTTP_GetConsole( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
+	UINT uiLen = 0;
     WS_RES_HEAD_S stWCHeader;
     CHAR* pcBuf = NULL;
 
-    printf("%s:%d[%x]# pstConsoleCtx:0x%p\r\n", __func__, __LINE__, xTaskGetCurrentTaskHandle(),pstCtx);
     if ( pstCtx->stResp.eProcess == RESP_Process_None )
     {
     	uiRet = WEBSOCKET_Handshake(pstCtx);
@@ -39,6 +39,8 @@ UINT HTTP_GetConsole( HTTP_CTX *pstCtx )
         	return FAIL;
         }
 
+        LOG_OUT( LOGOUT_INFO, "websocket recv data: %s", stWCHeader.Data);
+
         if ( stWCHeader.DataLen == 0 )
         {
         	return OK;
@@ -50,14 +52,19 @@ UINT HTTP_GetConsole( HTTP_CTX *pstCtx )
         	LOG_OUT( LOGOUT_ERROR, "malloc failed");
         	return FAIL;
         }
-        uiRet = WEBSOCKET_CmdHandle(stWCHeader.Data, stWCHeader.DataLen, pcBuf, HTTP_BUF_4K);
-        uiRet = WEBSOCKET_SendData(pstCtx, pcBuf, uiRet);
-        FREE_MEM(pcBuf);
+
+        uiLen = WEBSOCKET_CmdHandle(stWCHeader.Data, stWCHeader.DataLen, pcBuf, HTTP_BUF_4K);
+
+        uiRet = WEBSOCKET_SendData(pstCtx, pcBuf, uiLen);
         if ( uiRet != OK )
         {
         	LOG_OUT( LOGOUT_ERROR, "websocket send data failed");
+        	FREE_MEM(pcBuf);
         	return FAIL;
         }
+
+        LOG_OUT( LOGOUT_INFO, "websocket send data: %s", pcBuf);
+        FREE_MEM(pcBuf);
     }
 
     return OK;
@@ -167,19 +174,22 @@ UINT WEBSOCKET_ParseData( HTTP_CTX *pstCtx, WS_RES_HEAD_S *pstWCHeader )
 		return FAIL;
 	}
 
+	//	Opcode表示帧的类型: 0x0 表示附加数据帧, 0x1 表示文本数据帧, 0x2 表示二进制数据帧, 0x3-7 暂时无定义，为以后的非控制帧保留
+	//	0x8 表示连接关闭, 0x9 表示ping, 0xA 表示pong, 0xB-F 暂时无定义，为以后的控制帧保留
+	if ( pstWCHeader->Opcode == 0x08 )
+	{
+		LOG_OUT( LOGOUT_INFO, "websocker client closed" );
+		*(pstWCHeader->Data) = 0;
+		pstWCHeader->DataLen = 0;
+		pstCtx->stResp.eProcess = RESP_Process_Finished;
+	}
+
 	for ( i = 0; i < pstWCHeader->DataLen; i++ )
 	{
 		pstWCHeader->Data[i] = pstWCHeader->Data[i]^pstWCHeader->Mask[i % 4];
 	}
 	pstWCHeader->Data[i] = 0;
 
-	//	Opcode表示帧的类型: 0x0 表示附加数据帧, 0x1 表示文本数据帧, 0x2 表示二进制数据帧, 0x3-7 暂时无定义，为以后的非控制帧保留
-	//	0x8 表示连接关闭, 0x9 表示ping, 0xA 表示pong, 0xB-F 暂时无定义，为以后的控制帧保留
-	if ( pstWCHeader->Opcode == 0x08 )
-	{
-		LOG_OUT( LOGOUT_INFO, "websocker client closed" );
-		pstCtx->stResp.eProcess = RESP_Process_Finished;
-	}
 #if 0
 	LOG_OUT( LOGOUT_INFO, "pstWCHeader->FIN:%d",      pstWCHeader->FIN);
 	LOG_OUT( LOGOUT_INFO, "pstWCHeader->Opcode:0x%X", pstWCHeader->Opcode);
@@ -336,7 +346,7 @@ UINT WEBSOCKET_CmdHandle( CHAR* pcCmd, UINT uiCmdLen, CHAR* pcBuf, UINT uiBufLen
 	{
 		return PLUG_MarshalJsonDate(pcBuf, uiBufLen);
 	}
-	else if ( 0 == strcmp(pcCmd, "get free heap") )
+	else if ( 0 == strcmp(pcCmd, "get heap") )
 	{
 		return snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"Free heap Size:%d", system_get_free_heap_size());
 	}
