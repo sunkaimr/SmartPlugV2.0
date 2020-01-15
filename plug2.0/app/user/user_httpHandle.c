@@ -245,7 +245,7 @@ UINT HTTP_SendFile( HTTP_CTX *pstCtx, HTTP_FILE_S* pstFile )
         pstCtx->stResp.uiSendCurLen = pstCtx->stResp.uiPos + uiBodyLen;
         pstCtx->stResp.uiPos = 0;
 
-        LOG_OUT(LOGOUT_INFO, "send process:%d",
+        LOG_OUT(LOGOUT_DEBUG, "send process:%d",
                 pstCtx->stResp.uiSentLen * 100 / pstCtx->stResp.uiSendTotalLen);
 
         uiRet = WEB_WebSend(pstCtx);
