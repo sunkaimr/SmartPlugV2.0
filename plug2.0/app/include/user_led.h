@@ -46,7 +46,7 @@ IS_JI_ZHI_YUN:
 */
 
 #define IS_PHILIPS      	0
-#define IS_CHANG_XIN    	0
+#define IS_CHANG_XIN    	1
 #define IS_CHANG_XIN_V1    	0
 
 
