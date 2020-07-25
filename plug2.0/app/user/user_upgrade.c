@@ -12,19 +12,19 @@
 在makefile 23行左右修改对应的字段
 -----------------------------------------------------------------------------------------
 BOOT            none    表示不执行 boot.bin文件，即没有boot.bin文件
-                new        表示执行 boot.bin文件，每次执行将要执行boot.bin文件
-APP                1        表示生成 user1.bin文件    注意这个仅当上面的BOOT=new 才有效
-                2        表示生成 user2.bin文件    注意这个仅当上面的BOOT=new 才有效
-SPI_SPEED        40        表示烧录时候的频率选择，这里一般为40，对应烧录工具默认值即可
-SPI_MODE        QIO        这个主要看8266模块制作商，比如现在常见的是安信可的8266-12F，就是QIO。
-SPI_SIZE_MAP    1        flash=256，user1地址0x1000,user2地址0x41000        制作对应不同的falsh大小固件
+                new     表示执行 boot.bin文件，每次执行将要执行boot.bin文件
+APP               1     表示生成 user1.bin文件    注意这个仅当上面的BOOT=new 才有效
+                  2     表示生成 user2.bin文件    注意这个仅当上面的BOOT=new 才有效
+SPI_SPEED        40     表示烧录时候的频率选择，这里一般为40，对应烧录工具默认值即可
+SPI_MODE        QIO     这个主要看8266模块制作商，比如现在常见的是安信可的8266-12F，就是QIO。
+SPI_SIZE_MAP    1        flash=256，user1地址0x1000,user2地址0x41000     制作对应不同的falsh大小固件
                 2        flash=1024，user1地址0x1000,user2地址0x81000    制作对应不同的falsh大小固件
                 3        flash=2048，user1地址0x1000,user2地址0x81000    制作对应不同的falsh大小固件
                 4        flash=4096，user1地址0x1000,user2地址0x81000    制作对应不同的falsh大小固件
-                5        flash=2048，user1地址0x1000,user2地址0x101000    制作对应不同的falsh大小固件
-                6        flash=4096，user1地址0x1000,user2地址0x101000    制作对应不同的falsh大小固件
-                8        flash=8192，user1地址0x1000,user2地址0x101000    制作对应不同的falsh大小固件
-                9        flash=16384，user1地址0x1000,user2地址0x101000    制作对应不同的falsh大小固件
+                5        flash=2048，user1地址0x1000,user2地址0x101000   制作对应不同的falsh大小固件
+                6        flash=4096，user1地址0x1000,user2地址0x101000   制作对应不同的falsh大小固件
+                8        flash=8192，user1地址0x1000,user2地址0x101000   制作对应不同的falsh大小固件
+                9        flash=16384，user1地址0x1000,user2地址0x101000  制作对应不同的falsh大小固件
                 其它数值    flash=256，user1地址0x1000,user2地址0x41000        制作对应不同的falsh大小固件
 -----------------------------------------------------------------------------------------
 */
@@ -38,7 +38,7 @@ const UINT32 User1BinFlashSizeMap[] =
         0x1000,     //Flash:8Mbits. 512KBytes+512KBytes，  user1地址0x1000,user2地址0x81000
         0x1000,     //Flash:16Mbits.512KBytes+512KBytes，  user1地址0x1000,user2地址0x81000
         0x1000,     //Flash:32Mbits.512KBytes+512KBytes，  user1地址0x1000,user2地址0x81000
-        0x1000,        //Flash:16Mbits.1024KBytes+1024KBytes，  user1地址0x1000,user2地址0x101000
+        0x1000,     //Flash:16Mbits.1024KBytes+1024KBytes，  user1地址0x1000,user2地址0x101000
         0x1000,     //Flash:32Mbits.1024KBytes+1024KBytes，  user1地址0x1000,user2地址0x101000
         0x1000,     //Flash:32Mbits don't support now
         0x1000,     //Flash:64Mbits.1024KBytes+1024KBytes，  user1地址0x1000,user2地址0x101000

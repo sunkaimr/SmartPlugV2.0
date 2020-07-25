@@ -5,7 +5,7 @@
 
 #include "ssl/ssl_crypto.h"
 
-#define MQTT_PORT        1883
+#define MQTT_PORT         1883
 
 #define MQTT_SENDSIZE     256
 #define MQTT_RECVSIZE     256

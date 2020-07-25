@@ -47,23 +47,53 @@
     #define LED_GPIO_WIFI_STATUS_NUM         13
     #define LED_GPIO_WIFI_STATUS_FUNC        FUNC_GPIO13
 
-    #define GPIO_WIFI_STATUS_ON                (0x01)
-    #define GPIO_WIFI_STATUS_OFF            (0x00)
+    #define GPIO_WIFI_STATUS_ON              (0x01)
+    #define GPIO_WIFI_STATUS_OFF             (0x00)
 
 
-    #define LED_GPIO_RELAY_MUX                 PERIPHS_IO_MUX_MTMS_U
-    #define LED_GPIO_RELAY_NUM                 14
-    #define LED_GPIO_RELAY_FUNC                FUNC_GPIO14
+    #define LED_GPIO_RELAY_MUX               PERIPHS_IO_MUX_MTMS_U
+    #define LED_GPIO_RELAY_NUM               14
+    #define LED_GPIO_RELAY_FUNC              FUNC_GPIO14
 
     #define GPIO_RELAY_ON                    (0x01)
-    #define GPIO_RELAY_OFF                    (0x00)
+    #define GPIO_RELAY_OFF                   (0x00)
 
     /* 继电器状态指示 */
     #define LED_GPIO_RELAY_STATUS_MUX         PERIPHS_IO_MUX_MTDI_U
     #define LED_GPIO_RELAY_STATUS_NUM         12
     #define LED_GPIO_RELAY_STATUS_FUNC        FUNC_GPIO12
 
-    #define GPIO_RELAY_STATUS_ON            (0x01)
+    #define GPIO_RELAY_STATUS_ON             (0x01)
+    #define GPIO_RELAY_STATUS_OFF            (0x00)
+
+    /* 继电器按键输入 */
+    #define LED_GPIO_KEY_MUX                 PERIPHS_IO_MUX_GPIO4_U
+    #define LED_GPIO_KEY_NUM                 4
+    #define LED_GPIO_KEY_FUNC                FUNC_GPIO4
+#elif IS_CHANG_XIN_V1
+
+    /* wifi状态指示 */
+    #define LED_GPIO_WIFI_STATUS_MUX         PERIPHS_IO_MUX_MTCK_U
+    #define LED_GPIO_WIFI_STATUS_NUM         13
+    #define LED_GPIO_WIFI_STATUS_FUNC        FUNC_GPIO13
+
+    #define GPIO_WIFI_STATUS_ON              (0x01)
+    #define GPIO_WIFI_STATUS_OFF             (0x00)
+
+
+    #define LED_GPIO_RELAY_MUX               PERIPHS_IO_MUX_MTMS_U
+    #define LED_GPIO_RELAY_NUM               14
+    #define LED_GPIO_RELAY_FUNC              FUNC_GPIO14
+
+    #define GPIO_RELAY_ON                    (0x01)
+    #define GPIO_RELAY_OFF                   (0x00)
+
+    /* 继电器状态指示 */
+    #define LED_GPIO_RELAY_STATUS_MUX         PERIPHS_IO_MUX_MTDI_U
+    #define LED_GPIO_RELAY_STATUS_NUM         12
+    #define LED_GPIO_RELAY_STATUS_FUNC        FUNC_GPIO12
+
+    #define GPIO_RELAY_STATUS_ON             (0x01)
     #define GPIO_RELAY_STATUS_OFF            (0x00)
 
     /* 继电器按键输入 */
@@ -76,31 +106,31 @@
     /* wifi状态指示 */
     #define LED_GPIO_WIFI_STATUS_MUX         PERIPHS_IO_MUX_MTCK_U
     #define LED_GPIO_WIFI_STATUS_NUM         13
-    #define LED_GPIO_WIFI_STATUS_FUNC       FUNC_GPIO13
+    #define LED_GPIO_WIFI_STATUS_FUNC        FUNC_GPIO13
 
-    #define GPIO_WIFI_STATUS_ON                (0x01)
-    #define GPIO_WIFI_STATUS_OFF            (0x00)
+    #define GPIO_WIFI_STATUS_ON              (0x01)
+    #define GPIO_WIFI_STATUS_OFF             (0x00)
 
     /* 继电器控制 */
-    #define LED_GPIO_RELAY_MUX                 PERIPHS_IO_MUX_MTDO_U
-    #define LED_GPIO_RELAY_NUM                 15
-    #define LED_GPIO_RELAY_FUNC                FUNC_GPIO15
+    #define LED_GPIO_RELAY_MUX               PERIPHS_IO_MUX_MTDO_U
+    #define LED_GPIO_RELAY_NUM               15
+    #define LED_GPIO_RELAY_FUNC              FUNC_GPIO15
 
     #define GPIO_RELAY_ON                    (0x01)
-    #define GPIO_RELAY_OFF                    (0x00)
+    #define GPIO_RELAY_OFF                   (0x00)
 
     /* 继电器状态指示 */
     #define LED_GPIO_RELAY_STATUS_MUX         PERIPHS_IO_MUX_MTDI_U
     #define LED_GPIO_RELAY_STATUS_NUM         12
     #define LED_GPIO_RELAY_STATUS_FUNC        FUNC_GPIO12
 
-    #define GPIO_RELAY_STATUS_ON            (0x01)
-    #define GPIO_RELAY_STATUS_OFF            (0x00)
+    #define GPIO_RELAY_STATUS_ON              (0x01)
+    #define GPIO_RELAY_STATUS_OFF             (0x00)
 
     /* 按键输入 */
-    #define LED_GPIO_KEY_MUX                 PERIPHS_IO_MUX_GPIO4_U
-    #define LED_GPIO_KEY_NUM                 4
-    #define LED_GPIO_KEY_FUNC                FUNC_GPIO4
+    #define LED_GPIO_KEY_MUX                   PERIPHS_IO_MUX_GPIO4_U
+    #define LED_GPIO_KEY_NUM                   4
+    #define LED_GPIO_KEY_FUNC                  FUNC_GPIO4
 
 #endif
 
@@ -147,16 +177,15 @@ VOID LED_WifiStatusOff( VOID )
 
 VOID LED_RelayOn( VOID )
 {
-
     GPIO_OUTPUT_SET(GPIO_ID_PIN(LED_GPIO_RELAY_NUM),         GPIO_RELAY_ON);
-    GPIO_OUTPUT_SET(GPIO_ID_PIN(LED_GPIO_RELAY_STATUS_NUM), GPIO_RELAY_STATUS_ON);
+    GPIO_OUTPUT_SET(GPIO_ID_PIN(LED_GPIO_RELAY_STATUS_NUM),  GPIO_RELAY_STATUS_ON);
 }
 
 
 VOID LED_RelayOff( VOID )
 {
     GPIO_OUTPUT_SET(GPIO_ID_PIN(LED_GPIO_RELAY_NUM),         GPIO_RELAY_OFF);
-    GPIO_OUTPUT_SET(GPIO_ID_PIN(LED_GPIO_RELAY_STATUS_NUM), GPIO_RELAY_STATUS_OFF);
+    GPIO_OUTPUT_SET(GPIO_ID_PIN(LED_GPIO_RELAY_STATUS_NUM),  GPIO_RELAY_STATUS_OFF);
 }
 
 

@@ -10,13 +10,13 @@
 
 const CHAR* HttpStatus_Ok                     = "OK";
 const CHAR* HttpStatus_Created                = "Created";
-const CHAR* HttpStatus_Found                 = "Found";
+const CHAR* HttpStatus_Found                  = "Found";
 const CHAR* HttpStatus_BadRequest             = "BadRequest";
-const CHAR* HttpStatus_NotFound             = "NotFound";
-const CHAR* HttpStatus_InternalServerError     = "InternalServerError";
+const CHAR* HttpStatus_NotFound               = "NotFound";
+const CHAR* HttpStatus_InternalServerError    = "InternalServerError";
 
 const CHAR* STRING_SPACE = " ";
-const CHAR* STRING_ENTER= "\n";
+const CHAR* STRING_ENTER = "\n";
 
 HTTP_ROUTER_MAP_S stHttpRouterMap[HTTP_ROUTER_MAP_MAX];
 

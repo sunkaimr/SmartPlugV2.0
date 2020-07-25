@@ -298,7 +298,7 @@ UINT WEBSOCKET_CmdHandle( CHAR* pcCmd, UINT uiCmdLen, CHAR* pcBuf, UINT uiBufLen
 	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"get sys              : print system config.\r\n");
 	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"get date             : print now time.\r\n");
 	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"get device info      : print device info.\r\n");
-	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"get html header      : print device info.\r\n");
+	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"get html header      : print html info in falsh.\r\n");
 	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"get relay            : print relay status.\r\n");
 	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"get heap             : print free heap\r\n");
 	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"reboot               : reboot\r\n");

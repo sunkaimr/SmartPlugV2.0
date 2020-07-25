@@ -101,8 +101,8 @@ void INFRA_GPIOInit(void)
 
     stGpioCfg.GPIO_IntrType = GPIO_PIN_INTR_NEGEDGE;
     stGpioCfg.GPIO_Mode     = GPIO_Mode_Input;
-    stGpioCfg.GPIO_Pullup     = GPIO_PullUp_EN;
-    stGpioCfg.GPIO_Pin         = INFRA_GPIO_NUM;
+    stGpioCfg.GPIO_Pullup   = GPIO_PullUp_EN;
+    stGpioCfg.GPIO_Pin      = INFRA_GPIO_NUM;
     gpio_config( &stGpioCfg );
 }
 
@@ -110,14 +110,6 @@ void INFRA_GPIOInit(void)
 void INFRA_InfraredInit(void)
 {
     COMM_ExtiIntRegister(INFRA_GPIO_NUM, INFRA_GPIOInit, NULL, INFRA_InfrareHandle, "INFRA_InfrareHandle");
-
-    //GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, INFRA_GPIO_NUM);
-
-    //gpio_intr_handler_register(INFRA_InfrareHandle, NULL);
-
-    //_xt_isr_unmask(1 << ETS_GPIO_INUM);
-
-    //LOG_OUT(LOGOUT_INFO, "INFRA_InfraredInit success");
 }
 
 VOID INFRARED_JudgeInfrared( VOID )

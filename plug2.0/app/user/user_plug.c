@@ -18,8 +18,8 @@ VOID PLUG_StartDelayTime( PLUG_DELAY_S *pstDelay );
 
 PLUG_TIMER_S     g_astPLUG_Timer[PLUG_TIMER_MAX];
 PLUG_DELAY_S     g_astPLUG_Delay[PLUG_DELAY_MAX];
-PLUG_SYSSET_S     g_stPLUG_SystemSet;
-PLUG_PLATFORM_S g_stPLUG_PlatForm;
+PLUG_SYSSET_S    g_stPLUG_SystemSet;
+PLUG_PLATFORM_S  g_stPLUG_PlatForm;
 
 PLUG_WEBSET_S g_stWebSet = {"timer", "0"};
 
@@ -262,10 +262,10 @@ VOID PLUG_DelayDataDeInit( VOID )
 
 VOID PLUG_SystemSetDataDeInit( VOID )
 {
-    g_stPLUG_SystemSet.bRelayStatus     = 0;
+    g_stPLUG_SystemSet.bRelayStatus       = 0;
     g_stPLUG_SystemSet.ucWifiMode         = WIFI_MODE_STATION;
-    g_stPLUG_SystemSet.bSmartConfigFlag = FALSE;
-    g_stPLUG_SystemSet.eRelayPowerUp     = PWUP_LAST;
+    g_stPLUG_SystemSet.bSmartConfigFlag   = FALSE;
+    g_stPLUG_SystemSet.eRelayPowerUp      = PWUP_LAST;
 
     strncpy(g_stPLUG_SystemSet.szPlugName, PLUG_NAME, PLUG_NAME_MAX_LEN);
     memset(g_stPLUG_SystemSet.szWifiSSID, 0, PLUG_WIFI_SSID_LEN);
@@ -280,19 +280,19 @@ VOID PLUG_PlatformDeInit( VOID )
     g_stPLUG_PlatForm.eDevType = DEVTYPE_other;
 
     memset(g_stPLUG_PlatForm.szMqttProductKey,     0, PLUG_MQTT_PRODUCTKEY_LEN);
-    memset(g_stPLUG_PlatForm.szMqttDevName,     0, PLUG_MQTT_DEVNAME_LEN);
-    memset(g_stPLUG_PlatForm.szMqttDevSecret,     0, PLUG_MQTT_DEVSECRET_LEN);
+    memset(g_stPLUG_PlatForm.szMqttDevName,        0, PLUG_MQTT_DEVNAME_LEN);
+    memset(g_stPLUG_PlatForm.szMqttDevSecret,      0, PLUG_MQTT_DEVSECRET_LEN);
 
-    memset(g_stPLUG_PlatForm.szBigiotDevId,     0, PLUG_BIGIOT_DEVID_LEN);
-    memset(g_stPLUG_PlatForm.szBigiotApiKey,     0, PLUG_BIGIOT_APIKEY_LEN);
-    memset(g_stPLUG_PlatForm.szSwitchId,         0, PLUG_BIGIOT_IFID_LEN);
+    memset(g_stPLUG_PlatForm.szBigiotDevId,        0, PLUG_BIGIOT_DEVID_LEN);
+    memset(g_stPLUG_PlatForm.szBigiotApiKey,       0, PLUG_BIGIOT_APIKEY_LEN);
+    memset(g_stPLUG_PlatForm.szSwitchId,           0, PLUG_BIGIOT_IFID_LEN);
     memset(g_stPLUG_PlatForm.szTempId,             0, PLUG_BIGIOT_IFID_LEN);
     memset(g_stPLUG_PlatForm.szHumidityId,         0, PLUG_BIGIOT_IFID_LEN);
 
-    memset(g_stPLUG_PlatForm.szVoltageId,         0, PLUG_BIGIOT_IFID_LEN);
-    memset(g_stPLUG_PlatForm.szCurrentId,         0, PLUG_BIGIOT_IFID_LEN);
-    memset(g_stPLUG_PlatForm.szPowerId,         0, PLUG_BIGIOT_IFID_LEN);
-    memset(g_stPLUG_PlatForm.szElectricityId,     0, PLUG_BIGIOT_IFID_LEN);
+    memset(g_stPLUG_PlatForm.szVoltageId,          0, PLUG_BIGIOT_IFID_LEN);
+    memset(g_stPLUG_PlatForm.szCurrentId,          0, PLUG_BIGIOT_IFID_LEN);
+    memset(g_stPLUG_PlatForm.szPowerId,            0, PLUG_BIGIOT_IFID_LEN);
+    memset(g_stPLUG_PlatForm.szElectricityId,      0, PLUG_BIGIOT_IFID_LEN);
 }
 
 UINT8 PLUG_GetWifiMode( VOID )

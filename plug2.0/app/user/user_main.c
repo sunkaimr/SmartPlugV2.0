@@ -98,10 +98,12 @@ void user_init(void)
             system_upgrade_userbin_check()+1);
 
     LED_GpioInit();
+    CONFIG_ReadConfig(PLUG_MOUDLE_BUFF);
+
+    // 上电前按下按键，恢复出厂设置
     KEY_Restore();
     COMM_ExtiIntInit();
     INFRA_InfraredInit();
-    CONFIG_ReadConfig(PLUG_MOUDLE_BUFF);
 
     KEY_StartKeyHanderTimer();
     PLUG_StartJudgeTimeHanderTimer();

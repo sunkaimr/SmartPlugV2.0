@@ -8,7 +8,8 @@ var InfraredData;
 var DelayRefreshTime="";
 var meterRefreshTimer;
 var webSet;
-var ModelTab=""
+var ModelTab="";
+var dateStr="";
 
 $(document).ready(function () {
 
@@ -135,7 +136,7 @@ $(document).ready(function () {
 					//alert("成功");
 				}
 			});
-			$("#timerSubmitModal").modal("toggle")
+			$("#timerSubmitModal").modal("toggle");
 			$("#timerSubmitBtn").attr('disabled', false);
 
 		});
@@ -207,7 +208,7 @@ $(document).ready(function () {
 				}
 			});
 
-			$("#infraredSubmitModal").modal("toggle")
+			$("#infraredSubmitModal").modal("toggle");
             $("#infraredSubmitBtn").attr('disabled', false);
 		});
 	});
@@ -314,11 +315,10 @@ $(document).ready(function () {
                 }
             });
 
-            $("#delaySubmitModal").modal("toggle")
+            $("#delaySubmitModal").modal("toggle");
+            $("#delaySubmitBtn").attr('disabled', false);
         });
     });
-
-
 });
 
 function binFileChange() {
@@ -391,9 +391,8 @@ function DateDisplay(){
 	if (parseInt(LocalTime%60) == 1){
 		refreshRelay();
         GetTemperaturer();
-	}
-
-	if(parseInt(LocalTime%60) == 3){
+        getDate();
+	}else if(parseInt(LocalTime%60) == 3){
         var today = new Date(parseInt(LocalTime) * 1000);
         var str = SetFormat(today.getHours())+":"+SetFormat(today.getMinutes());
         if ( str == DelayRefreshTime ){
@@ -405,8 +404,8 @@ function DateDisplay(){
 function getDate(){
 	$.get("/date",function(data, status){
 		if (status == "success"){
+            dateStr=(data.Date).replace(/\-/g, "/");
 			if ( data.SyncTime ){
-				dateStr=(data.Date).replace(/\-/g, "/");
 				LocalTime = Date.parse(dateStr)/1000;
 				$("#date").text(FormatDate(LocalTime));
 			}else {
@@ -780,6 +779,7 @@ function DelayClick(){
 				}
 			});
 			$("#tabDelay a").click(tabDelaySubmit);
+            getDate();
             refreshTask();
 		}else{
 			alert("Data: " + data + "\nStatus: " + status);
@@ -1287,6 +1287,18 @@ function refreshTask() {
         if (item.Enable && (item.OnEnable||item.OffEnable)){
             $("#delayTaskClass").removeClass("hidden");
             DelayRefreshTime = item.TimePoint;
+            var hour = parseInt( DelayRefreshTime.split(":")[0]);
+            var min = parseInt( DelayRefreshTime.split(":")[1]);
+            var timePoint = hour * 60 + min;
+            var today = new Date(dateStr);
+            var nowTimePoint = today.getHours() * 60 + today.getMinutes();
+            var time = timePoint - nowTimePoint;
+            if (time < 0 ) {
+                time = time + 24 * 60;
+            }
+            hour = parseInt(time/60);
+            min = time % 60;
+
             var action;
             switch(item.SwFlag){
                 case 1: action = " 开启，还剩 " + item.TmpCycleTimes + " 次";break;
@@ -1298,14 +1310,14 @@ function refreshTask() {
                         }
                         break;
             }
-            $("#delayTask").text("提示："+item.Name+" 将在 "+item.TimePoint+ action);
+            $("#delayTask").text("提示："+item.Name+" 将在 "+hour.toString()+ " 小时"+min.toString()+"分钟后" + action);
             return false;
         }
         index++;
     });
     if(index >= data.length){
         $("#delayTaskClass").addClass("hidden");
-        $("#delayTask").text("提示：无");
+        $("#delayTask").text("提示：无延时任务");
         DelayRefreshTime = "";
     }
 }

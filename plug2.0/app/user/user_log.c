@@ -8,8 +8,6 @@
 static UINT uiLogLevel = LOGOUT_INFO;
 static CHAR *g_pcLogBuf = NULL;
 
-static xSemaphoreHandle  xMutex = NULL;
-
 
 VOID LOG_LogInit( VOID )
 {
@@ -23,14 +21,6 @@ VOID LOG_LogInit( VOID )
         while(1);
     }
     //printf("LOG_LogInit over.\r\n");
-
-    xMutex = xSemaphoreCreateRecursiveMutex();
-    if( xMutex == NULL )
-    {
-        printf("[ERROR][%s:%d][%s]# xSemaphoreCreateRecursiveMutex failed",
-                __FILE__, __LINE__, __func__);
-        while(1);
-    }
 }
 
 VOID LOG_SetLogLevel( UINT uiLevel )
@@ -98,18 +88,6 @@ VOID LOG_Logout(UINT uiLevel, CHAR *pcFileName, INT iLine, CHAR *pcfunc, CHAR *p
 
     pcPos += sprintf(pcPos,"\r\n");
     printf(pcBuf);
-
-//    if ( pstConsoleCtx != NULL && !strstr(pcfunc, "WEBSOCKET_SendData") && !strstr(pcfunc, "WEB_WebSend"))
-//    {
-//    	printf("%s:%d[%x]# pstConsoleCtx:0x%p, fd:%d\r\n", __func__, __LINE__, xTaskGetCurrentTaskHandle(),
-//    			pstConsoleCtx, pstConsoleCtx->iClientFd);
-    	//y有可能是传入的参数不对
-//    	uiRet = WEBSOCKET_SendData(pstConsoleCtx, pcBuf, pcPos - pcBuf);
-//    	if ( uiRet != OK )
-//    	{
-//    		pstConsoleCtx = NULL;
-//    	}
-//    }
 
     //判断输出日志是否过大截断
     if ( (pcPos - pcBuf) > (LOG_BUF_SIZE + LOG_PREFIX_BUF_SIZE))

@@ -7,16 +7,16 @@
 #include "esp_common.h"
 #include "user_common.h"
 
-UINT VolParReg      = 0;    // 电压参数寄存器
+UINT VolParReg        = 0;    // 电压参数寄存器
 UINT VolPar           = 0;    // 电压寄存器
-UINT CurrentParReg  = 0;    // 电流参数寄存器
+UINT CurrentParReg    = 0;    // 电流参数寄存器
 UINT CurrentPar       = 0;    // 电流寄存器
-UINT PowerParReg    = 0;    // 功率参数寄存器
-UINT PowerPar       = 0;    // 功率寄存器
-UINT PFReg           = 0;    // PF寄存器
+UINT PowerParReg      = 0;    // 功率参数寄存器
+UINT PowerPar         = 0;    // 功率寄存器
+UINT PFReg            = 0;    // PF寄存器
 UINT DataUpdateReg    = 0;    // 数据更新寄存器
-UINT StateReg        = 0;    // 状态寄存器
-UINT CheckSumReg    = 0;    // 校验和寄存器
+UINT StateReg         = 0;    // 状态寄存器
+UINT CheckSumReg      = 0;    // 校验和寄存器
 
 static UINT8  ucRecvData[48];
 static UINT8  ucRecvDataCnt = 0;
