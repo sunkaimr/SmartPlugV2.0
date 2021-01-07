@@ -26,6 +26,7 @@
 #define BIGIOT_SAY            "say"
 #define BIGIOT_LOGIN        "login"
 #define BIGIOT_LOGOUT        "logout"
+#define BIGIOT_CHECKED       "checked"
 
 // 两次发送间隔不得小于5s
 #define BIGIOT_MIN_INTERVAL  5
@@ -50,6 +51,7 @@ static int BigiotParseInt( const char* pcData, const char* pcKey );
 
 static int Bigiot_DeviceIDRegister( BIGIOT_Ctx_S *pstCtx );
 static int Bigiot_HeartBeat( void * para );
+static int Bigiot_HealthCheck( void * para );
 static char*  Bigiot_GenerateRelayStatus( void * para );
 static char*  Bigiot_GenerateTemp( void * para );
 static char*  Bigiot_GenerateHumidity( void * para );
@@ -58,6 +60,8 @@ static char*  Bigiot_GenerateCurrent( void * para );
 static char*  Bigiot_GeneratePower( void * para );
 static char*  Bigiot_GenerateElectricity( void * para );
 static int Bigiot_UploadAllIfData( BIGIOT_Ctx_S *pstCtx );
+static int WaitReadLock(BIGIOT_Ctx_S* pstCtx, unsigned int timeout_ms);
+static void ReleaseReadLock(BIGIOT_Ctx_S* pstCtx);
 
 BIGIOT_Ctx_S* pstCli = NULL;
 
@@ -66,6 +70,8 @@ static void BIGIOT_BigiotTask( void* para )
     int iRet = -1;
     char* pcDevId = 0;
     char* pcApiKey = 0;
+    unsigned char iCount = 0;
+    static unsigned char iFailCount = 0;
 
     pcDevId = PLUG_GetBigiotDevId();
     if ( pcDevId == 0 || pcDevId[0] == 0 || pcDevId[0] == 0xFF )
@@ -82,14 +88,13 @@ static void BIGIOT_BigiotTask( void* para )
     }
 
 retry:
-
+    iFailCount = 0;
     //等待wifi连接就绪
     while ( STATION_GOT_IP != wifi_station_get_connect_status() )
     {
-        BIGIOT_LOG(BIGIOT_DEBUG, "wait for connect");
+        BIGIOT_LOG(BIGIOT_DEBUG, "wait for network");
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
-
     pstCli = Bigiot_New( BIGIOT_HOSTNAME, BIGIOT_PORT, pcDevId, pcApiKey);
     if ( pstCli == 0 )
     {
@@ -125,24 +130,38 @@ retry:
 
         for ( ;; )
         {
-            iRet = Bigiot_Cycle( pstCli );
-            if ( iRet )
-            {
-                BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_Cycle failed");
-                goto exit;
-            }
+        	iCount++;
+        	// 40s一次健康检查, Bigiot_Cycle需要消耗3s+延时1s
+        	if ( iCount%10 == 0 )
+        	{
+        		iCount = 0;
+        		iRet = Bigiot_HealthCheck(pstCli);
+        		if ( iRet !=0 )
+        		{
+        			iFailCount++;
+        			// 健康检查连续3次失败重新登陆
+        			if ( iFailCount >= 3 )
+        			{
+        				pstCli->iAlived = 3;
+        			}
+        		}
+        	}
 
-            if ( !pstCli->iAlived )
-            {
+        	if ( pstCli->iAlived == 3 )
+        	{
+                BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_HealthCheck failed, will reconnect");
                 goto exit;
-            }
+        	}
+
+            Bigiot_Cycle( pstCli );
+
             vTaskDelay( 1000/portTICK_RATE_MS );
         }
     }
 
 exit:
+    vTaskDelay( 3000/portTICK_RATE_MS );
     BIGIOT_LOG(BIGIOT_INFO, "BIGIOT_BigiotTask stop");
-    vTaskDelay( 1000/portTICK_RATE_MS );
     BIGIOT_Destroy( &pstCli );
     goto retry;
 err:
@@ -198,7 +217,6 @@ static void Bigiot_EventHanderTask( void* para )
     for ( ;; )
     {
         Bigiot_EventCallBack( pstCtx );
-
         vTaskDelay( 1000 / portTICK_RATE_MS );
     }
 }
@@ -227,6 +245,8 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
     int iLen = 0;
     int iRet = 0;
 
+    pstCli->iAlived = 1;
+
     //先连接至贝壳物联平台
     iRet = pstCtx->Connect( pstCtx );
     if ( iRet )
@@ -239,6 +259,9 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
     iLen = snprintf(szMess, sizeof(szMess), "{\"M\":\"checkin\",\"ID\":\"%s\",\"K\":\"%s\"}\n",
                     pstCtx->pcDeviceId, pstCtx->pcApiKey );
 
+    // 先加锁
+    WaitReadLock(pstCtx, 0);
+
     iRet = pstCtx->Write( pstCtx, szMess, iLen, pstCtx->iTimeOut );
     if ( iRet != iLen )
     {
@@ -248,6 +271,9 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
 
     //登陆成功会返回checkinok和设备名称等字段
     iRet = pstCtx->Read( pstCtx, szMess, sizeof(szMess), pstCtx->iTimeOut );
+    // 释放锁
+    ReleaseReadLock(pstCtx);
+
     if ( iRet < 0 )
     {
         return 3;
@@ -266,6 +292,9 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
         {
             strncpy( pstCtx->szDevName, pcContent, BIGIOT_DEVNAME_LEN );
         }
+
+        pstCli->iAlived = 2;
+
         return 0;
     }
     BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_Login failed, unknown method:%s", pcMethod);
@@ -281,17 +310,22 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
     char* pcContent = 0;
     int iRet = 0;
 
+    WaitReadLock(pstCtx, 0);
+
     //判断是否有数据发送过来
     iRet = pstCtx->Read( pstCtx, szMess, sizeof(szMess), pstCtx->iTimeOut );
+
+    ReleaseReadLock(pstCtx);
+
     if ( iRet < 0 )
     {
         BIGIOT_LOG(BIGIOT_ERROR, "Read failed");
-        return iRet;
+        return 1;
     }
 
     if ( iRet > 0 )
     {
-        //BIGIOT_LOG(BIGIOT_DEBUG, "szMess:%s", szMess);
+        BIGIOT_LOG(BIGIOT_DEBUG, "szMess:%s", szMess);
 
         //有指令发送过来
         pcMethod = BigiotParseString(szMess, "M", szValue, sizeof(szValue));
@@ -385,7 +419,6 @@ int Bigiot_EventRegister( BIGIOT_Ctx_S *pstCtx, BIGIOT_Event_S* pstEvent )
 void Bigiot_EventCallBack( BIGIOT_Ctx_S *pstCtx )
 {
     UINT8 i = 0;
-    int iRet = 0;
     sntp_time_t NowTime;
     static sntp_time_t lLastTime = 0;
     char *pcBuf = NULL;
@@ -401,11 +434,8 @@ void Bigiot_EventCallBack( BIGIOT_Ctx_S *pstCtx )
     }
     else if ( (NowTime - lLastTime) > BIGIOT_MIN_INTERVAL )
     {
-        iRet = Bigiot_UploadAllIfData( pstCtx );
-        if ( !iRet )
-        {
-            lLastTime = NowTime;
-        }
+        Bigiot_UploadAllIfData( pstCtx );
+        lLastTime = NowTime;
     }
 }
 
@@ -681,17 +711,75 @@ static int Bigiot_HeartBeat( void * para )
         if ( iFailedCnt >= 2 )
         {
             BIGIOT_LOG(BIGIOT_ERROR, "HeartBeat send failed");
-            pstCtx->iAlived = 0;
+            pstCtx->iAlived = 3;
             iFailedCnt = 0;
             return 2;
         }
     }
 
     BIGIOT_LOG(BIGIOT_DEBUG, "send heartbeat");
-    pstCtx->iAlived = 1;
+    pstCtx->iAlived = 2;
     iFailedCnt = 0;
 
     return 0;
+}
+
+static int Bigiot_HealthCheck( void * para )
+{
+    BIGIOT_Ctx_S *pstCtx = para;
+    const char* pcMsg = "{\"M\":\"status\"}\n";
+    int iRet = 0;
+    char szMess[150] = { 0 };
+    char szValue[100] = { 0 };
+    char* pcStatus = 0;
+
+    if ( pstCtx == NULL )
+    {
+        BIGIOT_LOG(BIGIOT_ERROR, "pstCtx is NULL");
+        return 1;
+    }
+
+    WaitReadLock(pstCtx, 0);
+
+    iRet = pstCtx->Write( pstCtx, pcMsg, strlen(pcMsg), pstCtx->iTimeOut );
+    if ( iRet != strlen(pcMsg) )
+    {
+    	ReleaseReadLock(pstCtx);
+
+		BIGIOT_LOG(BIGIOT_ERROR, "send failed");
+		return 2;
+    }
+    BIGIOT_LOG(BIGIOT_DEBUG, "send HealthCheck");
+
+    iRet = pstCtx->Read( pstCtx, szMess, sizeof(szMess), pstCtx->iTimeOut );
+
+    ReleaseReadLock(pstCtx);
+
+    if ( iRet < 0 )
+    {
+        BIGIOT_LOG(BIGIOT_ERROR, "Read failed");
+        return iRet;
+    }
+
+    if ( iRet > 0 )
+    {
+    	//BIGIOT_LOG(BIGIOT_DEBUG, "szMess: %s", szMess);
+
+    	pcStatus = BigiotParseString(szMess, "M", szValue, sizeof(szValue));
+        if ( 0 != pcStatus && 0 == strcmp(pcStatus, BIGIOT_CHECKED) )
+        {
+        	BIGIOT_LOG(BIGIOT_DEBUG, "HealthCheck ok");
+        	return 0;
+        }
+        else
+        {
+        	BIGIOT_LOG(BIGIOT_ERROR, "HealthCheck failed, szMess: %s", szMess);
+        	return 3;
+        }
+    }
+
+    BIGIOT_LOG(BIGIOT_ERROR, "HealthCheck failed, read timeout");
+    return 4;
 }
 
 static char* Bigiot_GenerateRelayStatus( void * para )
@@ -845,6 +933,7 @@ static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDev
 
     pstCtx->xEventHandle     = 0;
     pstCtx->iAlived            = 0;
+    pstCtx->ucReadLock       = FALSE;
 
     pstCtx->iTimeOut         = BIGIOT_TIMEOUT;
     pstCtx->Read             = Read;
@@ -1029,4 +1118,29 @@ exit:
     return recvLen;
 }
 
+
+
+static int WaitReadLock(BIGIOT_Ctx_S* pstCtx, unsigned int timeout_ms)
+{
+	unsigned int count = 0;
+
+	while( pstCtx->ucReadLock )
+	{
+		vTaskDelay( 1 / portTICK_RATE_MS );
+		count++;
+
+		if ( timeout_ms > 0 && count > timeout_ms )
+		{
+			return -1;
+		}
+	}
+	pstCtx->ucReadLock = TRUE;
+
+	return 0;
+}
+
+static void ReleaseReadLock(BIGIOT_Ctx_S* pstCtx)
+{
+	pstCtx->ucReadLock = FALSE;
+}
 

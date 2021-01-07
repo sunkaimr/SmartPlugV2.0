@@ -47,9 +47,11 @@ typedef struct tagBigiot
     int iTimeOut;                            //发送和接收的超时时间，超过该时间认为发送或接收失败
 
     xTaskHandle xEventHandle;                //处理注册事件任务的任务句柄
-    int iAlived;                            //心跳成功标志，心跳失败时该标志会被清零
+    int iAlived;                            //连接平台状态；0:未知状态；1:正在连接；2:连接成功；3：连接失败
 
     BIGIOT_Event_S astEvent[BIGIOT_EVENT_NUM]; //心跳、开关状态、温度、湿度等事件会注册到这里
+
+    unsigned char ucReadLock;               // 读锁，有时想服务器发送了读取数据命令需要加一个读锁避免数据被其他任务抢占读取
 
     int  (*Read)(struct tagBigiot*, unsigned char*, unsigned int, unsigned int); //数据接受函数
     int  (*Write)(struct tagBigiot*, const unsigned char*, unsigned int, unsigned int); //数据发送函数

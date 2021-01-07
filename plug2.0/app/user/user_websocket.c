@@ -9,10 +9,6 @@ UINT WEBSOCKET_Handshake( HTTP_CTX *pstCtx );
 UINT WEBSOCKET_ParseData( HTTP_CTX *pstCtx, WS_RES_HEAD_S *pstWCHeader );
 UINT WEBSOCKET_CmdHandle( CHAR* pcCmd, UINT uiCmdLen, CHAR* pcBuf, UINT uiBufLen );
 
-// 传入日志模块，将日志输出到控制台
-HTTP_CTX *pstConsoleCtx = NULL;
-
-
 UINT HTTP_GetConsole( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
@@ -28,7 +24,6 @@ UINT HTTP_GetConsole( HTTP_CTX *pstCtx )
     		LOG_OUT( LOGOUT_ERROR, "websocket hand shake failed");
     		return FAIL;
     	}
-    	pstConsoleCtx = pstCtx;
     }
     else
     {
@@ -39,7 +34,7 @@ UINT HTTP_GetConsole( HTTP_CTX *pstCtx )
         	return FAIL;
         }
 
-        LOG_OUT( LOGOUT_INFO, "websocket recv data: %s", stWCHeader.Data);
+        LOG_OUT( LOGOUT_DEBUG, "websocket recv data: %s", stWCHeader.Data);
 
         if ( stWCHeader.DataLen == 0 )
         {
@@ -63,7 +58,7 @@ UINT HTTP_GetConsole( HTTP_CTX *pstCtx )
         	return FAIL;
         }
 
-        LOG_OUT( LOGOUT_INFO, "websocket send data: %s", pcBuf);
+        LOG_OUT( LOGOUT_DEBUG, "websocket send data: %s", pcBuf);
         FREE_MEM(pcBuf);
     }
 
@@ -303,6 +298,7 @@ UINT WEBSOCKET_CmdHandle( CHAR* pcCmd, UINT uiCmdLen, CHAR* pcBuf, UINT uiBufLen
 	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"get heap             : print free heap\r\n");
 	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"reboot               : reboot\r\n");
 	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"set log {level}      : set log level, {level} could be: none, debug, info, error.\r\n");
+	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"get log              : get log");
 	    uiPos += snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"\r\n");
 	    return uiPos;
 	}
@@ -376,6 +372,10 @@ UINT WEBSOCKET_CmdHandle( CHAR* pcCmd, UINT uiCmdLen, CHAR* pcBuf, UINT uiBufLen
 		else{
 			return snprintf( pcBuf+uiPos, uiBufLen-uiPos,	"unknown \'%s\', you can input \'set log none, debug, info or error\'.", pcCmd+8);
 		}
+	}
+	else if ( 0 == strcmp(pcCmd, "get log") )
+	{
+		return LOG_PrintHistoryLog(pcBuf+uiPos, uiBufLen-uiPos);
 	}
 	else
 	{

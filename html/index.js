@@ -861,10 +861,14 @@ function CloudPlatformClick(){
             $("#BigiotIfElectricity").val(data.ElectricityId);
 
             var str = "";
-            if ( data.ConnectSta == "connected" ){
-                str = "已连接至" + $("#PlatformSelect option:selected").text()+"平台";
-			}else if ( data.ConnectSta == "disconnect" ){
-                str = "连接" + $("#PlatformSelect option:selected").text() + "失败";
+            if ( data.ConnectSta == "unknown" ){
+                str = "连接状态未知";
+			}else if ( data.ConnectSta == "connectting" ){
+                str = "正在连接";
+			}else if ( data.ConnectSta == "connected" ){
+                str = "连接成功";
+			}else if ( data.ConnectSta == "failed" ){
+                str = "连接失败";
 			}else{
                 str = "连接状态未知";
 			}

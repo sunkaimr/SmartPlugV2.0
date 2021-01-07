@@ -912,15 +912,23 @@ UINT PLUG_MarshalJsonCloudPlatformSet( CHAR* pcBuf, UINT uiBufLen )
 
     if ( g_stPLUG_PlatForm.ucCloudPlatform == PLATFORM_BIGIOT )
     {
-        if ( Bigiot_GetBigioStatus() )
-        {
-            snprintf(szBuf, sizeof(szBuf), "connected");
-        }
-        else
-        {
-            snprintf(szBuf, sizeof(szBuf), "disconnect");
-        }
-
+    	switch ( Bigiot_GetBigioStatus() )
+    	{
+			case 0:
+				snprintf(szBuf, sizeof(szBuf), "unknown");
+				break;
+			case 1:
+				snprintf(szBuf, sizeof(szBuf), "connectting");
+				break;
+			case 2:
+				snprintf(szBuf, sizeof(szBuf), "connected");
+				break;
+			case 3:
+				snprintf(szBuf, sizeof(szBuf), "failed");
+				break;
+			default:
+				snprintf(szBuf, sizeof(szBuf), "unknown");
+    	}
     }
     else if ( g_stPLUG_PlatForm.ucCloudPlatform == PLATFORM_ALIYUN )
     {

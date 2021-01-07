@@ -156,7 +156,7 @@ function openWebSocket() {
 	//判断当前浏览器是否支持WebSocket
 	if ('WebSocket' in window){
 		if ( ws == null) {
-			ws = new WebSocket("ws://"+"192.168.1.102"+"/console");
+			ws = new WebSocket("ws://"+wsUrl+"/console");
             if(ws.readyState == 0){
                 writeOutput("Connecting to \'"+ wsUrl + "\'...");
             }

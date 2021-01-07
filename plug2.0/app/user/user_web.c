@@ -48,11 +48,6 @@ UINT WEB_CloseWebCtx( HTTP_CTX *pstCtx )
         LOG_OUT(LOGOUT_ERROR, "pstCtx:%p", pstCtx);
         return FAIL;
     }
-//
-//    if ( pstConsoleCtx == pstCtx )
-//    {
-//    	pstConsoleCtx = NULL;
-//    }
 
     if( pstCtx->iClientFd > 0 )
     {
