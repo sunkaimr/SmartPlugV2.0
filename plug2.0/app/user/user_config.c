@@ -529,7 +529,7 @@ UINT CONFIG_ReadConfig( PLUG_MOUDLE_E uiMoudle )
     switch( PLUG_GetRelayPowerUpStatus() )
     {
     case PWUP_LAST:
-            PLUG_SetRelayByStatus( PLUG_GetRelayStatus(), FALSE );
+        PLUG_SetRelayByStatus( PLUG_GetRelayStatus(), FALSE );
         break;
 
     case PWUP_OFF:

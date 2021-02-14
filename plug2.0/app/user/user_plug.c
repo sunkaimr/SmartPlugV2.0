@@ -604,6 +604,9 @@ VOID PLUG_SetRelayOn( UINT uiSaveFlag )
     {
         LOG_OUT(LOGOUT_INFO, "RelayOn");
     }
+#if IS_WELL
+    KEY_StartRelayOffTimer();
+#endif
 }
 
 VOID PLUG_SetRelayOff( UINT uiSaveFlag )
@@ -619,6 +622,10 @@ VOID PLUG_SetRelayOff( UINT uiSaveFlag )
     {
         LOG_OUT(LOGOUT_INFO, "RelayOff");
     }
+
+#if IS_WELL
+    KEY_StopRelayOffTimer();
+#endif
 }
 
 VOID PLUG_SetRelayByStatus( UINT8 ucStatus, BOOL bSaveFlag )
@@ -626,10 +633,20 @@ VOID PLUG_SetRelayByStatus( UINT8 ucStatus, BOOL bSaveFlag )
     if ( ucStatus )
     {
         PLUG_SetRelayOn( bSaveFlag );
+
+#if IS_WELL
+        KEY_StartRelayOffTimer();
+#endif
+
     }
     else
     {
         PLUG_SetRelayOff( bSaveFlag );
+
+#if IS_WELL
+        KEY_StopRelayOffTimer();
+#endif
+
     }
 }
 
@@ -639,11 +656,21 @@ VOID PLUG_SetRelayReversal( UINT uiSaveFlag )
     {
         LED_RelayOff();
         g_stPLUG_SystemSet.bRelayStatus = FALSE;
+
+#if IS_WELL
+        KEY_StopRelayOffTimer();
+#endif
+
     }
     else
     {
         LED_RelayOn();
         g_stPLUG_SystemSet.bRelayStatus = TRUE;
+
+#if IS_WELL
+        KEY_StartRelayOffTimer();
+#endif
+
     }
 
     if ( uiSaveFlag )

@@ -45,7 +45,7 @@ VOID TEMP_TempCallBack( VOID )
     uiCurAdc = system_adc_read();
     portEXIT_CRITICAL();
 
-    uiTempAdcValue = ( uiLastAdc * 9 +  uiCurAdc ) / 10;
+    uiTempAdcValue = ( uiLastAdc * 5 +  uiCurAdc * 5 ) / 10;
     uiLastAdc = uiTempAdcValue;
 }
 

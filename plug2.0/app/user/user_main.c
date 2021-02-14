@@ -112,5 +112,9 @@ void user_init(void)
 #if IS_CHANG_XIN
     METER_Init();
 #endif
+
+#if IS_WELL
+    KEY_StartWaterSensorHanderTimer();
+#endif
 }
 
