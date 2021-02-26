@@ -20,11 +20,11 @@
 #define BIGIOT_TIMEOUT         3
 
 #define BIGIOT_CONNECT_OK    "WELCOME TO BIGIOT"
-#define BIGIOT_LOGINT_OK    "checkinok"
+#define BIGIOT_LOGINT_OK     "checkinok"
 #define BIGIOT_ON            "play"
-#define BIGIOT_OFF            "stop"
-#define BIGIOT_SAY            "say"
-#define BIGIOT_LOGIN        "login"
+#define BIGIOT_OFF           "stop"
+#define BIGIOT_SAY           "say"
+#define BIGIOT_LOGIN         "login"
 #define BIGIOT_LOGOUT        "logout"
 #define BIGIOT_CHECKED       "checked"
 
@@ -95,6 +95,7 @@ retry:
         BIGIOT_LOG(BIGIOT_DEBUG, "wait for network");
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
+
     pstCli = Bigiot_New( BIGIOT_HOSTNAME, BIGIOT_PORT, pcDevId, pcApiKey);
     if ( pstCli == 0 )
     {
@@ -154,7 +155,6 @@ retry:
         	}
 
             Bigiot_Cycle( pstCli );
-
             vTaskDelay( 1000/portTICK_RATE_MS );
         }
     }
@@ -171,7 +171,7 @@ err:
 
 void BIGIOT_StartBigiotTheard(void)
 {
-    xTaskCreate( BIGIOT_BigiotTask, "BIGIOT_BigiotTask", 1024, (void*)0, 5, 0);
+    xTaskCreate( BIGIOT_BigiotTask, "BIGIOT_BigiotTask", 768, (void*)0, 5, 0);
 }
 
 BIGIOT_Ctx_S* Bigiot_New( char* pcHostName, int iPort, char* pcDevId, char* pcApiKey )
@@ -350,6 +350,16 @@ int Bigiot_Cycle( BIGIOT_Ctx_S *pstCtx )
                 else
                 {
                     BIGIOT_LOG(BIGIOT_INFO, "recv content:%s", pcContent);
+                    if ( strcmp(pcContent, "reboot") == 0 )
+                    {
+                        LOG_OUT(LOGOUT_INFO, "system will reboot");
+                        UPGRADE_StartRebootTimer();
+                    }
+                    else if ( strcmp(pcContent, "reset") == 0 )
+                    {
+                        LOG_OUT(LOGOUT_INFO, "system will reset");
+                        UPGRADE_Reset();
+                    }
                 }
             }
             else
@@ -423,7 +433,6 @@ void Bigiot_EventCallBack( BIGIOT_Ctx_S *pstCtx )
     static sntp_time_t lLastTime = 0;
     char *pcBuf = NULL;
     UINT uiPos = 0;
-    char szMsg[200] = {};
 
     NowTime = sntp_get_current_timestamp();
 
@@ -925,20 +934,20 @@ static int Bigiot_UploadAllIfData( BIGIOT_Ctx_S *pstCtx )
 
 static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDevId, char* pcApiKey )
 {
-    pstCtx->socket            = -1;
+    pstCtx->socket             = -1;
     pstCtx->pcHostName         = pcHostName;
     pstCtx->port               = iPort;
-    pstCtx->pcDeviceId        = pcDevId;
-    pstCtx->pcApiKey        = pcApiKey;
+    pstCtx->pcDeviceId         = pcDevId;
+    pstCtx->pcApiKey           = pcApiKey;
 
-    pstCtx->xEventHandle     = 0;
+    pstCtx->xEventHandle       = 0;
     pstCtx->iAlived            = 0;
-    pstCtx->ucReadLock       = FALSE;
+    pstCtx->ucReadLock         = FALSE;
 
-    pstCtx->iTimeOut         = BIGIOT_TIMEOUT;
-    pstCtx->Read             = Read;
-    pstCtx->Write             = Write;
-    pstCtx->Connect         = Connect;
+    pstCtx->iTimeOut           = BIGIOT_TIMEOUT;
+    pstCtx->Read               = Read;
+    pstCtx->Write              = Write;
+    pstCtx->Connect            = Connect;
     pstCtx->Disconnect         = Disconnect;
 
     memset( pstCtx->szDevName, 0, BIGIOT_DEVNAME_LEN );

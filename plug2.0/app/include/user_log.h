@@ -13,7 +13,7 @@ extern "C" {
 
 
 
-#define LOG_OUT_ENABLE     (1)
+#define LOG_OUT_ENABLE    (1)
 
 #define LOGOUT_NONE       4
 #define LOGOUT_ERROR      3

@@ -1,8 +1,11 @@
 
+
 #include "esp_common.h"
 #include "user_common.h"
-#include "mqtt/MQTTClient.h"
 
+#ifdef __ALIYUN__
+
+#include "mqtt/MQTTClient.h"
 #include "ssl/ssl_crypto.h"
 
 #define MQTT_PORT         1883
@@ -346,4 +349,4 @@ UINT PLUG_MarshalJsonPowerSwitch( CHAR* pcBuf, UINT uiBufLen )
 }
 
 
-
+#endif

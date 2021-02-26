@@ -215,19 +215,19 @@ VOID PLUG_TimerDataDeInit( VOID )
 
         memset(pstTimer, 0, sizeof(PLUG_TIMER_S));
 
-        memcpy(&pstTimer->stOnTime,     &stData, sizeof(PLUG_TIME_POINT_S));
+        memcpy(&pstTimer->stOnTime,      &stData, sizeof(PLUG_TIME_POINT_S));
         memcpy(&pstTimer->stOffTime,     &stData, sizeof(PLUG_TIME_POINT_S));
 
         snprintf(szName, sizeof(szName), "timer %d", uiLoopi+1);
         strcpy(pstTimer->szName, szName);
 
-        pstTimer->uiNum         = uiLoopi + 1;
-        pstTimer->bOnEnable     = TRUE;
+        pstTimer->uiNum          = uiLoopi + 1;
+        pstTimer->bOnEnable      = TRUE;
         pstTimer->bOffEnable     = TRUE;
         pstTimer->bEnable        = FALSE;
-        pstTimer->eWeek            = REPET_ONCE;
-        pstTimer->bCascode        = FALSE;
-        pstTimer->uiCascodeNum    = 1;
+        pstTimer->eWeek          = REPET_ONCE;
+        pstTimer->bCascode       = FALSE;
+        pstTimer->uiCascodeNum   = 1;
     }
 }
 
@@ -242,18 +242,18 @@ VOID PLUG_DelayDataDeInit( VOID )
         pstDelay = &g_astPLUG_Delay[uiLoopi];
 
         pstDelay->uiNum                    = uiLoopi+1;
-        pstDelay->bEnable                = FALSE;
+        pstDelay->bEnable                  = FALSE;
         pstDelay->uiCycleTimes             = 1;
-        pstDelay->uiTmpCycleTimes        = 0;
+        pstDelay->uiTmpCycleTimes          = 0;
         pstDelay->bOnEnable                = TRUE;
-        pstDelay->stOnInterval.iHour     = 0;
-        pstDelay->stOnInterval.iMinute    = 1;
-        pstDelay->bOffEnable            = TRUE;
-        pstDelay->stOffInterval.iHour     = 0;
+        pstDelay->stOnInterval.iHour       = 0;
+        pstDelay->stOnInterval.iMinute     = 1;
+        pstDelay->bOffEnable               = TRUE;
+        pstDelay->stOffInterval.iHour      = 0;
         pstDelay->stOffInterval.iMinute    = 1;
-        pstDelay->bCascode                = FALSE;
-        pstDelay->uiCascodeNum            = (uiLoopi + 2) % (PLUG_DELAY_MAX+1);
-        pstDelay->ucSwFlag              = 0;
+        pstDelay->bCascode                 = FALSE;
+        pstDelay->uiCascodeNum             = (uiLoopi + 2) % (PLUG_DELAY_MAX+1);
+        pstDelay->ucSwFlag                 = 0;
 
         snprintf(szName, sizeof(szName), "delay %d", uiLoopi+1);
         strcpy(pstDelay->szName, szName);
@@ -262,13 +262,21 @@ VOID PLUG_DelayDataDeInit( VOID )
 
 VOID PLUG_SystemSetDataDeInit( VOID )
 {
-    g_stPLUG_SystemSet.bRelayStatus       = 0;
-    g_stPLUG_SystemSet.ucWifiMode         = WIFI_MODE_STATION;
-    g_stPLUG_SystemSet.bSmartConfigFlag   = FALSE;
-    g_stPLUG_SystemSet.eRelayPowerUp      = PWUP_LAST;
+	CHAR szMac[20] = {};
 
-    strncpy(g_stPLUG_SystemSet.szPlugName, PLUG_NAME, PLUG_NAME_MAX_LEN);
-    memset(g_stPLUG_SystemSet.szWifiSSID, 0, PLUG_WIFI_SSID_LEN);
+    g_stPLUG_SystemSet.bRelayStatus       = 0;
+    g_stPLUG_SystemSet.ucWifiMode         = WIFI_MODE_SOFTAP;
+    g_stPLUG_SystemSet.bSmartConfigFlag   = FALSE;
+#if IS_WELL
+    g_stPLUG_SystemSet.eRelayPowerUp      = PWUP_OFF;
+#else
+    g_stPLUG_SystemSet.eRelayPowerUp      = PWUP_LAST;
+#endif
+
+    WIFI_GetMacAddr(szMac, sizeof(szMac));
+    sprintf(g_stPLUG_SystemSet.szPlugName, "%s_%s", PLUG_NAME, szMac+8);
+
+    memset(g_stPLUG_SystemSet.szWifiSSID,   0, PLUG_WIFI_SSID_LEN);
     memset(g_stPLUG_SystemSet.szWifiPasswd, 0, PLUG_WIFI_PASSWD_LEN);
 }
 
@@ -457,8 +465,8 @@ VOID PLUG_SetBigiotDevId( CHAR* pcDevId )
         return;
     }
 
-    uiLen =  strlen(pcDevId);
-    uiLen =  uiLen > PLUG_BIGIOT_DEVID_LEN ? PLUG_BIGIOT_DEVID_LEN : uiLen;
+    uiLen = strlen(pcDevId);
+    uiLen = uiLen > PLUG_BIGIOT_DEVID_LEN ? PLUG_BIGIOT_DEVID_LEN : uiLen;
     memcpy( g_stPLUG_PlatForm.szBigiotDevId, pcDevId, uiLen );
     g_stPLUG_PlatForm.szBigiotDevId[uiLen] = 0;
     CONFIG_SaveConfig(PLUG_MOUDLE_PLATFORM);
@@ -516,8 +524,8 @@ VOID PLUG_SetMqttDevName( CHAR* pcDevName )
         return;
     }
 
-    uiLen =  strlen(pcDevName);
-    uiLen =  uiLen > PLUG_MQTT_DEVNAME_LEN ? PLUG_MQTT_DEVNAME_LEN : uiLen;
+    uiLen = strlen(pcDevName);
+    uiLen = uiLen > PLUG_MQTT_DEVNAME_LEN ? PLUG_MQTT_DEVNAME_LEN : uiLen;
     memcpy( g_stPLUG_PlatForm.szMqttDevName, pcDevName, uiLen );
     g_stPLUG_PlatForm.szMqttDevName[uiLen] = 0;
     CONFIG_SaveConfig(PLUG_MOUDLE_PLATFORM);
@@ -533,8 +541,8 @@ VOID PLUG_SetMqttDevSecret( CHAR* DevSecret )
         return;
     }
 
-    uiLen =  strlen(DevSecret);
-    uiLen =  uiLen > PLUG_MQTT_DEVSECRET_LEN ? PLUG_MQTT_DEVSECRET_LEN : uiLen;
+    uiLen = strlen(DevSecret);
+    uiLen = uiLen > PLUG_MQTT_DEVSECRET_LEN ? PLUG_MQTT_DEVSECRET_LEN : uiLen;
     memcpy( g_stPLUG_PlatForm.szMqttDevSecret, DevSecret, uiLen );
     g_stPLUG_PlatForm.szMqttDevSecret[uiLen] = 0;
     CONFIG_SaveConfig(PLUG_MOUDLE_PLATFORM);
@@ -550,8 +558,8 @@ VOID PLUG_SetWifiPasswd( CHAR* pcWifiPasswd )
         return;
     }
 
-    uiLen =  strlen(pcWifiPasswd);
-    uiLen =  uiLen > PLUG_WIFI_PASSWD_LEN ? PLUG_WIFI_PASSWD_LEN : uiLen;
+    uiLen = strlen(pcWifiPasswd);
+    uiLen = uiLen > PLUG_WIFI_PASSWD_LEN ? PLUG_WIFI_PASSWD_LEN : uiLen;
     memcpy(g_stPLUG_SystemSet.szWifiPasswd, pcWifiPasswd, uiLen);
     g_stPLUG_SystemSet.szWifiPasswd[uiLen] = 0;
     CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
@@ -578,8 +586,8 @@ VOID PLUG_SetPlugName( CHAR* pcPlugName )
         return;
     }
 
-    uiLen =  strlen(pcPlugName);
-    uiLen =  uiLen > PLUG_NAME_MAX_LEN ? PLUG_NAME_MAX_LEN : uiLen;
+    uiLen = strlen(pcPlugName);
+    uiLen = uiLen > PLUG_NAME_MAX_LEN ? PLUG_NAME_MAX_LEN : uiLen;
     memcpy(g_stPLUG_SystemSet.szPlugName, pcPlugName, uiLen);
     g_stPLUG_SystemSet.szPlugName[uiLen] = 0;
     CONFIG_SaveConfig(PLUG_MOUDLE_SYSSET);
@@ -785,24 +793,24 @@ UINT PLUG_MarshalJsonDelay( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum)
 
         pJsonsub=cJSON_CreateObject();
 
-        cJSON_AddNumberToObject( pJsonsub,     "Num",                 pstData->uiNum);
-        cJSON_AddStringToObject( pJsonsub,    "Name",             pstData->szName);
-        cJSON_AddBoolToObject( pJsonsub,     "Enable",             pstData->bEnable);
-        cJSON_AddBoolToObject( pJsonsub,     "OnEnable",         pstData->bOnEnable);
-        cJSON_AddBoolToObject( pJsonsub,     "OffEnable",         pstData->bOffEnable);
-        cJSON_AddNumberToObject( pJsonsub,     "CycleTimes",         pstData->uiCycleTimes);
-        cJSON_AddNumberToObject( pJsonsub,     "TmpCycleTimes",     pstData->uiTmpCycleTimes);
-        cJSON_AddNumberToObject( pJsonsub,     "SwFlag",             pstData->ucSwFlag);
-        cJSON_AddBoolToObject( pJsonsub,     "Cascode",             pstData->bCascode);
-        cJSON_AddNumberToObject( pJsonsub,     "CascodeNum",         pstData->uiCascodeNum);
+        cJSON_AddNumberToObject( pJsonsub,     "Num",             pstData->uiNum);
+        cJSON_AddStringToObject( pJsonsub,     "Name",            pstData->szName);
+        cJSON_AddBoolToObject( pJsonsub,       "Enable",          pstData->bEnable);
+        cJSON_AddBoolToObject( pJsonsub,       "OnEnable",        pstData->bOnEnable);
+        cJSON_AddBoolToObject( pJsonsub,       "OffEnable",       pstData->bOffEnable);
+        cJSON_AddNumberToObject( pJsonsub,     "CycleTimes",      pstData->uiCycleTimes);
+        cJSON_AddNumberToObject( pJsonsub,     "TmpCycleTimes",   pstData->uiTmpCycleTimes);
+        cJSON_AddNumberToObject( pJsonsub,     "SwFlag",          pstData->ucSwFlag);
+        cJSON_AddBoolToObject( pJsonsub,       "Cascode",         pstData->bCascode);
+        cJSON_AddNumberToObject( pJsonsub,     "CascodeNum",      pstData->uiCascodeNum);
 
-        snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d", pstData->stOnInterval.iHour, pstData->stOnInterval.iMinute );
+        snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d", pstData->stOnInterval.iHour,  pstData->stOnInterval.iMinute );
         cJSON_AddStringToObject( pJsonsub,    "OnInterval",         szTimerPoint);
 
         snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d", pstData->stOffInterval.iHour, pstData->stOffInterval.iMinute );
         cJSON_AddStringToObject( pJsonsub,    "OffInterval",         szTimerPoint);
 
-        snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d", pstData->stTimePoint.iHour, pstData->stTimePoint.iMinute );
+        snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d", pstData->stTimePoint.iHour,   pstData->stTimePoint.iMinute );
         cJSON_AddStringToObject( pJsonsub,    "TimePoint",         szTimerPoint);
 
         cJSON_AddItemToArray(pJsonArry, pJsonsub);
@@ -836,15 +844,15 @@ UINT PLUG_MarshalJsonInfrared( CHAR* pcBuf, UINT uiBufLen, UINT uiNum )
 
         pJsonsub=cJSON_CreateObject();
 
-        cJSON_AddNumberToObject( pJsonsub,     "Num",                 pstData->uiNum);
-        cJSON_AddStringToObject( pJsonsub,    "Name",             pstData->szName);
-        cJSON_AddBoolToObject( pJsonsub,     "Enable",             pstData->bEnable);
+        cJSON_AddNumberToObject( pJsonsub,   "Num",              pstData->uiNum);
+        cJSON_AddStringToObject( pJsonsub,   "Name",             pstData->szName);
+        cJSON_AddBoolToObject( pJsonsub,     "Enable",           pstData->bEnable);
 
         snprintf(szBuf, sizeof(szBuf), "%X", pstData->uiOnValue);
-        cJSON_AddStringToObject( pJsonsub,     "OnValue",             szBuf);
+        cJSON_AddStringToObject( pJsonsub,   "OnValue",          szBuf);
 
         snprintf(szBuf, sizeof(szBuf), "%X", pstData->uiOffValue);
-        cJSON_AddStringToObject( pJsonsub,     "OffValue",         szBuf);
+        cJSON_AddStringToObject( pJsonsub,   "OffValue",         szBuf);
 
         cJSON_AddItemToArray(pJsonArry, pJsonsub);
     }
@@ -867,13 +875,13 @@ UINT PLUG_MarshalJsonSystemSet( CHAR* pcBuf, UINT uiBufLen )
 
     pJson = cJSON_CreateObject();
 
-    cJSON_AddBoolToObject( pJson,     "RelayStatus",         g_stPLUG_SystemSet.bRelayStatus);
-    cJSON_AddBoolToObject( pJson,     "SmartConfigFlag",     g_stPLUG_SystemSet.bSmartConfigFlag);
-    cJSON_AddNumberToObject( pJson, "RelayPowerUp",     g_stPLUG_SystemSet.eRelayPowerUp);
-    cJSON_AddNumberToObject( pJson, "WifiMode",         g_stPLUG_SystemSet.ucWifiMode);
-    cJSON_AddStringToObject( pJson, "PlugName",         g_stPLUG_SystemSet.szPlugName);
-    cJSON_AddStringToObject( pJson, "WifiSSID",         g_stPLUG_SystemSet.szWifiSSID);
-    cJSON_AddStringToObject( pJson, "WifiPasswd",         g_stPLUG_SystemSet.szWifiPasswd);
+    cJSON_AddBoolToObject( pJson,   "RelayStatus",         g_stPLUG_SystemSet.bRelayStatus);
+    cJSON_AddBoolToObject( pJson,   "SmartConfigFlag",     g_stPLUG_SystemSet.bSmartConfigFlag);
+    cJSON_AddNumberToObject( pJson, "RelayPowerUp",        g_stPLUG_SystemSet.eRelayPowerUp);
+    cJSON_AddNumberToObject( pJson, "WifiMode",            g_stPLUG_SystemSet.ucWifiMode);
+    cJSON_AddStringToObject( pJson, "PlugName",            g_stPLUG_SystemSet.szPlugName);
+    cJSON_AddStringToObject( pJson, "WifiSSID",            g_stPLUG_SystemSet.szWifiSSID);
+    cJSON_AddStringToObject( pJson, "WifiPasswd",          g_stPLUG_SystemSet.szWifiPasswd);
 
     stWifiInfo = WIFI_GetIpInfo();
     snprintf(szBuf, sizeof(szBuf), "%d.%d.%d.%d", stWifiInfo.uiIp&0xFF, (stWifiInfo.uiIp>>8)&0xFF,
@@ -911,21 +919,21 @@ UINT PLUG_MarshalJsonCloudPlatformSet( CHAR* pcBuf, UINT uiBufLen )
 
     cJSON_AddNumberToObject( pJson, "CloudPlatform",     g_stPLUG_PlatForm.ucCloudPlatform);
 
-    cJSON_AddStringToObject( pJson, "MqttProductKey",     g_stPLUG_PlatForm.szMqttProductKey);
-    cJSON_AddStringToObject( pJson, "MqttDevName",         g_stPLUG_PlatForm.szMqttDevName);
+    cJSON_AddStringToObject( pJson, "MqttProductKey",    g_stPLUG_PlatForm.szMqttProductKey);
+    cJSON_AddStringToObject( pJson, "MqttDevName",       g_stPLUG_PlatForm.szMqttDevName);
     cJSON_AddStringToObject( pJson, "MqttDevSecret",     g_stPLUG_PlatForm.szMqttDevSecret);
 
-    cJSON_AddNumberToObject( pJson, "DevType",             g_stPLUG_PlatForm.eDevType);
-    cJSON_AddStringToObject( pJson, "BigiotDevId",         g_stPLUG_PlatForm.szBigiotDevId);
-    cJSON_AddStringToObject( pJson, "BigiotApiKey",     g_stPLUG_PlatForm.szBigiotApiKey);
+    cJSON_AddNumberToObject( pJson, "DevType",           g_stPLUG_PlatForm.eDevType);
+    cJSON_AddStringToObject( pJson, "BigiotDevId",       g_stPLUG_PlatForm.szBigiotDevId);
+    cJSON_AddStringToObject( pJson, "BigiotApiKey",      g_stPLUG_PlatForm.szBigiotApiKey);
 
-    cJSON_AddStringToObject( pJson, "SwitchId",         g_stPLUG_PlatForm.szSwitchId);
-    cJSON_AddStringToObject( pJson, "TempId",             g_stPLUG_PlatForm.szTempId);
-    cJSON_AddStringToObject( pJson, "HumidityId",         g_stPLUG_PlatForm.szHumidityId);
+    cJSON_AddStringToObject( pJson, "SwitchId",          g_stPLUG_PlatForm.szSwitchId);
+    cJSON_AddStringToObject( pJson, "TempId",            g_stPLUG_PlatForm.szTempId);
+    cJSON_AddStringToObject( pJson, "HumidityId",        g_stPLUG_PlatForm.szHumidityId);
 
     cJSON_AddStringToObject( pJson, "VoltageId",         g_stPLUG_PlatForm.szVoltageId);
     cJSON_AddStringToObject( pJson, "CurrentId",         g_stPLUG_PlatForm.szCurrentId);
-    cJSON_AddStringToObject( pJson, "PowerId",             g_stPLUG_PlatForm.szPowerId);
+    cJSON_AddStringToObject( pJson, "PowerId",           g_stPLUG_PlatForm.szPowerId);
     cJSON_AddStringToObject( pJson, "ElectricityId",     g_stPLUG_PlatForm.szElectricityId);
 
     if ( Bigiot_GetBigioDeviceName() != NULL )
@@ -957,6 +965,7 @@ UINT PLUG_MarshalJsonCloudPlatformSet( CHAR* pcBuf, UINT uiBufLen )
 				snprintf(szBuf, sizeof(szBuf), "unknown");
     	}
     }
+#ifdef __ALIYUN__
     else if ( g_stPLUG_PlatForm.ucCloudPlatform == PLATFORM_ALIYUN )
     {
         if ( MQTT_GetConnectStatus() )
@@ -968,6 +977,7 @@ UINT PLUG_MarshalJsonCloudPlatformSet( CHAR* pcBuf, UINT uiBufLen )
             snprintf(szBuf, sizeof(szBuf), "disconnect");
         }
     }
+#endif
     else
     {
         snprintf(szBuf, sizeof(szBuf), "unknown");
@@ -1001,11 +1011,11 @@ UINT PLUG_MarshalJsonHtmlData( CHAR* pcBuf, UINT uiBufLen )
         pJsonsub=cJSON_CreateObject();
 
         cJSON_AddStringToObject( pJsonsub,    "Name",     pstHtmlData->szName);
-        cJSON_AddBoolToObject( pJsonsub,    "IsUpload", pstHtmlData->bIsUpload);
-        cJSON_AddNumberToObject( pJsonsub,     "Addr",     pstHtmlData->uiAddr);
-        cJSON_AddNumberToObject( pJsonsub,     "Length",     pstHtmlData->uiLength);
-        cJSON_AddStringToObject( pJsonsub,     "Type",     szHttpContentTypeStr[pstHtmlData->eType]);
-        cJSON_AddStringToObject( pJsonsub,     "eEncode",     szHttpEncodingStr[pstHtmlData->eEncode]);
+        cJSON_AddBoolToObject( pJsonsub,      "IsUpload", pstHtmlData->bIsUpload);
+        cJSON_AddNumberToObject( pJsonsub,    "Addr",     pstHtmlData->uiAddr);
+        cJSON_AddNumberToObject( pJsonsub,    "Length",   pstHtmlData->uiLength);
+        cJSON_AddStringToObject( pJsonsub,    "Type",     szHttpContentTypeStr[pstHtmlData->eType]);
+        cJSON_AddStringToObject( pJsonsub,    "eEncode",  szHttpEncodingStr[pstHtmlData->eEncode]);
 
         cJSON_AddItemToArray(pJsonArry, pJsonsub);
     }
@@ -1148,6 +1158,7 @@ VOID PLUG_SetTimeSyncFlag( PLUG_TIME_SYNC_E ucFlag )
 
 static VOID SyncTimeTask( VOID* para )
 {
+	PLUG_DATE_S pstDate = {2021, 1, 1, 0, 12, 0, 0 };
     INT iRetry = 0;
     UINT uiRet = 0;
 
@@ -1170,6 +1181,15 @@ static VOID SyncTimeTask( VOID* para )
         }
         LOG_OUT(LOGOUT_DEBUG, "Get time from retry %d times", iRetry);
         vTaskDelay( 3000/portTICK_RATE_MS );
+    }
+
+    if ( iRetry >= 100 )
+    {
+        LOG_OUT(LOGOUT_ERROR, "Get time from internet failed.");
+        PLUG_SetDate(&pstDate);
+        LOG_OUT(LOGOUT_INFO, "Socket_SetDate: %d-%02d-%02d %02d:%02d:%02d",
+                                pstDate.iYear, pstDate.iMonth, pstDate.iDay,
+                                pstDate.iHour, pstDate.iMinute, pstDate.iSecond);
     }
 
     LOG_OUT(LOGOUT_INFO, "SyncTimeTask stop");
@@ -1206,12 +1226,12 @@ VOID PLUG_GetDate(PLUG_DATE_S * pstDate )
     sntp_localtime_r(&tim_p, &stSntpDate);
 
     pstDate->iSecond    = stSntpDate.tm_sec;
-    pstDate->iMinute     = stSntpDate.tm_min;
-    pstDate->iHour         = stSntpDate.tm_hour;
-    pstDate->iWeek        = stSntpDate.tm_wday;
-    pstDate->iDay         = stSntpDate.tm_mday;
+    pstDate->iMinute    = stSntpDate.tm_min;
+    pstDate->iHour      = stSntpDate.tm_hour;
+    pstDate->iWeek      = stSntpDate.tm_wday;
+    pstDate->iDay       = stSntpDate.tm_mday;
     pstDate->iMonth     = 1 + stSntpDate.tm_mon;
-    pstDate->iYear         = 1900+stSntpDate.tm_year;
+    pstDate->iYear      = 1900+stSntpDate.tm_year;
     if ( pstDate->iWeek == 0 )
     {
         pstDate->iWeek = 7;
@@ -1944,6 +1964,12 @@ UINT PLUG_MarshalJsonWebSet( CHAR* pcBuf, UINT uiBufLen )
     cJSON_AddStringToObject( pJson, "ModelTab",         g_stWebSet.szModelTab);
     cJSON_AddStringToObject( pJson, "MeterRefresh",     g_stWebSet.szMeterRefresh);
 
+#if IS_CHANG_XIN
+    cJSON_AddBoolToObject( pJson, "IsSupportMeter",   TRUE);
+#else
+    cJSON_AddBoolToObject( pJson, "IsSupportMeter",   FALSE);
+#endif
+
     pJsonStr = cJSON_PrintUnformatted(pJson);
     strncpy(pcBuf, pJsonStr, uiBufLen);
     cJSON_Delete(pJson);
@@ -2475,6 +2501,8 @@ VOID PLUG_TimerHandle( VOID *pPara )
             PLUG_JudgeDelay();
         }
         TEMP_TempCallBack();
+        WIFI_SetWifiLinkStatus();
+        //LOG_OUT(LOGOUT_INFO, "Free heap Size:%d", system_get_free_heap_size());
     }
 
     INFRARED_JudgeInfrared();

@@ -201,8 +201,8 @@ UINT CONFIG_SysSetDataCheck( PLUG_SYSSET_S *pstData )
         return FAIL;
     }
 
-    if ( pstData->ucWifiMode != WIFI_MODE_STATION &&
-            pstData->ucWifiMode != WIFI_MODE_SOFTAP )
+    if ( pstData->ucWifiMode <= WIFI_MODE_NULL ||
+            pstData->ucWifiMode >= WIFI_MODE_BUFF )
     {
         LOG_OUT(LOGOUT_ERROR, "ucWifiMode:%d", pstData->ucWifiMode);
         return FAIL;

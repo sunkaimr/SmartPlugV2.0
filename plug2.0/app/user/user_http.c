@@ -26,6 +26,7 @@ const CHAR szHttpCodeMap[][5] =
 	"101",
     "200",
     "201",
+	"204",
     "302",
     "400",
     "404",
@@ -39,6 +40,7 @@ const CHAR szHttpStatusMap[][20] =
 	"Switching Protocols",
     "OK",
     "Created",
+	"No Content",
     "Found",
     "BadRequest",
     "NotFound",
@@ -149,6 +151,7 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
     }
     else if ( pstCtx->stReq.eProcess != RES_Process_None )
     {
+    	LOG_OUT(LOGOUT_ERROR, "eProcess = %d.", pstCtx->stReq.eProcess);
         HTTP_RequestInit( pstCtx );
         return FAIL;
     }
@@ -205,13 +208,25 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
         if ( HTTP_METHOD_BUFF == pstCtx->stReq.eMethod )
         {
             //解析eMethod
-            //LOG_OUT(LOGOUT_DEBUG, "eMethod：[%s]", pcCurPos);
+            //LOG_OUT(LOGOUT_INFO, "eMethod:[%s]", pcCurPos);
+        	for ( ; isspace(*pcCurPos); pcCurPos++){}
+        	pcTmpPos = strstr( pcCurPos, " ");
+        	if ( pcTmpPos == 0 )
+        	{
+                LOG_OUT( LOGOUT_ERROR, "Parsing eMethod failed, [%s]", pcCurPos);
+                return FAIL;
+        	}
+        	*pcTmpPos = 0;
+        	strupr(pcCurPos);
+
             for ( iLoop = HTTP_METHOD_GET; iLoop < HTTP_METHOD_BUFF; iLoop++ )
             {
                 if ( strstr( pcCurPos, szHttpMethodStr[iLoop]) )
                 {
                     pstCtx->stReq.eMethod = iLoop;
                     //LOG_OUT(LOGOUT_DEBUG, "eMethod：[%d]", pstCtx->stReq.eMethod);
+                    pcCurPos = pcTmpPos + 1;
+                    break;
                 }
             }
 
@@ -226,7 +241,7 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
 
             if ( pstCtx->stReq.eMethod == HTTP_METHOD_BUFF || pstCtx->stReq.szURL[0] == 0 )
             {
-                //LOG_OUT( LOGOUT_ERROR, "HTTP_ParsingHttpHead get eMethod or URL failed.");
+                LOG_OUT( LOGOUT_ERROR, "get eMethod or URL failed.");
                 HTTP_RequestInit( pstCtx );
                 return FAIL;
             }
@@ -297,7 +312,12 @@ CHAR* HTTP_GetReqHeader( HTTP_CTX *pstCtx, const CHAR* pcKey )
 
     for ( i = 0; i < sizeof(pstCtx->stReq.stHeader)/sizeof(pstCtx->stReq.stHeader[0]); i++ )
     {
-        if ( pstCtx->stReq.stHeader[i].pcKey != NULL && strcmp(pstCtx->stReq.stHeader[i].pcKey, pcKey) == 0 )
+        if ( pstCtx->stReq.stHeader[i].pcKey == NULL )
+		{
+        	break;
+		}
+
+        if ( strcmp(pstCtx->stReq.stHeader[i].pcKey, pcKey) == 0 )
         {
             return pstCtx->stReq.stHeader[i].pcValue;
         }
@@ -371,7 +391,6 @@ VOID HTTP_RouterInit( VOID )
     HTTP_RouterMapInit();
 
     HTTP_RouterRegiste(HTTP_METHOD_GET,  "/",                 HTTP_GetHome,       "HTTP_GetHome");
-
     HTTP_RouterRegiste(HTTP_METHOD_GET,  "/health",           HTTP_GetHealth,     "HTTP_GetHealth");
     HTTP_RouterRegiste(HTTP_METHOD_GET,  "/info",             HTTP_GetInfo,       "HTTP_GetInfo");
 
@@ -414,7 +433,7 @@ VOID HTTP_RouterInit( VOID )
     HTTP_RouterRegiste(HTTP_METHOD_GET,  "/upload",           HTTP_GetUploadHtml,   "HTTP_GetUploadHtml");
 
     // websocket
-    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/console",           HTTP_GetConsole,     "HTTP_GetConsole");
+    HTTP_RouterRegiste(HTTP_METHOD_GET,  "/console",          HTTP_GetConsole,     "HTTP_GetConsole");
 
     HTTP_FileListRegiste();
 }
@@ -438,7 +457,7 @@ BOOL HTTP_RouterIsMatch( const CHAR* pcRouter, const CHAR* pcUrl)
     }
 
     strncpy(pcRBuf, pcRouter,    HTTP_URL_MAX_LEN);
-    strncpy(pcUBuf, pcUrl,         HTTP_URL_MAX_LEN);
+    strncpy(pcUBuf, pcUrl,       HTTP_URL_MAX_LEN);
 
     pcRData = pcRBuf;
     pcUData = pcUBuf;
@@ -458,9 +477,33 @@ BOOL HTTP_RouterIsMatch( const CHAR* pcRouter, const CHAR* pcUrl)
             continue;
         }
 
-        if ( strcmp(pcRtmp, pcUtmp) != 0 )
+        // URL中包含通配符*的判断逻辑
+        if ( strstr(pcRtmp, "*") )
         {
-            return FALSE;
+            while ( *pcRtmp )
+            {
+            	// 通配符往后的无需再判断
+            	if ( *pcRtmp == '*' )
+            	{
+            		return TRUE;
+            	}
+
+            	if ( *pcRtmp != *pcUtmp )
+            	{
+            		return FALSE;
+            	}
+
+            	pcRtmp++;
+    			pcUtmp++;
+            }
+        }
+        else
+        {
+        	// 没有通配符需要绝对匹配
+			if ( strcmp(pcRtmp, pcUtmp) != 0 )
+			{
+				return FALSE;
+			}
         }
     }
 
@@ -543,6 +586,8 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 {
 	UINT uiRet = 0;
     UINT uiLoop = 0;
+    CHAR *pcValue = NULL;
+    UINT i = 0;
 
     if ( NULL == pstCtx )
     {
@@ -563,7 +608,6 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
           pstCtx->stReq.eMethod == HTTP_METHOD_PUT ) &&
           pstCtx->stReq.eProcess == RES_Process_GotHeader )
     {
-        //LOG_OUT( LOGOUT_DEBUG, "got header");
         uiRet = OK;
         goto end;
     }
@@ -598,6 +642,25 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 
     HTTP_ResponInit(pstCtx);
 
+    pcValue = HTTP_GetReqHeader(pstCtx, "Host");
+
+    if ( pcValue != NULL &&
+    	 sscanf(pcValue,"%d.%d.%d.%d",&i,&i,&i,&i) != 4 &&
+		 strstr(pstCtx->stReq.szURL, "favicon") == 0 &&
+    	 strstr(pstCtx->stReq.szURL, "system") == 0 &&
+		 strstr(pstCtx->stReq.szURL, "upload") == 0 &&
+		 strstr(pstCtx->stReq.szURL, "html/") == 0 )
+    {
+    	//HTTP_GetredirectHtml(pstCtx);
+    	LOG_OUT(LOGOUT_INFO, "[Request] Method:%s URL:%s -> /redirect.html",
+    			szHttpMethodStr[pstCtx->stReq.eMethod],
+				pstCtx->stReq.szURL);
+
+    	strcpy(pstCtx->stReq.szURL, "/redirect.html");
+    	HTTP_GetRedirectHtml(pstCtx);
+    	goto end;
+    }
+
     for ( uiLoop = 0; uiLoop < HTTP_ROUTER_MAP_MAX; uiLoop++ )
     {
         if ( stHttpRouterMap[uiLoop].eMethod == pstCtx->stReq.eMethod &&
@@ -614,6 +677,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
             goto end;
         }
     }
+
     if ( uiLoop >= HTTP_ROUTER_MAP_MAX )
     {
         LOG_OUT(LOGOUT_INFO, "[Request] Method:%s URL:%s", szHttpMethodStr[pstCtx->stReq.eMethod], pstCtx->stReq.szURL);
@@ -631,6 +695,7 @@ end:
                 pstCtx->stReq.szURL,
                 szHttpCodeMap[pstCtx->stResp.eHttpCode]);
         HTTP_RequestInit( pstCtx );
+        HTTP_ResponInit( pstCtx );
     }
 
     return uiRet;

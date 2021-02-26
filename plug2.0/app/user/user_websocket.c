@@ -334,7 +334,7 @@ UINT WEBSOCKET_CmdHandle( CHAR* pcCmd, UINT uiCmdLen, CHAR* pcBuf, UINT uiBufLen
 	{
 		//WIFI_WifiScanMarshalJson(pcBuf, uiBufLen);
 	}
-	else if ( 0 == strcmp(pcCmd, "get relay status") )
+	else if ( 0 == strcmp(pcCmd, "get relay") )
 	{
 		return PLUG_MarshalJsonRelayStatus(pcBuf, uiBufLen);
 	}

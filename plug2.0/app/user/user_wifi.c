@@ -136,18 +136,21 @@ UINT WIFI_SetWifiModeStation( VOID )
             return RET_FAILED;
         }
         LOG_OUT(LOGOUT_DEBUG, "new opmode is: %s", szWifiModeString[uiOpmode]);
+
+        vTaskDelay( 10/portTICK_RATE_MS );
+        system_restart();
     }
 
-    //设置为启动自动连接
+    //设置为不自动连接
     if ( !wifi_station_get_auto_connect() )
     {
-        bRet = wifi_station_set_auto_connect( TRUE );
+        bRet = wifi_station_set_auto_connect( FALSE );
         if ( !bRet )
         {
-            LOG_OUT(LOGOUT_ERROR, "wifi_station_set_auto_connect(TRUE) failed.");
+            LOG_OUT(LOGOUT_ERROR, "wifi_station_set_auto_connect(FALSE) failed.");
             return RET_FAILED;
         }
-        LOG_OUT(LOGOUT_DEBUG, "wifi_station_get_auto_connect is TRUE.");
+        LOG_OUT(LOGOUT_DEBUG, "wifi_station_get_auto_connect is FALSE.");
     }
 
     //设置wifi断开自动重连
@@ -178,11 +181,166 @@ UINT WIFI_SetWifiModeStation( VOID )
         return RET_FAILED;
     }
 
-    if ( !strncmp(sta_conf.ssid, PLUG_GetWifiSsid(), PLUG_GetWifiSsidLenth()) &&
-         !strncmp(sta_conf.password, PLUG_GetWifiPasswd(), PLUG_GetWifiPasswdLenth())
+    if ( !strncmp(sta_conf.ssid, PLUG_GetWifiSsid(), PLUG_WIFI_SSID_LEN) &&
+         !strncmp(sta_conf.password, PLUG_GetWifiPasswd(), PLUG_WIFI_PASSWD_LEN)
     )
     {
         LOG_OUT(LOGOUT_DEBUG, "wifi info %s not change", szWifiModeString[uiOpmode]);
+    }
+    else
+    {
+        //先断开连接的其他wifi
+        uiWifiConnSta = wifi_station_get_connect_status();
+        if ( uiWifiConnSta != STATION_IDLE )
+        {
+            bRet = wifi_station_disconnect();
+            if ( !bRet )
+            {
+                LOG_OUT(LOGOUT_ERROR, "disconnect old wifi failed.");
+                return RET_FAILED;
+            }
+            LOG_OUT(LOGOUT_DEBUG, "disconnect old wifi successed.");
+        }
+
+        //设置要连接的wifi的SSID和密码
+        memset((VOID*)&sta_conf, 0, sizeof(sta_conf) );
+        memcpy(&sta_conf.ssid, PLUG_GetWifiSsid(), PLUG_WIFI_SSID_LEN);
+        memcpy(&sta_conf.password, PLUG_GetWifiPasswd(), PLUG_WIFI_PASSWD_LEN);
+        bRet = wifi_station_set_config(&sta_conf);
+        if ( !bRet )
+        {
+            LOG_OUT(LOGOUT_ERROR, "wifi_station_set_config failed.");
+            return RET_FAILED;
+        }
+    }
+
+    //连接wifi
+    bRet = wifi_station_connect();
+    if ( !bRet )
+    {
+        LOG_OUT(LOGOUT_ERROR, "wifi_station_connect failed.");
+        return RET_FAILED;
+    }
+
+    //等待连接完成
+    while ( uiWifiConnSta = wifi_station_get_connect_status(), uiWifiConnSta != STATION_GOT_IP )
+    {
+        LOG_OUT(LOGOUT_DEBUG, "uiWifiConnSta: %s", szWifiModeString[uiOpmode]);
+        vTaskDelay( 1000/portTICK_RATE_MS );
+    }
+
+    LOG_OUT(LOGOUT_INFO, "set wifi mode %s successed", szWifiModeString[uiOpmode]);
+}
+
+
+
+UINT WIFI_SetWifiModeStationAP( VOID )
+{
+    BOOL bRet = FALSE;
+    UINT uiOpmode = NULL_MODE;
+    UINT uiWifiConnSta = STATION_IDLE;
+    struct station_config sta_conf;
+    struct softap_config config;
+
+    //检查是否为station-AP模式，若不是设置为station-AP模式
+    uiOpmode = wifi_get_opmode_default();
+    if ( uiOpmode != WIFI_MODE_STATIONAP )
+    {
+        LOG_OUT(LOGOUT_DEBUG, "old opmode is: %s", szWifiModeString[uiOpmode]);
+
+        uiOpmode = WIFI_MODE_STATIONAP;
+        bRet = wifi_set_opmode( uiOpmode );
+        if ( !bRet )
+        {
+            LOG_OUT(LOGOUT_ERROR, "set station failed.");
+            return RET_FAILED;
+        }
+        LOG_OUT(LOGOUT_DEBUG, "new opmode is: %s", szWifiModeString[uiOpmode]);
+
+        vTaskDelay( 10/portTICK_RATE_MS );
+        system_restart();
+    }
+
+    // 设置ap的配置
+    bRet = wifi_softap_get_config_default( &config );
+    if ( !bRet )
+    {
+        LOG_OUT(LOGOUT_ERROR, "wifi_softap_get_config_default failed.");
+        return RET_FAILED;
+    }
+
+//    LOG_OUT(LOGOUT_DEBUG, "ssid_len:[%d][%d]", config.ssid_len, PLUG_GetPlugNameLenth());
+//    LOG_OUT(LOGOUT_DEBUG, "authmode:[%d][%d]", config.authmode, AUTH_OPEN);
+//    LOG_OUT(LOGOUT_DEBUG, "max_connection:[%d][%d]", config.max_connection, 4);
+//    LOG_OUT(LOGOUT_DEBUG, "ssid:[%s][%s]", config.ssid, PLUG_GetPlugName());
+
+    if ( config.authmode == AUTH_OPEN &&
+         config.max_connection == 4 &&
+         config.ssid_len == PLUG_GetPlugNameLenth() &&
+         strncmp(config.ssid, PLUG_GetPlugName(), PLUG_GetPlugNameLenth()) == 0)
+    {
+        LOG_OUT(LOGOUT_DEBUG, "softap config not change, SSID: %s", config.ssid);
+    }
+    else
+    {
+        config.ssid_len = PLUG_GetPlugNameLenth();
+        strncpy( config.ssid, PLUG_GetPlugName(), config.ssid_len );
+        config.authmode = AUTH_OPEN;
+        config.max_connection = 4;
+        bRet = wifi_softap_set_config( &config );
+        if ( !bRet )
+        {
+            LOG_OUT(LOGOUT_ERROR, "wifi_softap_set_config failed.");
+            return RET_FAILED;
+        }
+        LOG_OUT(LOGOUT_INFO, "set hostname is %s", PLUG_GetPlugName());
+    }
+
+    //设置为不自动连接
+    if ( !wifi_station_get_auto_connect() )
+    {
+        bRet = wifi_station_set_auto_connect( FALSE );
+        if ( !bRet )
+        {
+            LOG_OUT(LOGOUT_ERROR, "wifi_station_set_auto_connect(FALSE) failed.");
+            return RET_FAILED;
+        }
+        LOG_OUT(LOGOUT_DEBUG, "wifi_station_get_auto_connect is FALSE.");
+    }
+
+    //设置wifi断开自动重连
+    if ( !wifi_station_get_reconnect_policy() )
+    {
+        bRet = wifi_station_set_reconnect_policy( TRUE );
+        if ( !bRet )
+        {
+            LOG_OUT(LOGOUT_ERROR, "wifi_station_set_reconnect_policy(TRUE) failed.");
+            return RET_FAILED;
+        }
+        LOG_OUT(LOGOUT_DEBUG, "wifi_station_set_reconnect_policy is TRUE.");
+    }
+
+    /* hostname 不会保存到Flash中每次重启需要重新设置 */
+    bRet = wifi_station_set_hostname(PLUG_GetPlugName());
+    if ( !bRet )
+    {
+        LOG_OUT(LOGOUT_ERROR, "wifi_station_set_hostname failed.");
+        return RET_FAILED;
+    }
+    LOG_OUT(LOGOUT_INFO, "set hostname is %s", PLUG_GetPlugName());
+
+    bRet = wifi_station_get_config_default( &sta_conf );
+    if ( !bRet )
+    {
+        LOG_OUT(LOGOUT_ERROR, "wifi_station_get_config_default failed.");
+        return RET_FAILED;
+    }
+
+    if ( !strncmp(sta_conf.ssid, PLUG_GetWifiSsid(), PLUG_WIFI_SSID_LEN) &&
+         !strncmp(sta_conf.password, PLUG_GetWifiPasswd(), PLUG_WIFI_PASSWD_LEN)
+    )
+    {
+        LOG_OUT(LOGOUT_DEBUG, "station config not change");
     }
     else
     {
@@ -219,17 +377,15 @@ UINT WIFI_SetWifiModeStation( VOID )
         return RET_FAILED;
     }
 
-    //等待连接完成
-    while ( uiWifiConnSta = wifi_station_get_connect_status(), uiWifiConnSta != STATION_GOT_IP )
-    {
-        LOG_OUT(LOGOUT_DEBUG, "uiWifiConnSta: %s", szWifiModeString[uiOpmode]);
-        vTaskDelay( 1000/portTICK_RATE_MS );
-    }
+    //这里不能等待连接完成,否则会一直卡着
+//    while ( uiWifiConnSta = wifi_station_get_connect_status(), uiWifiConnSta != STATION_GOT_IP )
+//    {
+//        LOG_OUT(LOGOUT_DEBUG, "uiWifiConnSta: %s", szWifiModeString[uiOpmode]);
+//        vTaskDelay( 1000/portTICK_RATE_MS );
+//    }
 
     LOG_OUT(LOGOUT_INFO, "set wifi mode %s successed", szWifiModeString[uiOpmode]);
 }
-
-
 
 UINT WIFI_SetWifiModeAP( VOID )
 {
@@ -288,6 +444,8 @@ UINT WIFI_SetWifiModeAP( VOID )
             return RET_FAILED;
         }
         LOG_OUT(LOGOUT_DEBUG, "new opmode is: %s", szWifiModeString[uiOpmode]);
+        vTaskDelay( 10/portTICK_RATE_MS );
+        system_restart();
     }
 
     bRet = wifi_softap_get_config_default( &config );
@@ -297,10 +455,10 @@ UINT WIFI_SetWifiModeAP( VOID )
         return RET_FAILED;
     }
 
-    LOG_OUT(LOGOUT_DEBUG, "ssid_len:[%d][%d]", config.ssid_len, PLUG_GetPlugNameLenth());
-    LOG_OUT(LOGOUT_DEBUG, "authmode:[%d][%d]", config.authmode, AUTH_OPEN);
-    LOG_OUT(LOGOUT_DEBUG, "max_connection:[%d][%d]", config.max_connection, 4);
-    LOG_OUT(LOGOUT_DEBUG, "ssid:[%s][%s]", config.ssid, PLUG_GetPlugName());
+//    LOG_OUT(LOGOUT_DEBUG, "ssid_len:[%d][%d]", config.ssid_len, PLUG_GetPlugNameLenth());
+//    LOG_OUT(LOGOUT_DEBUG, "authmode:[%d][%d]", config.authmode, AUTH_OPEN);
+//    LOG_OUT(LOGOUT_DEBUG, "max_connection:[%d][%d]", config.max_connection, 4);
+//    LOG_OUT(LOGOUT_DEBUG, "ssid:[%s][%s]", config.ssid, PLUG_GetPlugName());
 
     if ( config.authmode == AUTH_OPEN &&
          config.max_connection == 4 &&
@@ -321,9 +479,9 @@ UINT WIFI_SetWifiModeAP( VOID )
         LOG_OUT(LOGOUT_ERROR, "wifi_softap_set_config failed.");
         return RET_FAILED;
     }
+end:
     LOG_OUT(LOGOUT_INFO, "set hostname is %s", PLUG_GetPlugName());
     LOG_OUT(LOGOUT_INFO, "set wifi mode %s successed", szWifiModeString[uiOpmode]);
-end:
 
     return RET_SUCCESSED;
 }
@@ -393,18 +551,20 @@ UINT WIFI_SetWifiModeSmartConfig( VOID )
             return RET_FAILED;
         }
         LOG_OUT(LOGOUT_DEBUG, "new opmode is: %s", szWifiModeString[uiOpmode]);
+        vTaskDelay( 10/portTICK_RATE_MS );
+        system_restart();
     }
 
-    //设置为启动自动连接
+    //设置为不自动连接
     if ( !wifi_station_get_auto_connect() )
     {
-        bRet = wifi_station_set_auto_connect( TRUE );
+        bRet = wifi_station_set_auto_connect( FALSE );
         if ( !bRet )
         {
-            LOG_OUT(LOGOUT_ERROR, "wifi_station_set_auto_connect(TRUE) failed.");
+            LOG_OUT(LOGOUT_ERROR, "wifi_station_set_auto_connect(FALSE) failed.");
             return RET_FAILED;
         }
-        LOG_OUT(LOGOUT_DEBUG, "wifi_station_get_auto_connect is TRUE.");
+        LOG_OUT(LOGOUT_DEBUG, "wifi_station_get_auto_connect is FALSE.");
     }
 
     //设置wifi断开自动重连
@@ -431,6 +591,15 @@ UINT WIFI_SetWifiModeSmartConfig( VOID )
     {
         LOG_OUT(LOGOUT_INFO, "smartconfig verdion: %s", smartconfig_get_version());
 
+        PLUG_SetWifiSsid("");
+        PLUG_SetWifiPasswd("");
+        memset((VOID*)&sta_conf, 0, sizeof(sta_conf) );
+        bRet = wifi_station_set_config(&sta_conf);
+        if ( !bRet )
+        {
+            LOG_OUT(LOGOUT_ERROR, "wifi_station_set_config failed.");
+        }
+
         //每次smartconfig之前先要暂停
         smartconfig_stop();
         smartconfig_start(WIFI_SmartConfigDone);
@@ -447,6 +616,7 @@ UINT WIFI_SetWifiModeSmartConfig( VOID )
 }
 
 
+
 VOID WIFI_SetWifiModeTask( void *para )
 {
     WIFI_MODE_E eWifiMode = 0;
@@ -455,46 +625,46 @@ VOID WIFI_SetWifiModeTask( void *para )
     PLUG_DATE_S pstDate = {2018, 1, 1, 0, 12, 0, 0 };
 
     LOG_OUT(LOGOUT_INFO, "WIFI_SetWifiModeTask started.");
-    WIFI_StartWifiLinkStatusTheard();
 
     eWifiMode = PLUG_GetWifiMode();
     if ( eWifiMode == WIFI_MODE_SOFTAP )
     {
         WIFI_SetWifiModeAP();
+        DNS_StartDNSServerTheard();
 
         PLUG_SetDate(&pstDate);
-        LOG_OUT(LOGOUT_INFO, "Socket_SetDate: 2018-01-01 12:00:00");
+        LOG_OUT(LOGOUT_INFO, "Socket_SetDate: 2021-01-01 12:00:00");
 
         WEB_StartWebServerTheard();
         LED_SetWifiStatus(LED_WIFI_STATUS_SYNC_TIME);
     }
-    else if ( eWifiMode == WIFI_MODE_STATION )
+    else if ( eWifiMode == WIFI_MODE_STATION || eWifiMode == WIFI_MODE_STATIONAP)
     {
         if ( PLUG_GetSmartConfig() == FALSE)
         {
             WIFI_SetWifiModeSmartConfig();
         }
+        else if ( eWifiMode == WIFI_MODE_STATIONAP )
+        {
+        	WIFI_SetWifiModeStationAP();
+        	DNS_StartDNSServerTheard();
+        }
         else
         {
-            WIFI_SetWifiModeStation();
+        	WIFI_SetWifiModeStation();
         }
 
-        uiRet = PLUG_GetTimeFromInternet();
-        if ( uiRet != OK )
-        {
-            LOG_OUT(LOGOUT_ERROR, "Get time from internet failed.");
-            PLUG_SetDate(&pstDate);
-            LOG_OUT(LOGOUT_INFO, "Socket_SetDate: %d-%02d-%02d %02d:%02d:%02d",
-                                    pstDate.iYear, pstDate.iMonth, pstDate.iDay,
-                                    pstDate.iHour, pstDate.iMinute, pstDate.iSecond);
-        }
-
+        PLUG_GetTimeFromInternet();
 
         ucCloudPlatform = PLUG_GetCloudPlatform();
         switch ( ucCloudPlatform )
         {
             case PLATFORM_ALIYUN :
+#ifdef __ALIYUN__
                 MQTT_StartMqttTheard();
+#else
+                LOG_OUT(LOGOUT_ERROR, "not support aliyun!!!");
+#endif
                 break;
 
             case PLATFORM_BIGIOT :
@@ -508,13 +678,13 @@ VOID WIFI_SetWifiModeTask( void *para )
 
         for ( ; ; )
         {
-            if ( uiCurStatus == STATION_GOT_IP && WEB_GetWebSvcStatus() == FALSE )
+            if ( (uiCurStatus == STATION_GOT_IP || eWifiMode == WIFI_MODE_STATIONAP ) && WEB_GetWebSvcStatus() == FALSE )
             {
                 LOG_OUT(LOGOUT_INFO, "WEB_StartWebServerTheard.");
                 WEB_StartWebServerTheard();
             }
 
-            if ( uiCurStatus != STATION_GOT_IP && WEB_GetWebSvcStatus() == TRUE )
+            if ( uiCurStatus != STATION_GOT_IP && eWifiMode != WIFI_MODE_STATIONAP && WEB_GetWebSvcStatus() == TRUE )
             {
                 LOG_OUT(LOGOUT_INFO, "WEB_StopWebServerTheard.");
                 WEB_StopWebServerTheard();
@@ -534,83 +704,62 @@ VOID WIFI_StartWifiModeTheard( void )
 }
 
 
-VOID WIFI_WifiLinkStatusTask( void *para )
+VOID WIFI_SetWifiLinkStatus()
 {
-    UINT8 uiLastStatus = 1;
-    struct ip_info stStationInfo;
+    static UINT8 uiLastStatus = 0xFF;
     UINT8 uiWifiMode;
 
-    LOG_OUT(LOGOUT_INFO, "WIFI_WifiLinkStatusTask started.");
-    LED_SetWifiStatus(LED_WIFI_STATUS_CONNECTTING);
     uiWifiMode = PLUG_GetWifiMode();
-    if ( WIFI_MODE_STATION == uiWifiMode )
+    if ( WIFI_MODE_STATION == uiWifiMode || WIFI_MODE_STATIONAP == uiWifiMode)
     {
-        for ( ; ; )
-        {
-            uiCurStatus = wifi_station_get_connect_status();
-            if ( uiLastStatus != uiCurStatus )
-            {
-                switch ( uiCurStatus )
-                {
-                    case STATION_IDLE :
-                        LOG_OUT(LOGOUT_INFO, "Scan available wifi...");
-                        LED_SetWifiStatus(LED_WIFI_STATUS_FIND_WIFI);
-                        break;
+		uiCurStatus = wifi_station_get_connect_status();
+		if ( uiLastStatus != uiCurStatus )
+		{
+			switch ( uiCurStatus )
+			{
+				case STATION_IDLE :
+					LOG_OUT(LOGOUT_INFO, "Scan available wifi...");
+					LED_SetWifiStatus(LED_WIFI_STATUS_FIND_WIFI);
+					break;
 
-                    case STATION_CONNECTING :
-                        LOG_OUT(LOGOUT_INFO, "connect wifi...");
-                        LED_SetWifiStatus(LED_WIFI_STATUS_CONNECTTING);
-                        break;
+				case STATION_CONNECTING :
+					LOG_OUT(LOGOUT_INFO, "connect wifi...");
+					LED_SetWifiStatus(LED_WIFI_STATUS_CONNECTTING);
+					break;
 
-                    case STATION_WRONG_PASSWORD :
-                        LED_SetWifiStatus(LED_WIFI_STATUS_CONNECTTING);
-                        LOG_OUT(LOGOUT_INFO, "wifi password is worng.");
-                        break;
+				case STATION_WRONG_PASSWORD :
+					LED_SetWifiStatus(LED_WIFI_STATUS_CONNECTTING);
+					LOG_OUT(LOGOUT_INFO, "wifi password is worng.");
+					break;
 
-                    case STATION_NO_AP_FOUND :
-                        LOG_OUT(LOGOUT_INFO, "No any wifi was found.");
-                        LED_SetWifiStatus(LED_WIFI_STATUS_FIND_WIFI);
-                        break;
+				case STATION_NO_AP_FOUND :
+					LOG_OUT(LOGOUT_INFO, "No any wifi was found.");
+					LED_SetWifiStatus(LED_WIFI_STATUS_FIND_WIFI);
+					break;
 
-                    case STATION_CONNECT_FAIL:
-                        LOG_OUT(LOGOUT_INFO, "connect wifi failed.");
-                        LED_SetWifiStatus(LED_WIFI_STATUS_FIND_WIFI);
-                        break;
+				case STATION_CONNECT_FAIL:
+					LOG_OUT(LOGOUT_INFO, "connect wifi failed.");
+					LED_SetWifiStatus(LED_WIFI_STATUS_FIND_WIFI);
+					break;
 
-                    case STATION_GOT_IP :
-                        LED_SetWifiStatus(LED_WIFI_STATUS_ON);
+				case STATION_GOT_IP :
+					LED_SetWifiStatus(LED_WIFI_STATUS_ON);
+					struct ip_info stStationInfo;
 
-                        wifi_get_ip_info( STATION_IF, &stStationInfo );
-                        LOG_OUT(LOGOUT_INFO, "connet wifi successed, IP:%d.%d.%d.%d", stStationInfo.ip.addr&0xFF, (stStationInfo.ip.addr>>8)&0xFF,
-                            (stStationInfo.ip.addr>>16)&0xFF, (stStationInfo.ip.addr>>24)&0xFF);
+					wifi_get_ip_info( STATION_IF, &stStationInfo );
+					LOG_OUT(LOGOUT_INFO, "connet wifi successed, IP:%d.%d.%d.%d", stStationInfo.ip.addr&0xFF, (stStationInfo.ip.addr>>8)&0xFF,
+						(stStationInfo.ip.addr>>16)&0xFF, (stStationInfo.ip.addr>>24)&0xFF);
+					break;
 
-                        break;
+				default :
+					LOG_OUT(LOGOUT_INFO, "default");
+					break;
+			}
+			uiLastStatus = uiCurStatus;
+		}
 
-                    default : break;
-                }
-
-                uiLastStatus = uiCurStatus;
-            }
-
-            vTaskDelay( 1000/portTICK_RATE_MS );
-        }
     }
-    else
-    {
-        LED_SetWifiStatus(LED_WIFI_STATUS_SYNC_TIME);
-    }
-
-    LOG_OUT(LOGOUT_INFO, "WIFI_WifiLinkStatusTask stoppped.");
-
-    vTaskDelete( NULL );
 }
-
-
-VOID WIFI_StartWifiLinkStatusTheard( void )
-{
-    xTaskCreate(WIFI_WifiLinkStatusTask, "WIFI_WifiLinkStatusTask", 256, NULL, 3, NULL);
-}
-
 
 WIFI_INFO_S WIFI_GetIpInfo()
 {
@@ -637,15 +786,9 @@ WIFI_INFO_S WIFI_GetIpInfo()
 
 CHAR* WIFI_GetMacAddr( CHAR *pcMac, UINT uiLen )
 {
-    PLUG_SYSSET_S *pstSystemData = NULL;
     UINT8 ucMac[6] = {0};
-    UINT8 uiMode = 0;
 
-    pstSystemData = PLUG_GetSystemSetData();
-
-    uiMode = ( pstSystemData->ucWifiMode == WIFI_MODE_SOFTAP )? SOFTAP_IF : STATION_IF;
-
-    if ( TRUE != wifi_get_macaddr( uiMode, ucMac ))
+    if ( TRUE != wifi_get_macaddr( STATION_IF, ucMac ))
     {
         LOG_OUT(LOGOUT_ERROR, "get device mac failed");
         return NULL;
@@ -665,7 +808,7 @@ UINT WIFI_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen )
     CHAR *pJsonStr = NULL;
     cJSON  *pJsonArry, *pJsonsub;
 
-    //只有在stataion模式下才能扫描
+    //只有在station模式下才能扫描
     if ( PLUG_GetWifiMode() != WIFI_MODE_STATION )
     {
         return 0;
@@ -700,11 +843,11 @@ UINT WIFI_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen )
         }
         pJsonsub=cJSON_CreateObject();
 
-        cJSON_AddStringToObject( pJsonsub,    "Ssid",             pstData->szSsid);
+        cJSON_AddStringToObject( pJsonsub,    "Ssid",                pstData->szSsid);
         cJSON_AddStringToObject( pJsonsub,    "Mac",                 pstData->szMac);
         cJSON_AddStringToObject( pJsonsub,    "AuthMode",            pstData->szAuthMode);
         cJSON_AddNumberToObject( pJsonsub,    "Rssi",                pstData->iRssi);
-        cJSON_AddNumberToObject( pJsonsub,    "Channel",            pstData->ucChannel);
+        cJSON_AddNumberToObject( pJsonsub,    "Channel",             pstData->ucChannel);
 
         cJSON_AddItemToArray(pJsonArry, pJsonsub);
     }
@@ -732,12 +875,30 @@ UINT WIFI_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen)
     cJSON_AddStringToObject( pJson, "BuildDate",     szBuf);
 
     cJSON_AddStringToObject( pJson, "SDKVersion",     system_get_sdk_version());
-    cJSON_AddStringToObject( pJson, "FlashMap",     UPGRADE_GetFlashMap());
+    cJSON_AddStringToObject( pJson, "FlashMap",       UPGRADE_GetFlashMap());
 
     snprintf(szBuf, sizeof(szBuf),  "user%d.bin",     system_upgrade_userbin_check()+1);
     cJSON_AddStringToObject( pJson, "UserBin",         szBuf);
 
     cJSON_AddNumberToObject( pJson, "RunTime",         PLUG_GetRunTime());
+
+#if IS_PHILIPS
+        cJSON_AddStringToObject( pJson, "Hardware",    "philips");
+#elif IS_CHANG_XIN
+	#if IS_WELL
+        cJSON_AddStringToObject( pJson, "Hardware",    "changxin meter and well");
+	#else
+        cJSON_AddStringToObject( pJson, "Hardware",    "changxin meter");
+	#endif
+#elif IS_CHANG_XIN_V1
+	#if IS_WELL
+        cJSON_AddStringToObject( pJson, "Hardware",    "changxin well");
+	#else
+        cJSON_AddStringToObject( pJson, "Hardware",    "changxin");
+	#endif
+#else
+        cJSON_AddStringToObject( pJson, "Hardware",    "jizhiyun");
+#endif
 
     pJsonStr = cJSON_PrintUnformatted(pJson);
     strncpy(pcBuf, pJsonStr, uiBufLen);
@@ -755,7 +916,7 @@ UINT WIFI_TemperatureMarshalJson( CHAR* pcBuf, UINT uiBufLen)
 
     pJson = cJSON_CreateObject();
 
-    cJSON_AddNumberToObject( pJson, "Temperature",         PLUG_GetRunTime());
+    cJSON_AddNumberToObject( pJson, "Temperature", PLUG_GetRunTime());
 
     pJsonStr = cJSON_PrintUnformatted(pJson);
     strncpy(pcBuf, pJsonStr, uiBufLen);

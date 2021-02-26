@@ -19,7 +19,7 @@
     IS_JI_ZHI_YUN     : 机智云wifi模块(调试用)
     IS_CHANG_XIN      : 常新定时插座改装(带电量统计功能)
     IS_CHANG_XIN_V1   : 常新定时插座改装 V1版本
-    IS_WELL           : 水井控制
+    IS_WELL           : 是否启用水井自动上水控制
 
 IS_PHILIPS:
 	wifi状态指示       	:IO_13   [0:on 1:off]
@@ -49,7 +49,7 @@ IS_JI_ZHI_YUN:
 #define IS_PHILIPS      	0
 #define IS_CHANG_XIN    	1
 #define IS_CHANG_XIN_V1    	0
-#define IS_WELL				1
+#define IS_WELL				0
 
 #if IS_PHILIPS
     /* wifi状态指示 */

@@ -12,7 +12,7 @@
 #define HTTP_URL_MAX_LEN          50
 #define HTTP_HANDLE_MAX_LEN       50
 
-#define HTTP_ROUTER_MAP_MAX       50
+#define HTTP_ROUTER_MAP_MAX       45
 #define HTTP_HRADER_NUM_MAX       20
 
 #define HTTP_FILE_NAME_MAX_LEN    50
@@ -70,6 +70,7 @@ typedef enum {
 	HTTP_CODE_SwitchingProtocols = 0,
     HTTP_CODE_Ok,
     HTTP_CODE_Created,
+	HTTP_CODE_NoContent,
     HTTP_CODE_Found,
     HTTP_CODE_BadRequest,
     HTTP_CODE_NotFound,

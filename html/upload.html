@@ -115,6 +115,7 @@
 					if( xhr.status==201){
 						t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML="上传成功";
 						index=index+1;
+						sleep(100);
 						sendFile(fileObj, index);
 					}else{
 						t.rows[parseInt(8)+parseInt(index)].cells[2].innerHTML="上传失败";
@@ -167,6 +168,10 @@
 			}
 			xhr.send(file);
 		}
+		function sleep(time) {
+			var s = new Date().getTime() + parseInt(time, 10);
+			while(new Date().getTime()<s) {}
+		};
 	</script>
 </body>
 </html>

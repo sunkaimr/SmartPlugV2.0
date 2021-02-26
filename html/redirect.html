@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="text/html;charset=gb2312,width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no">
+</head>
+<style>
+	a{text-decoration:none;cursor:pointer}
+	table{position:absolute;left:0;top:0;right:0;bottom:50%;margin:auto}
+</style>
+<body bgcolor="#33CCFF" onload="ready()">
+	<table border="0" width="80%" cellpadding="10" id="tab" cellspacing="0">
+		<tr><td align="center">选择任意一种方式接入入设备：</td></tr>
+		<tr><td align="center"><a id="apMode" onclick="apClick()">1, 直接点击进入: http://192.168.4.1</a></td></tr>
+		<tr><td align="center"><a id="stationMode" onclick="stationClick()"></a></td></tr>
+	</table>
+	<script type="text/javascript">
+		var sysData;
+		function apClick() {
+			window.location.href = "http://192.168.4.1";
+		}
+		function stationClick() {
+			window.location.href = "http://" + sysData.IP;
+		}
+
+		function ready() {
+			sleep(100);
+			stat = document.getElementById("stationMode");
+			xhr = new XMLHttpRequest();
+			xhr.open("get", "/system", true);
+			xhr.onreadystatechange = function() {
+				if(xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200){
+					sysData = JSON.parse(xhr.responseText);
+					var m = sysData.WifiMode;					
+					if ((m == 1 || m == 3) && sysData.IP != "0.0.0.0" ){
+						stat.innerHTML = "2, 先连接到wifi \"" + sysData.WifiSSID + "\", 再点击进入: http://" + sysData.IP;
+					}
+				}
+			}			
+			xhr.send("{}")
+		}
+		function sleep(time) {
+			var s = new Date().getTime() + parseInt(time, 10);
+			while(new Date().getTime() < s ) {				
+			}
+		};
+	</script>	
+</body>
+</html>

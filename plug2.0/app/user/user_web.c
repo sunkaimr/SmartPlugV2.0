@@ -101,26 +101,17 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
     WEB_SetWebSvcStatus( TRUE );
 
     memset(&stServerAddr, 0, sizeof(stServerAddr));
-    stServerAddr.sin_family = AF_INET;
+    stServerAddr.sin_family = PF_INET;
     stServerAddr.sin_addr.s_addr = INADDR_ANY;
     stServerAddr.sin_len = sizeof(stServerAddr);
     stServerAddr.sin_port = htons(80);
 
-    iSocketFd = socket( AF_INET, SOCK_STREAM, 0 );
+    iSocketFd = socket( PF_INET, SOCK_STREAM, 0 );
     if ( iSocketFd == -1 )
     {
         LOG_OUT(LOGOUT_ERROR, "socket failed started. iSocketFd:%d", iSocketFd);
     }
     LOG_OUT(LOGOUT_DEBUG, "socket ok, iSocketFd:%d", iSocketFd);
-
-    //不知道为什么一直失败
-    //iRet = setsockopt(iSocketFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&Reuseaddr, sizeof(Reuseaddr));
-    //iRet = setsockopt(iSocketFd, SOL_SOCKET, SO_RCVTIMEO, (char *)&stRecvTimeOut, sizeof(stRecvTimeOut));
-    //if ( 0 != iRet )
-    //{
-    //    LOG_OUT(LOGOUT_ERROR, "setsockopt failed, iRet:%d", iRet);
-    //}
-    //LOG_OUT(LOGOUT_DEBUG, "setsockopt ok, iSocketFd:%d", iSocketFd);
 
     do
     {
@@ -268,7 +259,7 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
     INT32 iRet = 0;
     HTTP_CTX *pstCtx = Para;
 
-    //LOG_OUT(LOGOUT_INFO, "WEB_WebHandleTask started", pstCtx->iClientFd);
+    //LOG_OUT(LOGOUT_DEBUG, "WEB_WebHandleTask started", pstCtx->iClientFd);
 
     pcRecvBuf = ( CHAR* )malloc( WEB_RECVBUF_SIZE + 10 );
     if ( NULL == pcRecvBuf )
@@ -329,7 +320,7 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
             LOG_OUT(LOGOUT_INFO, "fd:%d Parsing http header failed");
             goto end;
         }
-        //LOG_OUT(LOGOUT_DEBUG, "ParsingHttpHead");
+        //LOG_OUT(LOGOUT_DEBUG, "parsed http header");
 
         iRet = HTTP_RouterHandle( pstCtx );
         if ( iRet != OK )
@@ -337,11 +328,21 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
             LOG_OUT(LOGOUT_INFO, "Router handle failed");
             goto end;
         }
-        //LOG_OUT(LOGOUT_INFO, "uiSentLen:%d, uiSendTotalLen:%d", pstCtx->stResp.uiSentLen, pstCtx->stResp.uiSendTotalLen);
+        //LOG_OUT(LOGOUT_DEBUG, "uiSentLen:%d, uiSendTotalLen:%d", pstCtx->stResp.uiSentLen, pstCtx->stResp.uiSendTotalLen);
+
+        if ( HTTP_IS_SEND_FINISH( pstCtx ) )
+        {
+        	pstCtx->uiTimeOut = WEB_CONTINUE_TMOUT;
+            LOG_OUT(LOGOUT_INFO, "[Response] Method:%s URL:%s Code:%s",
+                    szHttpMethodStr[pstCtx->stReq.eMethod],
+                    pstCtx->stReq.szURL,
+                    szHttpCodeMap[pstCtx->stResp.eHttpCode]);
+            HTTP_RequestInit( pstCtx );
+        }
     }
 
 end:
-    //LOG_OUT(LOGOUT_INFO, "WEB_WebHandleTask over", pstCtx->iClientFd);
+    //LOG_OUT(LOGOUT_DEBUG, "WEB_WebHandleTask over", pstCtx->iClientFd);
     WEB_CloseWebCtx( pstCtx );
     FREE_MEM( pcRecvBuf );
     vTaskDelete( NULL );

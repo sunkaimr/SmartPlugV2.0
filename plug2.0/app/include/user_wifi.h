@@ -48,7 +48,7 @@ typedef struct tagWifiScan
 
 typedef struct tagWifiInfo
 {
-    UINT32                 uiIp;
+    UINT32                uiIp;
     UINT32                uiGetWay;
     UINT32                uiNetMask;
 
@@ -57,8 +57,8 @@ typedef struct tagWifiInfo
 UINT WIFI_SetWifiModeStation( VOID );
 UINT WIFI_SetWifiModeAP( VOID );
 
-VOID WIFI_StartWifiLinkStatusTheard( VOID );
 void WIFI_StartWifiModeTheard( void );
+VOID WIFI_SetWifiLinkStatus();
 
 UINT WIFI_ScanWifiSsid( VOID );
 WIFI_INFO_S WIFI_GetIpInfo();

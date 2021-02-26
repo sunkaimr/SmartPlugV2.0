@@ -8,7 +8,7 @@
 #include "user_common.h"
 #include "esp_common.h"
 
-#define EXTIINT_NUM        5
+#define EXTIINT_NUM        2
 
 COMM_ExtiInt g_astExtiIntBuf[EXTIINT_NUM];
 

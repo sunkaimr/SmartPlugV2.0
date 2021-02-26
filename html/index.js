@@ -328,7 +328,7 @@ function binFileChange() {
 }
 
 function modeChange(){
-	if( $("#modeSelect").val() == 1 ){
+	if( $("#modeSelect").val() == 1 || $("#modeSelect").val() == 3){
 		if (SysData.WifiMode == 2){
             $("#wifiCustomClass, #wifiPasswdClass").removeClass("hidden");
         }else{
@@ -454,10 +454,15 @@ function getDevName(){
 	});
 }
 
-function getWebSet(){
+function getWebSet(){	
     $.get("/webset",function(data, status){
         if (status == "success"){
             webSet = data
+			if ( webSet.IsSupportMeter == true ){
+				meterli.style.display="";
+			}else{
+				meterli.style.display="none";
+			}
 			switch (webSet.ModelTab) {
 				case "timer":
                     TimerClick();
@@ -481,6 +486,8 @@ function getWebSet(){
                     TimerClick();
 					break;
 			}
+			
+
         }else{
             TimerClick();
             alert("Data: " + data + "\nStatus: " + status);
@@ -519,6 +526,7 @@ function getInfomation(){
 			SDKVersion = "SDK版本 ：" + data.SDKVersion;
 			FlashMap = "Flash大小 ：" + data.FlashMap;
 			UserBin = "当前固件 ： " + data.UserBin;
+			Hardware = "支持硬件 ：" + 	data.Hardware;
 			var day = parseInt(data.RunTime/(24*3600));
 			var hour= parseInt((data.RunTime%(24*3600))/3600);
 			var min = parseInt((data.RunTime%3600)/60);
@@ -527,12 +535,12 @@ function getInfomation(){
 			$("#aboutBody").empty();
 			$("#aboutBody").append("<li>"+RunTime+"</li>");
             $("#aboutBody").append("<li>"+GitCommit+"</li>");
+			$("#aboutBody").append("<li>"+Hardware+"</li>");
 			$("#aboutBody").append("<li>"+BuildDate+"</li>");
 			$("#aboutBody").append("<li>"+SDKVersion+"</li>");
 			$("#aboutBody").append("<li>"+UserBin+"</li>");
 			$("#aboutBody").append("<li>"+FlashMap+"</li>");
-
-			$("#aboutBody").append("</br>&copy;&nbsp;2019&nbsp;sunkai.mr@qq.com");
+			$("#aboutBody").append("</br>&copy;&nbsp;2019-2021&nbsp;sunkai.mr@qq.com");
 
 			$('#aboutModal').modal("show")
 
@@ -1173,11 +1181,9 @@ function setCommitClick(){
 
 	$("#devName").text("智能插座 （" + data.PlugName + "）");
 	$("#title").text(data.PlugName);
-	if ( $("#modeSelect").val() == 2 ){
-		data.WifiMode= 2;
-	}else if ( $("#modeSelect").val() == 1 ){
-		data.WifiMode= 1;
-
+	
+	if ( $("#modeSelect").val() == 1 || $("#modeSelect").val() == 3 ){
+		data.WifiMode=parseInt($("#modeSelect").val());
         if (SysData.WifiMode == 2) {
             data.WifiSSID=$("#wifiCustom").val();
         }else{
@@ -1186,23 +1192,18 @@ function setCommitClick(){
 
 		data.WifiPasswd=$("#wifiPasswd").val();
 		data.SmartConfigFlag=true;
-	}else if ( $("#modeSelect").val() == 3 ){
+	}else if ( $("#modeSelect").val() == 2 ){
+		data.WifiMode= 2;
+	}else if ( $("#modeSelect").val() == 4 ){
 		data.WifiMode = 1;
 		data.SmartConfigFlag = false;
 	}
-
-	if ( data.WifiMode == 1 ){
-        data.CloudPlatform = parseInt($("#PlatformSelect").val());
-        if ( data.CloudPlatform == 1 ){
-            data.MqttProductKey = $("#ProductKey").val();
-            data.MqttDevName = $("#DeviceName").val();
-            data.MqttDevSecret = $("#DeviceSecret").val();
-        }else if ( data.CloudPlatform == 2 ){
-            data.BigiotDevId = $("#BigiotDeviceId").val();
-            data.BigiotApiKey = $("#BigiotApiKey").val();
-        }
-
+	
+	if ( data.WifiMode == 1 && data.SmartConfigFlag == true && data.WifiSSID == "" ){
+		ShowInfo("WIFI名称不能为空");
+		return;
 	}
+
 	$.ajax({
 		type: "POST",
 		url: "/system",
@@ -1223,17 +1224,14 @@ function cloudPlatformCommitClick(){
     var data = {};
 
     if ( $("#PlatformSelect").val() == "0" ){
-
         data.CloudPlatform = 0;
     }else if ( $("#PlatformSelect").val() == "1" ){
-
         data.CloudPlatform = 1;
         data.MqttProductKey = $("#ProductKey").val();
         data.MqttDevName = $("#DeviceName").val();
         data.MqttDevSecret = $("#DeviceSecret").val();
 
     }else if ( $("#PlatformSelect").val() == "2" ){
-
         data.CloudPlatform = 2;
         data.DevType = parseInt($("#BigiotDeviceTypeSelect option:selected").val());
         data.BigiotDevId = $("#BigiotDeviceId").val();
@@ -1265,6 +1263,12 @@ function cloudPlatformCommitClick(){
 
 
 function scanWifiClick(){
+	var mode = new Array("未知", "客户端","热点","客户端+热点");
+	if ( SysData.WifiMode != 1 ){
+		ShowInfo("当前处于\""+ mode[SysData.WifiMode] + "\"模式，只有运行在\"客户端\"模式才能扫描wifi");
+		return
+	}
+	
 	$("#wifiList").empty();
 	$("#wifiPasswd").val("");
 	var opt = $("<option>").val(1).text("正在扫描...");

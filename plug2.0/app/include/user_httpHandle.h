@@ -16,6 +16,7 @@
 #define HTTP_BUF_5K        (1024*5)
 #define HTTP_BUF_10K       (1024*10)
 #define HTTP_BUF_20K       (1024*20)
+#define HTTP_BUF_25K       (1024*25)
 #define HTTP_BUF_30K       (1024*30)
 
 
@@ -39,6 +40,8 @@ UINT HTTP_NotFound( HTTP_CTX *pstCtx );
 UINT HTTP_BadRequest( HTTP_CTX *pstCtx );
 UINT HTTP_InternalServerError( HTTP_CTX *pstCtx );
 UINT HTTP_GetHome( HTTP_CTX *pstCtx );
+UINT HTTP_Connect( HTTP_CTX *pstCtx );
+UINT HTTP_Generate204( HTTP_CTX *pstCtx );
 UINT HTTP_GetHealth( HTTP_CTX *pstCtx );
 UINT HTTP_GetInfo( HTTP_CTX *pstCtx );
 UINT HTTP_GetDate( HTTP_CTX *pstCtx );
@@ -69,6 +72,7 @@ UINT HTTP_PostRelayStatus( HTTP_CTX *pstCtx );
 UINT WIFI_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen);
 UINT WIFI_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen);
 UINT HTTP_GetUploadHtml( HTTP_CTX *pstCtx );
+UINT HTTP_GetRedirectHtml( HTTP_CTX *pstCtx );
 UINT HTTP_GetMeter( HTTP_CTX *pstCtx );
 UINT HTTP_PostMeter( HTTP_CTX *pstCtx );
 UINT HTTP_PostWebSet( HTTP_CTX *pstCtx );

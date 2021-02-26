@@ -38,7 +38,7 @@
     #define GIT_COMMIT_SHA1 "NULL"
 #endif
 
-#define EXTIINT_NAME_LEN    (64)
+#define EXTIINT_NAME_LEN    (32)
 
 typedef VOID(*fn)(VOID);
 
@@ -57,6 +57,7 @@ VOID COMM_ExtiIntInit(VOID);
 UINT COMM_ExtiIntRegister(UINT uiNum, fn fInit, fn fDeInit, fn fHandle, CHAR *pcName);
 UINT COMM_ExtiIntUnregister(UINT uiNum);
 
+#define __ALIYUN__
 
 
 #endif /* APP_INCLUDE_USER_COMMON_H_ */

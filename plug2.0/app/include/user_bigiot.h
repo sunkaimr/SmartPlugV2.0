@@ -18,8 +18,8 @@
 #define BIGIOT_LOG(lev, arg...) LOG_OUT(lev, ##arg)
 
 
-#define BIGIOT_DEVNAME_LEN  64
-#define BIGIOT_EVENT_NUM      10
+#define BIGIOT_DEVNAME_LEN     64
+#define BIGIOT_EVENT_NUM       7
 #define BIGIOT_CBNAME_NUM      64
 
 typedef char* (*CallbackFun)(void *para);
@@ -27,8 +27,8 @@ typedef char* (*CallbackFun)(void *para);
 typedef struct tagBigiotEvent
 {
     char*             pcIfId;                                //贝壳物联的接口ID
-    char            szCbName[BIGIOT_CBNAME_NUM];        //回调函数名称
-    CallbackFun     cb;                                    //回调函数
+    char              szCbName[BIGIOT_CBNAME_NUM];           //回调函数名称
+    CallbackFun       cb;                                    //回调函数
     void*             cbPara;                                //回调函数入参
     void*             pstCtx;                                //BIGIOT_Ctx_S
 

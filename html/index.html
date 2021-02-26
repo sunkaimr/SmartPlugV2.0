@@ -110,8 +110,8 @@
 					<li><a id="relay">关闭</a></li>
 					<li><a id="date" >2019-01-01 00:00:00 星期一</a></li>
 					<li><a id="temperature" >0 ℃</a></li>
-					<li><a id="information" data-toggle="modal" data-target="#aboutModal">关于</a></li>
 					<li><a id="console" >控制台</a></li>
+					<li><a id="information" data-toggle="modal" data-target="#aboutModal">关于</a></li>					
 				</ul>
 			</div>
 		</div>
@@ -125,7 +125,7 @@
 					<li><a id="timer">定时</a></li>
 					<li><a id="delay">延时</a></li>
 					<li><a id="infrared">红外</a></li>
-					<li><a id="meter">电量</a></li>
+					<li id="meterli"><a id="meter">电量</a></li>
 					<li><a id="cloudPlatform">云平台</a></li>
 					<li><a id="set">设置</a></li>
 				</ul>
@@ -145,7 +145,7 @@
 				<form id="formCloudPlatform" class="form-horizontal hidden" action="#" method="POST">
 					<div class="form-group">
 						<label class="col-sm-1 control-label">提示 :</label>
-						<span class="help-block col-sm-10">对接云平台可实现设备的远程控制，目前支持贝壳物联、阿里云。注意:只有在连接到外网时才会对接成功</span>
+						<span class="help-block col-sm-10">对接云平台可实现设备的远程控制，目前支持<a target="_blank" href="https://www.bigiot.net/User/index.html">贝壳物联</a>、阿里云。注意:只有在连接到外网时才会对接成功</span>
 					</div>
 					<div id="PlatformSelectClass" class="form-group">
 						<label class="col-sm-1 control-label">* 平台 :</label>
@@ -326,7 +326,8 @@
 								<option value=0 disabled selected hidden>请选择模式...</option>
 								<option value=1>客户端</option>
 								<option value=2>热点</option>
-								<option value=3>智能配对</option>
+								<option value=3>客户端+热点</option>
+								<option value=4>智能配对</option>
 							</select>
 						</div>
 						<span class="help-block col-sm-6">热点模式：设备将发射WIFI信号；客户端模式：设备需要连接路由器</span>
