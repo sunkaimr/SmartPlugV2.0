@@ -7,8 +7,6 @@
 	<link href="bootstrap.min.css" rel="stylesheet">
 	<script src="jquery-1.11.1.min.js"></script>
 	<script src="bootstrap.min.js"></script>
-	<link href="bootstrapValidator.min.css" rel="stylesheet">
-	<script src="bootstrapValidator.min.js"></script>
 	<script src="index.js"></script>
 	<style>
 		.table th, .table td {
@@ -143,174 +141,200 @@
 				</div>
 
 				<form id="formCloudPlatform" class="form-horizontal hidden" action="#" method="POST">
-					<div class="form-group">
-						<label class="col-sm-1 control-label">提示 :</label>
-						<span class="help-block col-sm-10">对接云平台可实现设备的远程控制，目前支持<a target="_blank" href="https://www.bigiot.net/User/index.html">贝壳物联</a>、阿里云。注意:只有在连接到外网时才会对接成功</span>
-					</div>
-					<div id="PlatformSelectClass" class="form-group">
-						<label class="col-sm-1 control-label">* 平台 :</label>
-						<div class="col-sm-3 ">
-							<select id="PlatformSelect" class="form-control">
-								<option value=0 selected>不对接任何平台</option>
-								<option value=1>阿里云</option>
-								<option value=2>贝壳物联</option>
-							</select>
+					<div class="panel panel-default">
+						<div class="panel-heading"><strong>腾讯云平台</strong>&emsp;(接到互联网后可通过<a target="_blank" href="https://console.cloud.tencent.com/iotexplorer">腾讯云物联平台</a>实现远程控制、远程固件升级)</div>
+						<div class="panel-body">
+								<div id="RegisteTypeClass" class="form-group">
+								<label class="col-sm-1 control-label">注册方式 :</label>
+								<div class="col-sm-3 ">
+									<select id="RegisteTypeSelect" class="form-control">
+										<option value=0>动态注册</option >
+										<option value=1>静态注册</option >	
+									</select>
+								</div>
+								<span class="help-block col-sm-6"><p id="TencontConnectSta" class="text-info"></p></span>								
+							</div>		
+							<div class="form-group">
+								<label class="col-sm-1 control-label">* 产品ID :</label>
+								<div class="col-sm-3 ">
+									<input id="ProductKey" class="form-control" type="text" placeholder="Product Key">
+								</div>									
+							</div>
+							<div id="ProductSecretClass" class="form-group">
+								<label class="col-sm-1 control-label">* 产品密钥 :</label>
+								<div class="col-sm-3 ">
+									<input id="ProductSecret" class="form-control" type="password" placeholder="Product Secret">
+								</div>								
+							</div>							
+							<div id="DeviceNameClass" class="form-group hidden">
+								<label class="col-sm-1 control-label">* 设备ID :</label>
+								<div class="col-sm-3 ">
+									<input id="DeviceName" class="form-control" type="text" placeholder="Device Name">
+								</div>								
+							</div>
+							<div id="DeviceSecretClass" class="form-group hidden">
+								<label class="col-sm-1 control-label">* 设备密钥 :</label>
+								<div class="col-sm-3 ">
+									<input id="DeviceSecret" class="form-control" type="password" placeholder="Device Secret">
+								</div>								
+							</div>
+							<div class="form-group">
+								<label class="col-sm-1 control-label">启用 :</label>
+								<div class="col-sm-3">
+									<div class="btn-group btn-group-justified" role="group" aria-label="">
+									  <div class="btn-group" role="group">
+										<button id="TencentEnable" type="button" class="btn btn-default">启用</button>
+									  </div>
+									  <div class="btn-group" role="group">
+										<button id="TencentDisable" type="button" class="btn btn-default">禁用</button>
+									  </div>
+									</div>
+								</div>
+								<span class="help-block col-sm-5"></span>
+							</div>
+							<div class="form-group">
+								<label class="col-sm-1 control-label"></label>
+								<div class="col-sm-3">
+									<button id="TencentBtn" class="btn btn-primary btn-block" type="button">确定</button>
+								</div>								
+							</div>
 						</div>
-						<span class="help-block col-sm-6"><p id="connectSta" class="text-info"></p></span>
-					</div>
-					<div id="ProductKeyClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">* 产品 :</label>
-						<div class="col-sm-3 ">
-							<input id="ProductKey" class="form-control" type="text" placeholder="Product Key">
+					</div>					
+					<div class="panel panel-default">
+						<div class="panel-heading"><strong>贝壳物联平台</strong>&emsp;(接到互联网后可通过<a target="_blank" href="https://www.bigiot.net/User/index.html">贝壳物联</a>实现远程控制、对接天猫精灵等)</div>						
+						<div class="panel-body">			
+							<div id="BigiotDeviceNameClass" class="form-group">
+								<label class="col-sm-1 control-label">设备名称 :</label>
+								<div class="col-sm-3 ">
+									<input id="BigiotDeviceName" class="form-control" readonly="readonly" type="text" placeholder="Device Name">
+								</div>
+								<span class="help-block col-sm-6"><p id="BigiotConnectSta" class="text-info"></p></span>								
+							</div>							
+							<div id="BigiotDeviceTypeClass" class="form-group">
+								<label class="col-sm-1 control-label">设备类型 :</label>
+								<div class="col-sm-3 ">
+									<select id="BigiotDeviceTypeSelect" class="form-control">
+										<option value=0>默认设备</option >
+										<option value=1>电视</option >
+										<option value=2>灯</option >
+										<option value=3>空调</option >
+										<option value=4>空气净化器</option >
+										<option value=5>插座</option >
+										<option value=6>开关</option >
+										<option value=7>扫地机器人</option >
+										<option value=8>窗帘</option >
+										<option value=9>加湿器</option >
+										<option value=10>风扇</option >
+										<option value=11>暖奶器</option >
+										<option value=12>豆浆机</option >
+										<option value=13>电热水壶</option >
+										<option value=14>饮水机</option >
+										<option value=15>摄像头</option >
+										<option value=16>路由器</option >
+										<option value=17>电饭煲</option >
+										<option value=18>热水器</option >
+										<option value=19>烤箱</option >
+										<option value=20>净水器</option >
+										<option value=21>冰箱</option >
+										<option value=22>机顶盒</option >
+										<option value=23>传感器</option >
+										<option value=24>洗衣机</option >
+										<option value=25>智能床</option >
+										<option value=26>香薰机</option >
+										<option value=27>窗</option >
+										<option value=28>抽油烟机</option >
+										<option value=29>指纹锁</option >
+										<option value=30>万能遥控器</option >
+										<option value=31>洗碗机</option >
+										<option value=32>除湿机</option >
+										<option value=33>干衣机</option >
+										<option value=34>壁挂炉</option >
+										<option value=35>微波炉</option >
+										<option value=36>取暖器</option >
+										<option value=37>驱蚊器</option >
+										<option value=38>跑步机</option >
+										<option value=39>智能门控(门锁)</option >
+										<option value=40>智能手环</option >
+										<option value=41>晾衣架</option >
+									</select>
+								</div>								
+							</div>
+							<div id="BigiotDeviceIdClass" class="form-group">
+								<label class="col-sm-1 control-label">* 设备ID :</label>
+								<div class="col-sm-3 ">
+									<input id="BigiotDeviceId" class="form-control" type="text" placeholder="Device Id">
+								</div>								
+							</div>
+							<div id="BigiotApiKeyClass" class="form-group">
+								<label class="col-sm-1 control-label">* API KEY :</label>
+								<div class="col-sm-3 ">
+									<input id="BigiotApiKey" class="form-control" type="password" placeholder="API Key">
+								</div>								
+							</div>
+							<div id="BigiotIfSwitchStatusClass" class="form-group">
+								<label class="col-sm-1 control-label">开关接口 :</label>
+								<div class="col-sm-3 ">
+									<input id="BigiotIfSwitchStatus" class="form-control" type="text" placeholder="开关接口ID">
+								</div>								
+							</div>
+							<div id="BigiotIfHumidityClass" class="form-group">
+								<label class="col-sm-1 control-label">温度接口 :</label>
+								<div class="col-sm-3 ">
+									<input id="BigiotIfTemp" class="form-control" type="text" placeholder="温度接口ID">
+								</div>								
+							</div>
+							<div id="BigiotIfVoltageClass" class="form-group">
+								<label class="col-sm-1 control-label">电压接口 :</label>
+								<div class="col-sm-3 ">
+									<input id="BigiotIfVoltage" class="form-control" type="text" placeholder="电压接口ID">
+								</div>								
+							</div>
+							<div id="BigiotIfCurrentClass" class="form-group">
+								<label class="col-sm-1 control-label">电流接口 :</label>
+								<div class="col-sm-3 ">
+									<input id="BigiotIfCurrent" class="form-control" type="text" placeholder="电流接口ID">
+								</div>
+								
+							</div>
+							<div id="BigiotIfPowerClass" class="form-group">
+								<label class="col-sm-1 control-label">功率接口 :</label>
+								<div class="col-sm-3 ">
+									<input id="BigiotIfPower" class="form-control" type="text" placeholder="功率接口ID">
+								</div>								
+							</div>
+							<div id="BigiotIfElectricityClass" class="form-group">
+								<label class="col-sm-1 control-label">电量接口 :</label>
+								<div class="col-sm-3 ">
+									<input id="BigiotIfElectricity" class="form-control" type="text" placeholder="电量接口ID">
+								</div>								
+							</div>
+							<div class="form-group ">
+								<label class="col-sm-1 control-label">启用 :</label>
+								<div class="col-sm-3">
+									<div class="btn-group btn-group-justified" role="group" aria-label="...">
+									  <div class="btn-group" role="group">
+										<button id="BigiotEnable" type="button" class="btn btn-default">启用</button>
+									  </div>
+									  <div class="btn-group" role="group">
+										<button id="BigiotDisable" type="button" class="btn btn-default">禁用</button>
+									  </div>
+									</div>
+								</div>								
+							</div>	
+							
+							<div class="form-group">
+								<label class="col-sm-1 control-label"></label>
+								<div class="col-sm-3">
+									<button id="BigiotBtn" class="btn btn-primary btn-block" type="button">确定</button>
+								</div>								
+							</div>							
 						</div>
-						<span class="help-block col-sm-5">阿里云ProductKey</span>
-					</div>
-					<div id="DeviceNameClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">* 设备 :</label>
-						<div class="col-sm-3 ">
-							<input id="DeviceName" class="form-control" type="text" placeholder="Device Name">
-						</div>
-						<span class="help-block col-sm-5">阿里云DeviceName</span>
-					</div>
-					<div id="DeviceSecretClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">* 密钥 :</label>
-						<div class="col-sm-3 ">
-							<input id="DeviceSecret" class="form-control" type="password" placeholder="Device Secret">
-						</div>
-						<span class="help-block col-sm-5">阿里云DeviceSecret</span>
-					</div>
-					<div id="BigiotDeviceNameClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">设备名称 :</label>
-						<div class="col-sm-3 ">
-							<input id="BigiotDeviceName" class="form-control" readonly="readonly" type="text" placeholder="Device Name">
-						</div>
-						<span class="help-block col-sm-5">贝壳物联设备名称</span>
-					</div>
-					<div id="BigiotDeviceTypeClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">设备类型 :</label>
-						<div class="col-sm-3 ">
-							<select id="BigiotDeviceTypeSelect" class="form-control">
-								<option value=0>默认设备</option >
-								<option value=1>电视</option >
-								<option value=2>灯</option >
-								<option value=3>空调</option >
-								<option value=4>空气净化器</option >
-								<option value=5>插座</option >
-								<option value=6>开关</option >
-								<option value=7>扫地机器人</option >
-								<option value=8>窗帘</option >
-								<option value=9>加湿器</option >
-								<option value=10>风扇</option >
-								<option value=11>暖奶器</option >
-								<option value=12>豆浆机</option >
-								<option value=13>电热水壶</option >
-								<option value=14>饮水机</option >
-								<option value=15>摄像头</option >
-								<option value=16>路由器</option >
-								<option value=17>电饭煲</option >
-								<option value=18>热水器</option >
-								<option value=19>烤箱</option >
-								<option value=20>净水器</option >
-								<option value=21>冰箱</option >
-								<option value=22>机顶盒</option >
-								<option value=23>传感器</option >
-								<option value=24>洗衣机</option >
-								<option value=25>智能床</option >
-								<option value=26>香薰机</option >
-								<option value=27>窗</option >
-								<option value=28>抽油烟机</option >
-								<option value=29>指纹锁</option >
-								<option value=30>万能遥控器</option >
-								<option value=31>洗碗机</option >
-								<option value=32>除湿机</option >
-								<option value=33>干衣机</option >
-								<option value=34>壁挂炉</option >
-								<option value=35>微波炉</option >
-								<option value=36>取暖器</option >
-								<option value=37>驱蚊器</option >
-								<option value=38>跑步机</option >
-								<option value=39>智能门控(门锁)</option >
-								<option value=40>智能手环</option >
-								<option value=41>晾衣架</option >
-							</select>
-						</div>
-						<span class="help-block col-sm-6">选择贝壳物联的设备类型</span>
-					</div>
-					<div id="BigiotDeviceIdClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">* 设备ID :</label>
-						<div class="col-sm-3 ">
-							<input id="BigiotDeviceId" class="form-control" type="text" placeholder="Device Id">
-						</div>
-						<span class="help-block col-sm-5">贝壳物联设备ID</span>
-					</div>
-					<div id="BigiotApiKeyClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">* API KEY :</label>
-						<div class="col-sm-3 ">
-							<input id="BigiotApiKey" class="form-control" type="password" placeholder="API Key">
-						</div>
-						<span class="help-block col-sm-5">贝壳物联API Key</span>
-					</div>
-					<div id="BigiotIfSwitchStatusClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">开关接口 :</label>
-						<div class="col-sm-3 ">
-							<input id="BigiotIfSwitchStatus" class="form-control" type="text" placeholder="开关接口ID">
-						</div>
-						<span class="help-block col-sm-5">开关接口ID, 用于上报设备的开关状态</span>
-					</div>
-					<div id="BigiotIfTempClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">温度接口 :</label>
-						<div class="col-sm-3 ">
-							<input id="BigiotIfTemp" class="form-control" type="text" placeholder="温度接口ID">
-						</div>
-						<span class="help-block col-sm-5">温度接口ID， 用于上报设备的温度</span>
-					</div>
-					<div id="BigiotIfHumidityClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">湿度接口 :</label>
-						<div class="col-sm-3 ">
-							<input id="BigiotIfHumidity" class="form-control" type="text" placeholder="湿度接口ID">
-						</div>
-						<span class="help-block col-sm-5">湿度接口ID， 用于上报设备的湿度</span>
-					</div>
-					<div id="BigiotIfVoltageClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">电压接口 :</label>
-						<div class="col-sm-3 ">
-							<input id="BigiotIfVoltage" class="form-control" type="text" placeholder="电压接口ID">
-						</div>
-						<span class="help-block col-sm-5">电压接口ID， 用于上报设备的电压</span>
-					</div>
-                    <div id="BigiotIfCurrentClass" class="form-group hidden">
-                        <label class="col-sm-1 control-label">电流接口 :</label>
-                        <div class="col-sm-3 ">
-                            <input id="BigiotIfCurrent" class="form-control" type="text" placeholder="电流接口ID">
-                        </div>
-                        <span class="help-block col-sm-5">电流接口ID， 用于上报设备的电流</span>
-                    </div>
-                    <div id="BigiotIfPowerClass" class="form-group hidden">
-                        <label class="col-sm-1 control-label">功率接口 :</label>
-                        <div class="col-sm-3 ">
-                            <input id="BigiotIfPower" class="form-control" type="text" placeholder="功率接口ID">
-                        </div>
-                        <span class="help-block col-sm-5">功率接口ID， 用于上报设备的功率</span>
-                    </div>
-                    <div id="BigiotIfElectricityClass" class="form-group hidden">
-                        <label class="col-sm-1 control-label">电量接口 :</label>
-                        <div class="col-sm-3 ">
-                            <input id="BigiotIfElectricity" class="form-control" type="text" placeholder="电量接口ID">
-                        </div>
-                        <span class="help-block col-sm-5">电量接口ID， 用于上报设备的电量</span>
-                    </div>
-					<div class="form-group">
-						<label class="col-sm-1 control-label"></label>
-						<div class="col-sm-3">
-							<button id="cloudPlatformCommit" class="btn btn-primary btn-block" type="button">确定</button>
-						</div>
-						<span class="help-block col-sm-5">修改后重启生效</span>
 					</div>
 				</form>
 				<form id="formSet" class="form-horizontal hidden" action="#" method="POST">
 					<div class="form-group">
 						<label class="col-sm-1 control-label">提示 :</label>
-						<span class="help-block col-sm-10">短按按键可直接控制开关，按下按键3-6s当wifi指示灯快速闪烁进入热点模式；按键按下6s以上wifi指示灯常亮进入客户端模式</span>
+						<span class="help-block col-sm-10">短按按键可直接控制开关，按下按键3-6s当wifi指示灯快速闪烁进入客户端模式；按键按下6s以上wifi指示灯常亮进入热点模式</span>
 					</div>
 					<div class="form-group">
 						<label class="col-sm-1 control-label">名称 :</label>
@@ -352,12 +376,13 @@
 						<span class="help-block col-sm-5">请输入要连接的WIFI</span>
 					</div>
 					<div id="wifiPasswdClass" class="form-group hidden">
-						<label class="col-sm-1 control-label">密码 :</label>
+						<label class="col-sm-1 control-label">WIFI密码 :</label>
 						<div class="col-sm-3 ">
-							<input id="wifiPasswd" class="form-control" type="password" placeholder="请输入密码">
+							<input id="wifiPasswd" class="form-control" type="password" placeholder="请输入密码"/>
+							<i class="ace-icon fa fa-eye-slash" οnclick="SeePwd(this)"></i>
 						</div>
-						<span class="help-block col-sm-5">请输入要连接的WIFI密码</span>
-					</div>
+						<span class="help-block col-sm-5"></span>
+					</div>					
                     <div class="form-group">
                         <label class="col-sm-1 control-label">上电状态 :</label>
                         <div class="col-sm-3 ">
@@ -367,21 +392,21 @@
                                 <option value=2>打开</option>
                             </select>
                         </div>
-                        <span class="help-block col-sm-6">关闭：上电时关闭；打开：上电时打开；上次状态：记忆上次的状态</span>
+                        <span class="help-block col-sm-6">关闭：上电时关闭；打开：上电时打开；上次状态：记忆下电前的状态</span>
                     </div>
 					<div class="form-group">
 						<label class="col-sm-1 control-label"></label>
 						<div class="col-sm-3">
 							<button id="setCommit" class="btn btn-primary btn-block" type="button">确定</button>
 						</div>
-						<span class="help-block col-sm-5">修改后重启生效</span>
+						<span class="help-block col-sm-5"></span>
 					</div>
 					<br/>
                     <div class="row form-group">
                         <label class="col-sm-1 control-label">升级 :</label>
                         <div class="col-sm-3">
                             <div class="input-group">
-                                <input id="file" type="file" accept=".bin" style="display:none">
+                                <input id="file" type="file" accept=".bin" style="display:none" onchange="ReloadFile()">
                                 <input id="binFile" class="form-control" type="text" placeholder="请选择固件">
                                 <span class="input-group-btn">
                                     <button id="upload" class="btn btn-primary btn-block" type="button">升级</button>
@@ -394,14 +419,14 @@
 						<div class="col-sm-3">
 							<button id="reboot" class="btn btn-primary btn-block" type="button">重启</button>
 						</div>
-						<span class="help-block col-sm-5">重启设备</span>
+						<span class="help-block col-sm-5"></span>
 					</div>
 					<div class="form-group">
 						<label class="col-sm-1 control-label">重置 :</label>
 						<div class="col-sm-3">
 							<button id="reset" class="btn btn-warning btn-block" type="button">恢复出厂设置</button>
 						</div>
-						<span class="help-block col-sm-5">数据将全部清零，恢复到出厂模式</span>
+						<span class="help-block col-sm-5"></span>
 					</div>
 			</form>
 
@@ -576,7 +601,6 @@
 			</div>
 		</div>
 	</div>
-
 	<div class="modal fade" id="rebootModal" tabindex="1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 		<div class="modal-dialog">
 			<div class="modal-content">
@@ -621,8 +645,7 @@
 			</div>
 		</div>
 	</div>
-
-	<form id="timerSubmitForm" class="form-horizontal" role="form" action="timer" method="post">
+	<form id="timerSubmitForm" class="form-horizontal" role="form">
 		<div class="modal fade" id="timerSubmitModal" tabindex="2" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
@@ -692,14 +715,14 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-						<button id="timerSubmitBtn" type="submit" class="btn btn-primary">确定</button>
+						<button type="button" id="timerSubmitBtn" class="btn btn-primary">确定</button>
 					</div>
 				</div>
 			</div>
 		</div>
 	</form>
 
-	<form id="delaySubmitForm" class="form-horizontal" role="form" action="delay" method="post">
+	<form id="delaySubmitForm" class="form-horizontal" role="form">
 		<div class="modal fade" id="delaySubmitModal" tabindex="2" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
@@ -767,14 +790,14 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-						<button id="delaySubmitBtn" type="submit" class="btn btn-primary">确定</button>
+						<button type="button" id="delaySubmitBtn" type="submit" class="btn btn-primary">确定</button>
 					</div>
 				</div>
 			</div>
 		</div>
 	</form>
 
-	<form id="infraredSubmitForm" class="form-horizontal" role="form" action="infrared" method="post">
+	<form id="infraredSubmitForm" class="form-horizontal" role="form">
 		<div class="modal fade" id="infraredSubmitModal" tabindex="2" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
@@ -820,7 +843,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-						<button id="infraredSubmitBtn" type="submit" class="btn btn-primary">确定</button>
+						<button type="button" id="infraredSubmitBtn" type="submit" class="btn btn-primary">确定</button>
 					</div>
 				</div>
 			</div>

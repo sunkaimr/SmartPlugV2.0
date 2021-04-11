@@ -10,7 +10,7 @@
 
 
 
-float TEMP_GetTemperature( VOID );
+double TEMP_GetTemperature( VOID );
 VOID TEMP_TempCallBack( VOID );
 
 #endif /* __USER_TEMP_H__ */

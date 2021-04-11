@@ -43,12 +43,12 @@ UINT METER_ReadMeterDataFromFlash( VOID );
 
 UINT METER_ParseMeterData( CHAR* pDataStr);
 
-float METER_GetMeterVoltage( VOID );
-float METER_GetMeterCurrent( VOID );
-float METER_GetMeterPower( VOID );
-float METER_GetMeterApparentPower( VOID );
-float METER_GetMeterPowerFactor( VOID );
-float METER_GetMeterElectricity( VOID );
+double METER_GetMeterVoltage( VOID );
+double METER_GetMeterCurrent( VOID );
+double METER_GetMeterPower( VOID );
+double METER_GetMeterApparentPower( VOID );
+double METER_GetMeterPowerFactor( VOID );
+double METER_GetMeterElectricity( VOID );
 
 
 #endif /* __USER_METER_H__ */

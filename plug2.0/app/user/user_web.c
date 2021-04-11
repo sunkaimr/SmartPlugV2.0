@@ -16,8 +16,6 @@ xTaskHandle xWebHandle = NULL;
 INT32 iSocketFd = -1;
 static HTTP_CTX stWebCtx[WEB_MAX_FD];
 
-CHAR* pcRecvBuf = NULL;
-
 BOOL bIsWebSvcRunning = FALSE;
 BOOL bWebServerTaskTerminate = FALSE;
 
@@ -88,7 +86,6 @@ STATIC VOID WEB_WebServerTask( VOID *Para )
     INT32 iClientAddrLen = sizeof( struct sockaddr_in );
     INT32 iClientFd = -1;
     INT32 iRet = 0;
-    INT32 Reuseaddr = 1;
     INT8 iLoop = 0;
     INT8 iCount = 0;
     INT8 ucRetry = 0;
@@ -182,7 +179,7 @@ retry:
             if ( iCount < WEB_MAX_FD)
             {
             	//预留一定的内存后边读取Flash时会申请内存若预留内存不足会导致malloc失败导致响应失败
-            	if ( system_get_free_heap_size() > HTTP_BUF_30K )
+            	if ( system_get_free_heap_size() > HTTP_BUF_15K)
             	{
             		break;
             	}
@@ -307,7 +304,7 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
         //数据接收出错
         if ( iRetN <= 0 )
         {
-            LOG_OUT(LOGOUT_DEBUG, "fd:%d recv failed, client closed");
+            LOG_OUT(LOGOUT_DEBUG, "recv failed, client closed");
             goto end;
         }
         pcRecvBuf[iRetN] = 0;
@@ -317,7 +314,7 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
         iRet = HTTP_ParsingHttpHead( pstCtx, pcRecvBuf, iRetN );
         if ( iRet != OK )
         {
-            LOG_OUT(LOGOUT_INFO, "fd:%d Parsing http header failed");
+            LOG_OUT(LOGOUT_INFO, "Parsing http header failed");
             goto end;
         }
         //LOG_OUT(LOGOUT_DEBUG, "parsed http header");

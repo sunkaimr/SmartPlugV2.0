@@ -7,6 +7,7 @@
 
 #include "user_common.h"
 #include "esp_common.h"
+#include "lwip/netdb.h"
 
 const CHAR* HttpStatus_Ok                     = "OK";
 const CHAR* HttpStatus_Created                = "Created";
@@ -23,10 +24,12 @@ HTTP_ROUTER_MAP_S stHttpRouterMap[HTTP_ROUTER_MAP_MAX];
 
 const CHAR szHttpCodeMap[][5] =
 {
+	"999",
 	"101",
     "200",
     "201",
 	"204",
+	"206",
     "302",
     "400",
     "404",
@@ -37,6 +40,7 @@ const CHAR szHttpCodeMap[][5] =
 
 const CHAR szHttpStatusMap[][20] =
 {
+	"None",
 	"Switching Protocols",
     "OK",
     "Created",
@@ -261,7 +265,7 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
             pcTmpPos++;
             // 跳过空白字符
             for ( ; isspace(*pcTmpPos); pcTmpPos++ ){}
-            HTTP_SetReqHeader( pstCtx, pcCurPos, pcTmpPos );
+            HTTP_SetReqHeader( &pstCtx->stReq.stHeader[0], pcCurPos, pcTmpPos );
             for ( ; !isspace(*pcTmpPos); pcTmpPos++ ){}
             *pcTmpPos = 0;
         }
@@ -272,54 +276,53 @@ INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
     return OK;
 }
 
-UINT HTTP_SetReqHeader( HTTP_CTX *pstCtx, CHAR* pcKey, CHAR*pcValue )
+UINT HTTP_SetReqHeader( HTTP_HEADER *pstHeader, CHAR* pcKey, CHAR*pcValue )
 {
     UINT i = 0;
 
-    if ( pstCtx == NULL ||  pcKey == NULL || pcValue == NULL)
+    if ( pstHeader == NULL ||  pcKey == NULL || pcValue == NULL)
     {
-        LOG_OUT(LOGOUT_ERROR, "pstCtx, pcKey or pcValue is NULL, pstCtx:%p pcKey:%p pcValue:%p",
-                pstCtx, pcKey, pcValue);
+        LOG_OUT(LOGOUT_ERROR, "pstHeader, pcKey or pcValue is NULL, pstCtx:%p pcKey:%p pcValue:%p",
+        		pstHeader, pcKey, pcValue);
         return FAIL;
     }
 
-    for ( i = 0; i < sizeof(pstCtx->stReq.stHeader)/sizeof(pstCtx->stReq.stHeader[0]); i++ )
+    for ( i = 0; i < HTTP_HRADER_NUM_MAX; i++ )
     {
-        if ( pstCtx->stReq.stHeader[i].pcKey == NULL )
+        if ( pstHeader[i].pcKey == NULL )
         {
-            pstCtx->stReq.stHeader[i].pcKey = pcKey;
-            pstCtx->stReq.stHeader[i].pcValue = pcValue;
+        	pstHeader[i].pcKey = pcKey;
+        	pstHeader[i].pcValue = pcValue;
 
             //LOG_OUT(LOGOUT_DEBUG, "pcKey:%s, pcValue:%s", pcKey, pcValue);
             return OK;
         }
     }
 
-    LOG_OUT(LOGOUT_ERROR, "stHeader num is full %d, pcKey:%s pcValue:%s",
-            sizeof(pstCtx->stReq.stHeader)/sizeof(pstCtx->stReq.stHeader[0]), pcKey, pcValue);
+    LOG_OUT(LOGOUT_ERROR, "stHeader num is full %d, pcKey:%s pcValue:%s",HTTP_HRADER_NUM_MAX, pcKey, pcValue);
     return FAIL;
 }
 
-CHAR* HTTP_GetReqHeader( HTTP_CTX *pstCtx, const CHAR* pcKey )
+CHAR* HTTP_GetReqHeader( HTTP_HEADER *pstHeader, const CHAR* pcKey )
 {
     UINT i = 0;
 
-    if ( pstCtx == NULL ||  pcKey == NULL )
+    if ( pstHeader == NULL ||  pcKey == NULL )
     {
-        LOG_OUT(LOGOUT_ERROR, "pstCtx, pcKey is NULL, pstCtx:%p pcKey:%p",pstCtx, pcKey);
+        LOG_OUT(LOGOUT_ERROR, "pstHeader, pcKey is NULL, pstCtx:%p pcKey:%p",pstHeader, pcKey);
         return NULL;
     }
 
-    for ( i = 0; i < sizeof(pstCtx->stReq.stHeader)/sizeof(pstCtx->stReq.stHeader[0]); i++ )
+    for ( i = 0; i < HTTP_HRADER_NUM_MAX; i++ )
     {
-        if ( pstCtx->stReq.stHeader[i].pcKey == NULL )
+        if ( pstHeader[i].pcKey == NULL )
 		{
         	break;
 		}
 
-        if ( strcmp(pstCtx->stReq.stHeader[i].pcKey, pcKey) == 0 )
+        if ( strcmp(pstHeader[i].pcKey, pcKey) == 0 )
         {
-            return pstCtx->stReq.stHeader[i].pcValue;
+            return pstHeader[i].pcValue;
         }
     }
 
@@ -628,7 +631,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 
     // websocket 协议的特殊处理
 	CHAR* pcHeader = NULL;
-    pcHeader = HTTP_GetReqHeader(pstCtx, "Upgrade");
+    pcHeader = HTTP_GetReqHeader(&pstCtx->stReq.stHeader[0], "Upgrade");
     if ( pcHeader != NULL && strcmp(pcHeader, "websocket") == 0 )
     {
     	//3600s无数据交互则断开连接
@@ -642,7 +645,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 
     HTTP_ResponInit(pstCtx);
 
-    pcValue = HTTP_GetReqHeader(pstCtx, "Host");
+    pcValue = HTTP_GetReqHeader(&pstCtx->stReq.stHeader[0], "Host");
 
     if ( pcValue != NULL &&
     	 sscanf(pcValue,"%d.%d.%d.%d",&i,&i,&i,&i) != 4 &&
@@ -737,7 +740,7 @@ UINT HTTP_SetRespHeader( HTTP_CTX *pstCtx )
 					"Content-Type: %s \r\n", szHttpContentTypeStr[pstCtx->stResp.eContentType]);
 		}
 
-		if (pstCtx->stResp.eCacheControl >= HTTP_CACHE_CTL_TYPE_Buff )
+		if (pstCtx->stResp.eCacheControl < HTTP_CACHE_CTL_TYPE_Buff )
 		{
 			pstCtx->stResp.uiPos += snprintf(
 					pstCtx->stResp.pcResponBody + pstCtx->stResp.uiPos,
@@ -867,7 +870,6 @@ UINT HTTP_SendOnce( HTTP_CTX *pstCtx )
 }
 
 
-
 UINT HTTP_SetResponseBody( HTTP_CTX *pstCtx, CHAR* pcBody )
 {
     UINT uiLen = 0;
@@ -889,5 +891,494 @@ UINT HTTP_SetResponseBody( HTTP_CTX *pstCtx, CHAR* pcBody )
     return OK;
 }
 
+HTTP_CLIENT_S* HTTP_NewClient(CHAR* pcMethod, CHAR* pcEndpoint, CHAR* pcUrl, CHAR* pcBody, UINT uiLen)
+{
+    struct sockaddr_in sAddr;
+    struct hostent* ipAddress;
+    HTTP_CLIENT_S *pstCli = NULL;
+    CHAR* pcPort = NULL;
+    INT iRet = -1;
+    UINT i = 0;
+
+	if (pcMethod == NULL || pcEndpoint == NULL|| pcUrl == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pcMethod:%p, pcEndpoint:%p, pcUrl:%p",
+				pcMethod, pcEndpoint, pcUrl);
+		return NULL;
+	}
+
+    for ( i = HTTP_METHOD_GET; i < HTTP_METHOD_BUFF; i++ )
+    {
+        if ( strcmp( pcMethod, szHttpMethodStr[i]) == 0)
+        {
+            break;
+        }
+    }
+    if ( i >= HTTP_METHOD_BUFF )
+    {
+		LOG_OUT(LOGOUT_ERROR, " unsupport method: [%s]", pcMethod);
+		return NULL;
+    }
+
+    sAddr.sin_port = htons(80);
+    pcPort = strstr( pcEndpoint, ":");
+    if ( pcPort != NULL )
+    {
+    	sAddr.sin_port = htons(atoi(pcPort));
+    	*pcPort = '0';
+    }
+
+	pstCli = malloc(sizeof(HTTP_CLIENT_S));
+	if ( pstCli == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "malloc pstCli failed");
+		return NULL;
+	}
+
+	memset(pstCli, 0, sizeof(HTTP_CLIENT_S));
+
+	pstCli->uiTimeOut = 5;
+	pstCli->uiCost = 0;
+	pstCli->stReq.uiHeadBufLen = 1024;
+	pstCli->stReq.uiHeadPos = 0;
+	pstCli->stReq.pcBodyBuf = pcBody;
+	pstCli->stReq.uiBodyBufLen = uiLen ;
+
+	pstCli->stReson.pcHeadBuf = NULL;
+	pstCli->stReson.pcBodyBuf = NULL;
+	pstCli->stReson.uiHeadBufLen = 1024;
+	pstCli->stReson.uiBodyBufLen = 1024;
+
+	pstCli->stReq.pcHeadBuf = malloc(pstCli->stReq.uiHeadBufLen);
+	if ( pstCli->stReq.pcHeadBuf == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "malloc pcBuf failed");
+		goto end;
+	}
+
+    ipAddress = gethostbyname( pcEndpoint );
+    if ( ipAddress == NULL ) {
+    	LOG_OUT(LOGOUT_ERROR, "gethostbyname failed, name:%s", pcEndpoint);
+        return NULL;
+    }
+
+    sAddr.sin_family = AF_INET;
+    sAddr.sin_addr.s_addr = ((struct in_addr*)(ipAddress->h_addr))->s_addr;
+
+    pstCli->iSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if ( pstCli->iSocket < 0 )
+    {
+        BIGIOT_LOG(BIGIOT_ERROR, "socket failed, socket:%d", pstCli->iSocket);
+        return NULL;
+    }
+
+    iRet = connect(pstCli->iSocket, (struct sockaddr*)&sAddr, sizeof(sAddr));
+    if ( iRet < 0)
+    {
+        BIGIOT_LOG(BIGIOT_ERROR, "connect failed, socket:%d, ret:%d", pstCli->iSocket, iRet);
+        close( pstCli->iSocket );
+        return NULL;
+    }
+
+    if (strlen(pcUrl) == 0)
+    {
+    	pcUrl = "/";
+    }
+
+    pstCli->stReq.uiHeadPos += snprintf(pstCli->stReq.pcHeadBuf + pstCli->stReq.uiHeadPos,
+    		pstCli->stReq.uiHeadBufLen - pstCli->stReq.uiHeadPos,
+    			"%s ", pcMethod);
+    strncpy(pstCli->stReq.pcHeadBuf + pstCli->stReq.uiHeadPos, pcUrl, strlen(pcUrl));
+    pstCli->stReq.uiHeadPos += strlen(pcUrl);
+
+    pstCli->stReq.uiHeadPos += snprintf(pstCli->stReq.pcHeadBuf + pstCli->stReq.uiHeadPos,
+    		pstCli->stReq.uiHeadBufLen - pstCli->stReq.uiHeadPos,
+			" HTTP/1.1\r\n"
+			"User-Agent: SmartPlug\r\n"
+			"Accept: */*\r\n"
+			"Content-Length: %d \r\n"
+			"Host: %s\r\n\r\n", uiLen, pcEndpoint);
+    return pstCli;
+
+end:
+	close( pstCli->iSocket );
+	FREE_MEM(pstCli->stReq.pcHeadBuf);
+	FREE_MEM(pstCli);
+	return NULL;
+}
 
 
+VOID HTTP_DestoryClient(HTTP_CLIENT_S* pstCli)
+{
+	if ( pstCli == NULL )
+	{
+		return;
+	}
+
+	close( pstCli->iSocket );
+	FREE_MEM(pstCli->stReq.pcHeadBuf);
+	FREE_MEM(pstCli->stReson.pcBodyBuf);
+	FREE_MEM(pstCli->stReson.pcHeadBuf);
+	FREE_MEM(pstCli);
+}
+
+
+VOID HTTP_ClientSetHeader(HTTP_CLIENT_S *pstCli, CHAR* pcKey, CHAR* pcValue)
+{
+	if (pstCli == NULL || pcKey == NULL|| pcValue == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pstCli:%p, pcKey:%p, pcValue:%p",
+				pstCli, pcKey, pcValue);
+		return;
+	}
+
+	pstCli->stReq.uiHeadPos -= 2;
+	pstCli->stReq.uiHeadPos += snprintf(pstCli->stReq.pcHeadBuf + pstCli->stReq.uiHeadPos,
+			pstCli->stReq.uiHeadBufLen - pstCli->stReq.uiHeadPos,
+			"%s: %s\r\n\r\n", pcKey, pcValue);
+}
+
+UINT HTTP_ClientDoRequest(HTTP_CLIENT_S *pstCli)
+{
+    struct timeval stTimeOut = {1, 0};
+    fd_set stFdWrite;
+    INT iRet = -1;
+    UINT8 ucRetry = 0;
+    CHAR* pcBuf = NULL;
+    UINT uiLen = 0;
+
+    for (;;)
+    {
+		switch(pstCli->stReq.eProcess)
+		{
+		case CLI_ReqProcess_None:
+			pcBuf = pstCli->stReq.pcHeadBuf;
+			uiLen = pstCli->stReq.uiHeadPos;
+			pstCli->stReq.eProcess = CLI_ReqProcess_SentHeader;
+			break;
+		case CLI_ReqProcess_SentHeader:
+			pcBuf = pstCli->stReq.pcBodyBuf;
+			uiLen = pstCli->stReq.uiBodyBufLen;
+			pstCli->stReq.eProcess = CLI_ReqProcess_SentBody;
+			break;
+		case CLI_ReqProcess_SentBody:
+			pstCli->stReq.eProcess = CLI_ReqProcess_Finish;
+			return OK;
+		}
+
+		if ( uiLen == 0 )
+		{
+			//LOG_OUT(LOGOUT_INFO, "uiLen == 0");
+			continue;
+		}
+
+		if ( pcBuf == NULL )
+		{
+			LOG_OUT(LOGOUT_ERROR, "pcBuf is NULL");
+			goto end;
+		}
+
+retry:
+		FD_ZERO( &stFdWrite );
+		FD_SET( pstCli->iSocket, &stFdWrite );
+
+		iRet = select( pstCli->iSocket + 1, NULL, &stFdWrite, NULL, &stTimeOut );
+		if ( iRet < 0 )
+		{
+			LOG_OUT(LOGOUT_ERROR, "select error, errno:%d, iRet:%d", errno, iRet);
+			goto end;
+		}
+		//等待接收超时
+		else if ( 0 == iRet )
+		{
+			pstCli->uiCost++;
+			if ( pstCli->uiCost > pstCli->uiTimeOut )
+			{
+				LOG_OUT(LOGOUT_ERROR, "send timeout, errno:%d", errno);
+				goto end;
+			}
+			goto retry;
+		}
+
+		if ( !FD_ISSET(pstCli->iSocket, &stFdWrite ))
+		{
+			ucRetry ++;
+			if ( ucRetry >= 10 )
+			{
+				LOG_OUT(LOGOUT_ERROR, "FdWrite error, errno:%d", errno);
+				goto end;
+			}
+			LOG_OUT(LOGOUT_DEBUG, "FdWrite error, errno", errno);
+			goto retry;
+		}
+
+		pstCli->uiCost = 0;
+
+		//puts(pcBuf);
+
+		iRet = send(pstCli->iSocket, pcBuf, uiLen, 0);
+		if (iRet <= 0)
+		{
+			LOG_OUT(LOGOUT_ERROR, "send failed, errno:%d", errno);
+			goto end;
+		}
+		else if ( iRet != uiLen )
+		{
+			LOG_OUT(LOGOUT_ERROR, "should send %d, but send %d actually", uiLen, iRet);
+			goto end;
+		}
+    }
+
+end:
+	pstCli->uiCost = 0;
+	return FAIL;
+}
+
+
+INT32 HTTP_ClientParseResponseHead( HTTP_CLIENT_S *pstCli, CHAR * pcData, UINT32 uiLen )
+{
+    CHAR *pcCurPos = NULL;
+    CHAR *pcTmpPos = NULL;
+    CHAR *pcPos = NULL;
+    INT32 iLoop = 0;
+    int i = 0;
+
+    if ( NULL == pstCli || NULL == pcData)
+    {
+        LOG_OUT( LOGOUT_ERROR, "pstCli:%p, pcData:%p", pstCli, pcData);
+        return FAIL;
+    }
+
+    //header已经解析完成，正在接收body体
+    if ( pstCli->stReson.eProcess == RES_Process_GetBody ||
+    	 pstCli->stReson.eProcess == RES_Process_GotHeader )
+    {
+        //LOG_OUT(LOGOUT_DEBUG, "Getting Body...");
+        pstCli->stReson.uiRecvCurLen = uiLen;
+        pstCli->stReson.pcBody = pcData;
+        pstCli->stReson.uiRecvLen += uiLen;
+
+        if ( pstCli->stReson.eProcess == RES_Process_GotHeader )
+        {
+        	pstCli->stReson.eProcess = RES_Process_GetBody;
+        }
+
+        if ( pstCli->stReson.uiRecvLen >= pstCli->stReson.uiRecvTotalLen )
+        {
+        	pstCli->stReson.eProcess = RES_Process_Finished;
+            //LOG_OUT(LOGOUT_DEBUG, "RES_Process_Finished.");
+            return OK;
+        }
+        //LOG_OUT(LOGOUT_DEBUG, "RES_Process...");
+        return OK;
+    }
+    else if ( pstCli->stReson.eProcess != RES_Process_None )
+    {
+    	LOG_OUT(LOGOUT_ERROR, "eProcess = %d.", pstCli->stReson.eProcess);
+        return FAIL;
+    }
+
+    pcData[uiLen] = '\r';
+    pcData[uiLen+1] = '\n';
+    pcData[uiLen+2] = 0;
+    pcPos = pcCurPos = pcData;
+
+    /* 逐行解析 */
+    while ( pcData != NULL )
+    {
+        //LOG_OUT(LOGOUT_DEBUG, "pcData:[%s]", pcData);
+        pcCurPos = strsep(&pcData, STRING_ENTER);
+        if ( NULL == pcCurPos )
+        {
+            LOG_OUT(LOGOUT_DEBUG, "continue");
+            continue;
+        }
+        //LOG_OUT(LOGOUT_DEBUG, "pcCurPos:[%s]", pcCurPos);
+
+        //header结束
+        if ( strlen(pcCurPos) <= 1 && pstCli->stReson.uiRecvTotalLen != 0 )
+        {
+            pcCurPos = pcCurPos + 2;
+            pstCli->stReson.pcBody = pcCurPos;
+            pstCli->stReson.uiRecvCurLen = uiLen - (pcCurPos - pcPos);
+            pstCli->stReson.uiRecvLen += pstCli->stReson.uiRecvCurLen;
+
+            if ( pstCli->stReson.uiRecvCurLen == 0 )
+            {
+                //LOG_OUT(LOGOUT_DEBUG, "RES_Process_GotHeader.");
+            	pstCli->stReson.eProcess = RES_Process_GotHeader;
+                return OK;
+            }
+
+            if ( pstCli->stReson.uiRecvLen >= pstCli->stReson.uiRecvTotalLen )
+            {
+                //LOG_OUT(LOGOUT_DEBUG, "RES_Process_Finished.");
+            	pstCli->stReson.eProcess = RES_Process_Finished;
+                return OK;
+            }
+            pstCli->stReson.eProcess = RES_Process_GetBody;
+            //LOG_OUT(LOGOUT_DEBUG, "RES_Process_GetBody.");
+            return OK;
+        }
+
+        /* HTTP/1.1 200 OK*/
+        if ( HTTP_CODE_None == pstCli->stReson.eHttpCode )
+        {
+            //解析eHttpCode
+        	//LOG_OUT( LOGOUT_ERROR, "[%s]", pcCurPos);
+            for ( iLoop = HTTP_CODE_Ok; iLoop < HTTP_CODE_Buff; iLoop++ )
+            {
+                if ( strstr( pcCurPos, szHttpCodeMap[iLoop]) )
+                {
+                	pstCli->stReson.eHttpCode = iLoop;
+                    pcCurPos = pcTmpPos + 1;
+                    break;
+                }
+            }
+
+           	if ( iLoop >= HTTP_CODE_Buff )
+			{
+				LOG_OUT( LOGOUT_ERROR, "Parsing eHttpCode failed, [%s]", pcCurPos);
+				return FAIL;
+			}
+        }
+        //curl命令等工具 发送的字段内容长度字段是大写字母开头"Content-Length", postman 发送的字段内容长度字段是小写字母"content-length"
+        else if ( NULL != (pcTmpPos = strstr( pcCurPos, "ontent-Length: " )))
+        {
+            pcTmpPos += 15;
+            pstCli->stReson.uiRecvTotalLen = atoi(pcTmpPos);
+            pstCli->stReson.uiContentLength = pstCli->stReson.uiRecvTotalLen;
+        }
+        else if ( NULL != (pcTmpPos = strstr( pcCurPos, ":" )))
+        {
+            // 跳过空白字符
+        	for ( ; isspace(*pcCurPos); pcCurPos++){}
+            *pcTmpPos = 0;
+            pcTmpPos++;
+            // 跳过空白字符
+            for ( ; isspace(*pcTmpPos); pcTmpPos++ ){}
+            HTTP_SetReqHeader( &pstCli->stReson.stHeader[0], pcCurPos, pcTmpPos );
+            //LOG_OUT(LOGOUT_DEBUG, "pcKey:%s, pcValue:%s", pcCurPos, pcTmpPos);
+            for ( ; !isspace(*pcTmpPos); pcTmpPos++ ){}
+            *pcTmpPos = 0;
+        }
+    }
+
+    pstCli->stReson.eProcess = RES_Process_GotHeader;
+    return OK;
+}
+
+UINT HTTP_ClientDoResponse(HTTP_CLIENT_S *pstCli, HttpClientHandle pfHandle, VOID* pPara)
+{
+    struct timeval stTimeOut = {1, 0};
+    fd_set stFdRead;
+    INT iRet = -1;
+    UINT8 ucRetry = 0;
+    UINT uiRecvBufLen = 0;
+    CHAR* pcRecvBuf = NULL;
+
+    pstCli->stReson.pcHeadBuf = ( CHAR* )malloc( pstCli->stReson.uiHeadBufLen + 4);
+    if ( NULL == pstCli->stReson.pcHeadBuf )
+    {
+        LOG_OUT(LOGOUT_ERROR, "malloc pstCli->stReson.pcBuf failed.");
+        goto end;
+    }
+
+    pstCli->stReson.pcBodyBuf = ( CHAR* )malloc( pstCli->stReson.uiBodyBufLen + 4);
+    if ( NULL == pstCli->stReson.pcBodyBuf )
+    {
+        LOG_OUT(LOGOUT_ERROR, "malloc pstCli->stReson.pcBodyBuf failed.");
+        goto end;
+    }
+
+    for(;;)
+    {
+retry:
+		FD_ZERO( &stFdRead );
+		FD_SET( pstCli->iSocket, &stFdRead );
+		iRet = select( pstCli->iSocket + 1, &stFdRead, NULL, NULL, &stTimeOut );
+		if ( iRet < 0 )
+		{
+			LOG_OUT(LOGOUT_ERROR, "select error, errno:%d, iRet:%d", errno, iRet);
+			goto end;
+		}
+		//等待接收超时
+		else if ( 0 == iRet )
+		{
+			pstCli->uiCost++;
+			if ( pstCli->uiCost > pstCli->uiTimeOut )
+			{
+				LOG_OUT(LOGOUT_ERROR, "recv timeout, errno:%d", errno);
+				pstCli->uiCost = 0;
+				return -2;
+			}
+			LOG_OUT(LOGOUT_DEBUG, "select timeout, count: %d", pstCli->uiCost);
+			goto retry;
+		}
+		if ( !FD_ISSET(pstCli->iSocket, &stFdRead ))
+		{
+			ucRetry ++;
+			if ( ucRetry >= 10 )
+			{
+				LOG_OUT(LOGOUT_ERROR, "stFdRead error, errno:%d", errno);
+				goto end;
+			}
+			LOG_OUT(LOGOUT_DEBUG, "stFdRead error, errno", errno);
+			goto retry;
+		}
+		pstCli->uiCost = 0;
+
+		if ( pstCli->stReson.eProcess == CLI_ResponProcess_None )
+		{
+			pcRecvBuf = pstCli->stReson.pcHeadBuf;
+			uiRecvBufLen = pstCli->stReson.uiHeadBufLen;
+		}
+		else
+		{
+			pcRecvBuf = pstCli->stReson.pcBodyBuf;
+			uiRecvBufLen = pstCli->stReson.uiBodyBufLen;
+		}
+
+		iRet = recv( pstCli->iSocket, pcRecvBuf, uiRecvBufLen, 0 );
+		if ( iRet <= 0 )
+		{
+			LOG_OUT(LOGOUT_DEBUG, "recv failed, client closed");
+			goto end;
+		}
+		pcRecvBuf[iRet] = 0;
+		// LOG_OUT(LOGOUT_INFO,"pcRecvBuf:[%s]", pcRecvBuf);
+
+		iRet = HTTP_ClientParseResponseHead( pstCli, pcRecvBuf, iRet );
+		if ( iRet != OK )
+		{
+			LOG_OUT(LOGOUT_ERROR, "Parsing http header failed");
+			goto end;
+		}
+		//LOG_OUT(LOGOUT_DEBUG,"[%d][%d]", pstCli->stReson.uiRecvLen, pstCli->stReson.uiRecvTotalLen);
+		//LOG_OUT(LOGOUT_INFO, "get response process: %d", pstCli->stReson.uiRecvLen*100 / pstCli->stReson.uiRecvTotalLen);
+
+		//uint32 start = system_get_time();
+		if ( NULL != pfHandle)
+		{
+	        iRet = pfHandle( pPara );
+	        if ( iRet != OK )
+	        {
+	            LOG_OUT(LOGOUT_ERROR, "pfHandle failed, iRet:%d", iRet);
+	            goto end;
+	        }
+		}
+
+        //LOG_OUT(LOGOUT_ERROR, "recv:[%d], used:%d us", pstCli->stReson.uiRecvCurLen, system_get_time() - start);
+        //MQTT_WriteSoftWarePara_S *pstWriteSoftWare = pPara;
+        //pstWriteSoftWare->pstMqttCtx->iDownloadProcess = pstCli->stReson.uiRecvLen*100 / pstCli->stReson.uiRecvTotalLen;
+
+        //LOG_OUT(LOGOUT_DEBUG, "uiSentLen:%d, uiSendTotalLen:%d", pstCtx->stResp.uiSentLen, pstCtx->stResp.uiSendTotalLen);
+        if ( pstCli->stReson.eProcess == CLI_ResponProcess_Finished )
+        {
+        	return OK;
+        }
+    }
+end:
+	pstCli->uiCost = 0;
+	return -1;
+}

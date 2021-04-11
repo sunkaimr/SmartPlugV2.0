@@ -33,9 +33,33 @@
 #include "user_infrared.h"
 #include "user_meter.h"
 #include "user_websocket.h"
+#include "user_mqtt.h"
 
 #ifndef GIT_COMMIT_SHA1
     #define GIT_COMMIT_SHA1 "NULL"
+#endif
+
+#ifndef SOFTWARE_VERSION
+    #define SOFTWARE_VERSION "5.0.0"
+#endif
+
+
+#if IS_PHILIPS
+    	#define HARDWARE    "philips"
+#elif IS_CHANG_XIN
+	#if IS_WELL
+		#define HARDWARE    "changxin meter and well"
+	#else
+		#define HARDWARE    "changxin meter"
+	#endif
+#elif IS_CHANG_XIN_V1
+	#if IS_WELL
+		#define HARDWARE    "changxin well"
+	#else
+		#define	HARDWARE    "changxin"
+	#endif
+#else
+	#define HARDWARE        "jizhiyun"
 #endif
 
 #define EXTIINT_NAME_LEN    (32)
@@ -46,9 +70,9 @@ typedef VOID(*fn)(VOID);
 typedef struct tagExtiInt
 {
     UINT            uiGPIO;            //GPIO num
-    fn                 fInit;            //中断初始化函数
-    fn                 fDeInit;        //中断去初始化函数
-    fn                 fHandle;        //中断处理函数
+    fn              fInit;             //中断初始化函数
+    fn              fDeInit;           //中断去初始化函数
+    fn              fHandle;           //中断处理函数
     CHAR            szHandleName[EXTIINT_NAME_LEN]; //中断处理函数名称
 
 }COMM_ExtiInt;

@@ -1,8 +1,9 @@
-
 var LocalTime = 0;
 var relaystatus = false;
 var SysData;
 var MeterData;
+var InfoData;
+var TimerData;
 var DelayData;
 var InfraredData;
 var DelayRefreshTime="";
@@ -31,7 +32,6 @@ $(document).ready(function () {
     $("#cloudPlatform").click(CloudPlatformClick);
 	$("#set").click(SetClick);
 	$("#setCommit").click(setCommitClick);
-	$("#cloudPlatformCommit").click(cloudPlatformCommitClick);
 	$("#binFile").click(chooseBinClick);
 	$("#scanWifi").click(scanWifiClick);
 	$("#upload").click(uploadClick);
@@ -39,7 +39,6 @@ $(document).ready(function () {
     $("#meterClear").click(meterClearClick);
 	$("#reset").click(resetClick);
 	$("#modeSelect").change(modeChange);
-    $("#PlatformSelect").change(PlatformSelectChange);
 	$("#file").change(binFileChange);
 	$("#information").click(getInfomation);
 	$("#rebootModalButton").click(reboot);
@@ -47,279 +46,149 @@ $(document).ready(function () {
     $("#meterClearModalButton").click(meterClear);
     $("#meterRefreshSelect").change(meterRefreshChange);
     $("#meterButton").click(meterSubmit);
+	$("#TencentEnable").click(TencentEnableClick);
+	$("#TencentDisable").click(TencentDisableClick);
+	$("#BigiotEnable").click(BigiotEnableClick);
+	$("#BigiotDisable").click(BigiotDisableClick);
+	$("#TencentBtn").click(TencentBtnClick);
+	$("#BigiotBtn").click(BigiotBtnClick);
+	$("#timerSubmitBtn").click(timerSubmitBtnClick);
+	$("#delaySubmitBtn").click(delaySubmitBtnClick);
+	$("#infraredSubmitBtn").click(infraredSubmitBtnClick);
+	$("#RegisteTypeSelect").change(RegisteTypeChange);
 
 	$("#content").click(function () {
 		$("#navBar").collapse('hide');
 	});
-
-	$(function () {
-		$('#timerSubmitForm').bootstrapValidator({
-			message: 'This value is not valid',
-			feedbackIcons: {
-				valid: 'glyphicon glyphicon-ok',
-				invalid: 'glyphicon glyphicon-remove',
-				//validating: 'glyphicon glyphicon-refresh'
-			},
-			fields: {
-				timeName: {
-					message: 'Timer name is not valid',
-					validators: {
-						notEmpty: {
-							message: '名称不能为空'
-						},
-						stringLength: {
-							min: 1,
-							max: 32,
-							message: '长度必须小于32（中文占3个字符）'
-						}
-					}
-				},
-				onTime: {
-					message: 'Off Time is not valid',
-					validators: {
-						notEmpty: {
-							message: '开启时间不能为空'
-						},
-					}
-				},
-				offTime: {
-					message: 'Off Time is not valid',
-					validators: {
-						notEmpty: {
-							message: '关闭时间不能为空'
-						},
-					}
-				},
-				timerCascodeNum: {
-					validators: {
-						notEmpty: {
-							message: '关联延时不能为空'
-						},
-						greaterThan: {
-							value: 0,
-							message: '不能小于1',
-						},
-						lessThan: {
-							value: 10,
-							message: '不能大于10'
-						}
-					}
-				}
-			}
-		}).on('success.form.bv', function (e) {//点击提交之后
-			e.preventDefault();
-			var $form = $(e.target);
-			//var bv = $form.data('bootstrapValidator');
-			var jsonDataAry=[];
-			var jsonData = {};
-
-			var numStr=$('#timerModalHead').text().trim().split(/\s+/);
-			jsonData.Num = parseInt(numStr[numStr.length-1]);
-			jsonData.Name = $("#timeName").val();
-			jsonData.Enable = $("#timeEnable").is(':checked');
-			jsonData.OnEnable = $("#onTimeEnable").is(':checked');
-			jsonData.OffEnable = $("#offTimeEnable").is(':checked');
-			jsonData.Cascode = $("#timerCascodeEnable").is(':checked');
-			jsonData.CascodeNum = parseInt($("#timerCascodeNum").val());
-			jsonData.Week = stringConversionWeek();
-			jsonData.OnTime = $("#onTime").val();
-			jsonData.OffTime = $("#offTime").val();
-			jsonDataAry.push(jsonData);
-
-			$.ajax({
-				url: $form.attr('action'),
-				type: "POST",
-				contentType: "application/json",
-				data:JSON.stringify(jsonDataAry),
-				success: function () {
-                    TimerClick();
-					//alert("成功");
-				}
-			});
-			$("#timerSubmitModal").modal("toggle");
-			$("#timerSubmitBtn").attr('disabled', false);
-
-		});
-	});
-
-	$(function () {
-		$('#infraredSubmitForm').bootstrapValidator({
-			message: 'This value is not valid',
-			feedbackIcons: {
-				valid: 'glyphicon glyphicon-ok',
-				invalid: 'glyphicon glyphicon-remove',
-				//validating: 'glyphicon glyphicon-refresh'
-			},
-			fields: {
-                infraredName:{
-					message: 'infrared name is not valid',
-						validators: {
-						notEmpty: {
-							message: '名称不能为空'
-						},
-						stringLength: {
-							min: 1,
-							max: 32,
-							message: '长度必须小于32（中文占3个字符）'
-						}
-					}
-				},
-                infraredOnValue: {
-					message: 'infraredOnValue is invalid',
-					validators: {
-						notEmpty: {
-							message: '开启值不能为空'
-						},
-					}
-				},
-                infraredOffValue: {
-					message: 'infraredOffValue is invalid',
-					validators: {
-						notEmpty: {
-							message: '关闭值不能为空'
-						},
-					}
-				}
-			}
-		}).on('success.form.bv', function (e) {//点击提交之后
-			e.preventDefault();
-			var $form = $(e.target);
-			var jsonDataAry=[];
-			var jsonData = {};
-
-			var numStr=$('#infraredModalHead').text().trim().split(/\s+/);
-			jsonData.Num = parseInt(numStr[numStr.length-1]);
-			jsonData.Name = $("#infraredName").val();
-			jsonData.Enable = $("#infraredEnable").is(':checked');
-            jsonData.OnValue = $("#infraredOnValue").val();
-            jsonData.OffValue = $("#infraredOffValue").val();
-			jsonDataAry.push(jsonData);
-
-			$.ajax({
-				url: $form.attr('action'),
-				type: "POST",
-				contentType: "application/json",
-				data:JSON.stringify(jsonDataAry),
-				success: function () {
-                    InfraredClick();
-				},
-				error: function (jqXHR, textStatus, errorThrown) {
-					ShowInfo(jqXHR.responseText);
-				}
-			});
-
-			$("#infraredSubmitModal").modal("toggle");
-            $("#infraredSubmitBtn").attr('disabled', false);
-		});
-	});
-
-    $(function () {
-        $('#delaySubmitForm').bootstrapValidator({
-            message: 'This value is not valid',
-            feedbackIcons: {
-                valid: 'glyphicon glyphicon-ok',
-                invalid: 'glyphicon glyphicon-remove',
-                //validating: 'glyphicon glyphicon-refresh'
-            },
-            fields: {
-                delayName:{
-                    message: 'Timer name is not valid',
-                    validators: {
-                        notEmpty: {
-                            message: '名称不能为空'
-                        },
-                        stringLength: {
-                            min: 1,
-                            max: 32,
-                            message: '长度必须小于32（中文占3个字符）'
-                        }
-                    }
-                },
-                onInterval: {
-                    message: 'Off Time is not valid',
-                    validators: {
-                        notEmpty: {
-                            message: '开启间隔不能为空'
-                        },
-                    }
-                },
-                offInterval: {
-                    message: 'Off Time is not valid',
-                    validators: {
-                        notEmpty: {
-                            message: '关闭间隔不能为空'
-                        },
-                    }
-                },
-                timerCascodeNum: {
-                    validators: {
-                        notEmpty: {
-                            message: '关联延时不能为空'
-                        },
-                        greaterThan: {
-                            value: 0,
-                            message: '不能小于1',
-                        },
-                        lessThan: {
-                            value: 10,
-                            message: '不能大于10'
-                        }
-                    }
-                },
-                cycleTimes: {
-                    validators: {
-                        notEmpty: {
-                            message: '重复次数不能为空'
-                        },
-                        greaterThan: {
-                            value: 0,
-                            message: '不能小于0',
-                        },
-                        lessThan: {
-                            value: 10,
-                            message: '不能大于9999'
-                        }
-                    }
-                }
-            }
-        }).on('success.form.bv', function (e) {//点击提交之后
-            e.preventDefault();
-            var $form = $(e.target);
-            var jsonDataAry=[];
-            var jsonData = {};
-
-            var numStr=$('#delayModalHead').text().trim().split(/\s+/);
-            jsonData.Num = parseInt(numStr[numStr.length-1]);
-            jsonData.Name = $("#delayName").val();
-            jsonData.Enable = $("#delayEnable").is(':checked');
-            jsonData.OnEnable = $("#onIntervalEnable").is(':checked');
-            jsonData.OffEnable = $("#onIntervalEnable").is(':checked');
-            jsonData.Cascode = $("#delayCascodeEnable").is(':checked');
-            jsonData.CascodeNum = parseInt($("#delayCascodeNum").val());
-            jsonData.CycleTimes = parseInt($("#cycleTimes").val());
-            jsonData.OnInterval = $("#onInterval").val();
-            jsonData.OffInterval = $("#offInterval").val();
-            jsonDataAry.push(jsonData);
-
-            $.ajax({
-                url: $form.attr('action'),
-                type: "POST",
-                contentType: "application/json",
-                data:JSON.stringify(jsonDataAry),
-                success: function () {
-                    DelayClick();
-                    //alert("成功");
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    ShowInfo(jqXHR.responseText);
-                }
-            });
-
-            $("#delaySubmitModal").modal("toggle");
-            $("#delaySubmitBtn").attr('disabled', false);
-        });
-    });
 });
+
+function timerSubmitBtnClick(){
+	var jsonDataAry=[];
+	var jsonData = {};
+
+	var numStr=$('#timerModalHead').text().trim().split(/\s+/);
+	jsonData.Num = parseInt(numStr[numStr.length-1]);
+	jsonData.Name = $("#timeName").val();
+	jsonData.Enable = $("#timeEnable").is(':checked');
+	jsonData.OnEnable = $("#onTimeEnable").is(':checked');
+	jsonData.OffEnable = $("#offTimeEnable").is(':checked');
+	jsonData.Cascode = $("#timerCascodeEnable").is(':checked');
+	jsonData.CascodeNum = parseInt($("#timerCascodeNum").val());
+	jsonData.Week = stringConversionWeek();
+	jsonData.OnTime = $("#onTime").val();
+	jsonData.OffTime = $("#offTime").val();
+	jsonDataAry.push(jsonData);
+	
+	if (DelayData == null){
+		$.ajaxSettings.async = false;
+		$.get("delay/all",function(data, status){
+			if (status == "success"){
+				DelayData = data;
+			}
+		});
+		$.ajaxSettings.async = true;
+	}
+	
+	if (jsonData.CascodeNum < 0 || jsonData.CascodeNum > TimerData.length){
+		console.log(222);
+		$("#timerSubmitModal").modal("toggle");
+		$("#timerSubmitBtn").attr('disabled', false);
+		ShowInfo("参数错误, \"关联延时\"应在0-"+DelayData.length+"之间");
+		return;
+	}
+
+	$.ajax({
+		url: "timer",
+		type: "POST",
+		contentType: "application/json",
+		data:JSON.stringify(jsonDataAry),
+		success: function () {
+			TimerClick();
+		},
+		error: function(XMLHttpRequest, textStatus, errorThrown){
+			ShowInfo(XMLHttpRequest.responseJSON.msg);					
+		}
+	});
+	$("#timerSubmitModal").modal("toggle");
+	$("#timerSubmitBtn").attr('disabled', false);
+}
+
+function infraredSubmitBtnClick(){
+	var jsonDataAry=[];
+	var jsonData = {};
+
+	var numStr=$('#infraredModalHead').text().trim().split(/\s+/);
+	jsonData.Num = parseInt(numStr[numStr.length-1]);
+	jsonData.Name = $("#infraredName").val();
+	jsonData.Enable = $("#infraredEnable").is(':checked');
+	jsonData.OnValue = $("#infraredOnValue").val();
+	jsonData.OffValue = $("#infraredOffValue").val();
+	jsonDataAry.push(jsonData);
+
+	$.ajax({
+		url: "infrared",
+		type: "POST",
+		contentType: "application/json",
+		data:JSON.stringify(jsonDataAry),
+		success: function () {
+			InfraredClick();
+		},
+		error: function (jqXHR, textStatus, errorThrown) {
+			ShowInfo(jqXHR.responseJSON.msg);
+		}
+	});
+
+	$("#infraredSubmitModal").modal("toggle");
+	$("#infraredSubmitBtn").attr('disabled', false);
+}
+
+function delaySubmitBtnClick(){
+	var jsonDataAry=[];
+	var jsonData = {};
+
+	var numStr=$('#delayModalHead').text().trim().split(/\s+/);
+	jsonData.Num = parseInt(numStr[numStr.length-1]);
+	jsonData.Name = $("#delayName").val();
+	jsonData.Enable = $("#delayEnable").is(':checked');
+	jsonData.OnEnable = $("#onIntervalEnable").is(':checked');
+	jsonData.OffEnable = $("#onIntervalEnable").is(':checked');
+	jsonData.Cascode = $("#delayCascodeEnable").is(':checked');
+	jsonData.CascodeNum = parseInt($("#delayCascodeNum").val());
+	jsonData.CycleTimes = parseInt($("#cycleTimes").val());
+	jsonData.OnInterval = $("#onInterval").val();
+	jsonData.OffInterval = $("#offInterval").val();
+	jsonDataAry.push(jsonData);
+	
+	if (jsonData.CascodeNum < 0 || jsonData.CascodeNum > DelayData.length){
+		$("#delaySubmitModal").modal("toggle");
+		$("#delaySubmitBtn").attr('disabled', false);
+		ShowInfo("参数错误, \"关联延时\"应在0-"+DelayData.length+"之间");
+		return;
+	}
+	
+	if (jsonData.CycleTimes < 0 || jsonData.CycleTimes > 9999){
+		$("#delaySubmitModal").modal("toggle");
+		$("#delaySubmitBtn").attr('disabled', false);
+		ShowInfo("参数错误, \"重复次数\"应在0-9999之间");
+		return;
+	}
+
+	$.ajax({
+		url: "delay",
+		type: "POST",
+		contentType: "application/json",
+		data:JSON.stringify(jsonDataAry),
+		success: function () {
+			DelayClick();
+		},
+		error: function (jqXHR, textStatus, errorThrown) {
+			ShowInfo(jqXHR.responseJSON.msg);
+		}
+	});
+
+	$("#delaySubmitModal").modal("toggle");
+	$("#delaySubmitBtn").attr('disabled', false);
+}
 
 function binFileChange() {
 	var path=$('#file').val().split("\\");
@@ -339,29 +208,13 @@ function modeChange(){
 	}
 }
 
-function PlatformSelectChange(){
-
-	$("#PlatformSelectClass").removeClass("hidden");
-
-	if( $("#PlatformSelect").val() == 1 ) {
-
-		$("#ProductKeyClass, #DeviceNameClass, #DeviceSecretClass").removeClass("hidden");
-
-		$("#BigiotDeviceIdClass, #BigiotApiKeyClass, #BigiotDeviceTypeClass, #BigiotDeviceNameClass").addClass("hidden");
-		$("#BigiotDeviceTypeClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfHumidityClass").addClass("hidden");
-        $("#BigiotIfVoltageClass, #BigiotIfCurrentClass, #BigiotIfPowerClass, #BigiotIfElectricityClass").addClass("hidden");
-
-	}else if (  $("#PlatformSelect").val() == 2 ){
-
-		$("#ProductKeyClass, #DeviceNameClass, #DeviceSecretClass").addClass("hidden");
-        $("#BigiotDeviceNameClass, #BigiotApiKeyClass, #BigiotDeviceTypeClass").removeClass("hidden");
-        $("#BigiotDeviceIdClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfHumidityClass").removeClass("hidden");
-        $("#BigiotIfVoltageClass, #BigiotIfCurrentClass, #BigiotIfPowerClass, #BigiotIfElectricityClass").removeClass("hidden");
+function RegisteTypeChange(){
+	if( $("#RegisteTypeSelect").val() == 0 ) {
+        $("#DeviceNameClass, #DeviceSecretClass").addClass("hidden");
+		$("#ProductSecretClass").removeClass("hidden");
 	}else{
-        $("#ProductKeyClass, #DeviceNameClass, #DeviceSecretClass").addClass("hidden");
-        $("#BigiotDeviceNameClass, #BigiotApiKeyClass, #BigiotDeviceTypeClass").addClass("hidden");
-        $("#BigiotDeviceIdClass, #BigiotIfSwitchStatusClass, #BigiotIfTempClass, #BigiotIfHumidityClass").addClass("hidden");
-        $("#BigiotIfVoltageClass, #BigiotIfCurrentClass, #BigiotIfPowerClass, #BigiotIfElectricityClass").addClass("hidden");
+		$("#ProductSecretClass").addClass("hidden");
+		$("#DeviceNameClass, #DeviceSecretClass").removeClass("hidden");
 	}
 }
 
@@ -521,25 +374,28 @@ function setWebSet(){
 function getInfomation(){
 	$.get("/info",function(data, status){
 		if (status == "success"){
-            GitCommit = "GitCommit ："+ data.GitCommit;
+			InfoData=data;
+            GitCommit = "commitId ："+ data.GitCommit;
 			BuildDate = "编译时间 ："+ data.BuildDate;
-			SDKVersion = "SDK版本 ：" + data.SDKVersion;
-			FlashMap = "Flash大小 ：" + data.FlashMap;
-			UserBin = "当前固件 ： " + data.UserBin;
+			SoftWareVersion = "固件版本 ：" + data.SoftWareVersion;
+			FlashMap = "flashsize ：" + data.FlashMap;
+			UserBin = "当前固件 ：" + data.UserBin;
 			Hardware = "支持硬件 ：" + 	data.Hardware;
+			Mac = "硬件地址 ：" + 	data.Mac;
 			var day = parseInt(data.RunTime/(24*3600));
 			var hour= parseInt((data.RunTime%(24*3600))/3600);
 			var min = parseInt((data.RunTime%3600)/60);
 			var sec = parseInt(data.RunTime%60);
 			RunTime = "运行时间 ：" + day+ " 天 "+ hour +" 时 "+ min +" 分 "+ sec +" 秒 ";
 			$("#aboutBody").empty();
-			$("#aboutBody").append("<li>"+RunTime+"</li>");
-            $("#aboutBody").append("<li>"+GitCommit+"</li>");
+			$("#aboutBody").append("<li>"+RunTime+"</li>");            
 			$("#aboutBody").append("<li>"+Hardware+"</li>");
-			$("#aboutBody").append("<li>"+BuildDate+"</li>");
-			$("#aboutBody").append("<li>"+SDKVersion+"</li>");
-			$("#aboutBody").append("<li>"+UserBin+"</li>");
+			$("#aboutBody").append("<li>"+Mac+"</li>");		
 			$("#aboutBody").append("<li>"+FlashMap+"</li>");
+			$("#aboutBody").append("<li>"+UserBin+"</li>");
+			$("#aboutBody").append("<li>"+SoftWareVersion+"</li>");	
+			$("#aboutBody").append("<li>"+BuildDate+"</li>");
+			$("#aboutBody").append("<li>"+GitCommit+"</li>");
 			$("#aboutBody").append("</br>&copy;&nbsp;2019-2021&nbsp;sunkai.mr@qq.com");
 
 			$('#aboutModal').modal("show")
@@ -687,7 +543,7 @@ function TimerClick(){
 
 			$("#tabTimer").empty();
 			$("#tabTimer").html("<thead><th>编号</th><th>名称</th><th>开启时间</th><th>关闭时间</th><th>关联延时</th><th>重复</th><th></th></thead><tbody><tr></tr></tbody>");
-
+			TimerData=data;
 			data = eval(data);
 			var t = document.getElementById('tabTimer');
 			$.each(data, function (index, item) {
@@ -841,19 +697,60 @@ function InfraredClick(){
 
 
 function CloudPlatformClick(){
-    clearInterval(meterRefreshTimer);
-
-    $("#timer, #delay, #infrared, #set, #meter").removeClass("lead");
+	$("#timer, #delay, #infrared,#set, #meter").removeClass("lead");
     $("#cloudPlatform").addClass("lead");
 
-    $("#formSet, #tabDelay, #tabTimer, #tabInfrared, #meterInfo").addClass("hidden");
+	$("#tabTimer, #tabDelay, #tabInfrared, #delayTaskClass, #formSet, #meterInfo").addClass("hidden");
 	$("#formCloudPlatform").removeClass("hidden");
+    clearInterval(meterRefreshTimer);
+	
+	if (InfoData==null){
+		$.ajaxSettings.async = false;
+		$.get("info",function(data, status){
+			if (status == "success"){
+				InfoData = data;
+			}
+		});
+		$.ajaxSettings.async = true;
+	}
+	
+	if(InfoData.Hardware.indexOf("meter") != -1){
+		$("#BigiotIfVoltageClass,#BigiotIfCurrentClass,#BigiotIfPowerClass,#BigiotIfElectricityClass").removeClass("hidden");
+	}else{
+		$("#BigiotIfVoltageClass,#BigiotIfCurrentClass,#BigiotIfPowerClass,#BigiotIfElectricityClass").addClass("hidden");
+	}
+
     ModelTab = "cloudplatform"
     setWebSet();
     $.get("/cloudplatform",function(data, status){
-        if (status == "success"){
-            $("#PlatformSelect").val(data.CloudPlatform);
+        if (status == "success"){	
+			if ( data.TencentEnable ){
+				$("#TencentDisable").removeClass("btn-success");
+				$("#TencentEnable").removeClass("btn-default");
+				$("#TencentDisable").addClass("btn-default");
+				$("#TencentEnable").addClass("btn-success");
+			}else{
+				$("#TencentEnable").removeClass("btn-success");
+				$("#TencentDisable").removeClass("btn-default");
+				$("#TencentEnable").addClass("btn-default");
+				$("#TencentDisable").addClass("btn-success");
+			}
+
+			if ( data.BigiotEnable ){
+				$("#BigiotDisable").removeClass("btn-success");
+				$("#BigiotEnable").removeClass("btn-default");
+				$("#BigiotDisable").addClass("btn-default");
+				$("#BigiotEnable").addClass("btn-success");
+			}else{
+				$("#BigiotEnable").removeClass("btn-success");
+				$("#BigiotDisable").removeClass("btn-default");
+				$("#BigiotEnable").addClass("btn-default");
+				$("#BigiotDisable").addClass("btn-success");
+			}
+			
+			$("#RegisteTypeSelect").val(data.MqttRegisteType);			
             $("#ProductKey").val(data.MqttProductKey);
+			$("#ProductSecret").val(data.MqttProductSecret);
             $("#DeviceName").val(data.MqttDevName);
             $("#DeviceSecret").val(data.MqttDevSecret);
             $("#BigiotDeviceName").val(data.BigiotDevName);
@@ -867,22 +764,35 @@ function CloudPlatformClick(){
             $("#BigiotIfCurrent").val(data.CurrentId);
             $("#BigiotIfPower").val(data.PowerId);
             $("#BigiotIfElectricity").val(data.ElectricityId);
+						
+			RegisteTypeChange();
 
             var str = "";
-            if ( data.ConnectSta == "unknown" ){
+            if ( data.BigiotConnectSta == "unknown" ){
                 str = "连接状态未知";
-			}else if ( data.ConnectSta == "connectting" ){
+			}else if ( data.BigiotConnectSta == "connectting" ){
                 str = "正在连接";
-			}else if ( data.ConnectSta == "connected" ){
+			}else if ( data.BigiotConnectSta == "connected" ){
                 str = "连接成功";
-			}else if ( data.ConnectSta == "failed" ){
+			}else if ( data.BigiotConnectSta == "failed" ){
                 str = "连接失败";
 			}else{
                 str = "连接状态未知";
 			}
-            $("#connectSta").text(str);
-
-            PlatformSelectChange();
+            $("#BigiotConnectSta").text(str);
+			
+            if ( data.TencontConnectSta == "unknown" ){
+                str = "连接状态未知";
+			}else if ( data.TencontConnectSta == "connectting" ){
+                str = "正在连接";
+			}else if ( data.TencontConnectSta == "connected" ){
+                str = "连接成功";
+			}else if ( data.TencontConnectSta == "failed" ){
+                str = "连接失败";
+			}else{
+                str = "连接状态未知";
+			}
+            $("#TencontConnectSta").text(str);
         }else{
             alert("Data: " + data + "\nStatus: " + status);
         }
@@ -1106,13 +1016,13 @@ function tabTimerSubmit(){
 			var week= parseInt(data[0].Week);
 			for ( var i = 0; i < 7; i++ ){
 				switch(i){
-					case 0: $("#week1").attr('checked',week&(1<<i));break;
-					case 1: $("#week2").attr('checked',week&(1<<i));break;
-					case 2: $("#week3").attr('checked',week&(1<<i));break;
-					case 3: $("#week4").attr('checked',week&(1<<i));break;
-					case 4: $("#week5").attr('checked',week&(1<<i));break;
-					case 5: $("#week6").attr('checked',week&(1<<i));break;
-					case 6: $("#week7").attr('checked',week&(1<<i));break;
+					case 0: $("#week1").prop('checked',week&(1<<i));break;
+					case 1: $("#week2").prop('checked',week&(1<<i));break;
+					case 2: $("#week3").prop('checked',week&(1<<i));break;
+					case 3: $("#week4").prop('checked',week&(1<<i));break;
+					case 4: $("#week5").prop('checked',week&(1<<i));break;
+					case 5: $("#week6").prop('checked',week&(1<<i));break;
+					case 6: $("#week7").prop('checked',week&(1<<i));break;
 				}
 			}
 		}else{
@@ -1214,38 +1124,238 @@ function setCommitClick(){
 			ShowInfo("修改成功，重启生效");
 		},
 		error: function (jqXHR, textStatus, errorThrown) {
-			ShowInfo(jqXHR.responseText);
+			ShowInfo(jqXHR.responseJSON.msg);
 		}
 	});
 }
 
-
-function cloudPlatformCommitClick(){
+function TencentEnableClick(){
     var data = {};
+	data.TencentEnable = true;
+	data.MqttRegistType=parseInt($("#RegisteTypeSelect").val());
+	data.MqttProductKey = $("#ProductKey").val();
+	if (data.MqttProductKey.length == 0){
+		ShowInfo("产品ID不能为空");
+		return;
+	}
+	
+	if (data.MqttRegistType == 0){
+		data.MqttProductSecret = $("#ProductSecret").val();
+		if (data.MqttProductSecret.length == 0){
+			ShowInfo("产品密钥不能为空");
+			return;
+		}		
+	}else if (data.MqttRegistType == 1){
+		data.MqttDevName = $("#DeviceName").val();
+		data.MqttDevSecret = $("#DeviceSecret").val();
+		if (data.MqttDevName.length == 0){
+			ShowInfo("设备ID不能为空");
+			return;
+		}
+		if (data.MqttDevSecret.length == 0){
+			ShowInfo("设备密钥不能为空");
+			return;
+		}
+	}else{
+		ShowInfo("注册方式错误");
+		return;
+	}
+	
+    $.ajax({
+        type: "POST",
+        url: "/cloudplatform",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(data),
+        success: function (data) { 			
+			$("#TencentDisable").removeClass("btn-success");
+			$("#TencentEnable").removeClass("btn-default");
+			$("#TencentDisable").addClass("btn-default");
+			$("#TencentEnable").addClass("btn-success");			
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            ShowInfo(jqXHR.responseJSON.msg);
+        }
+    });
+}
 
-    if ( $("#PlatformSelect").val() == "0" ){
-        data.CloudPlatform = 0;
-    }else if ( $("#PlatformSelect").val() == "1" ){
-        data.CloudPlatform = 1;
-        data.MqttProductKey = $("#ProductKey").val();
-        data.MqttDevName = $("#DeviceName").val();
-        data.MqttDevSecret = $("#DeviceSecret").val();
+function TencentDisableClick(){
+    var data = {};
+	data.TencentEnable = false;	
+	data.MqttRegistType=parseInt($("#RegisteTypeSelect").val());
+	data.MqttProductKey = $("#ProductKey").val();
+	
+	if (data.MqttRegistType == 0){
+		data.MqttProductSecret = $("#ProductSecret").val();
+	}else if (data.MqttRegistType == 1){
+		data.MqttDevName = $("#DeviceName").val();
+		data.MqttDevSecret = $("#DeviceSecret").val();
+	}else{
+		ShowInfo("注册方式错误");
+		return;
+	}
+	
+    $.ajax({
+        type: "POST",
+        url: "/cloudplatform",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(data),
+        success: function (data) {            
+			$("#TencentDisable").removeClass("btn-default");
+			$("#TencentDisable").addClass("btn-success");
+			$("#TencentEnable").removeClass("btn-success");
+			$("#TencentEnable").addClass("btn-default");			
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            ShowInfo(jqXHR.responseJSON.msg);
+        }
+    });
+}
 
-    }else if ( $("#PlatformSelect").val() == "2" ){
-        data.CloudPlatform = 2;
-        data.DevType = parseInt($("#BigiotDeviceTypeSelect option:selected").val());
-        data.BigiotDevId = $("#BigiotDeviceId").val();
-        data.BigiotApiKey = $("#BigiotApiKey").val();
-        data.SwitchId = $("#BigiotIfSwitchStatus").val();
-        data.TempId = $("#BigiotIfTemp").val();
-        data.HumidityId = $("#BigiotIfHumidity").val();
+function BigiotEnableClick(){
+    var data = {};
+	data.BigiotEnable = true;
+	data.DevType = parseInt($("#BigiotDeviceTypeSelect option:selected").val());
+	data.BigiotDevId = $("#BigiotDeviceId").val();
+	data.BigiotApiKey = $("#BigiotApiKey").val();
+	if (data.BigiotDevId.length == 0){
+		ShowInfo("设备ID不能为空");
+		return;
+	}
+	if (data.BigiotApiKey.length == 0){
+		ShowInfo("API KEY不能为空");
+		return;
+	}
+	
+	data.SwitchId = $("#BigiotIfSwitchStatus").val();
+	data.TempId = $("#BigiotIfTemp").val();
+	data.HumidityId = $("#BigiotIfHumidity").val();
+	data.VoltageId = $("#BigiotIfVoltage").val();
+	data.CurrentId = $("#BigiotIfCurrent").val();
+	data.PowerId = $("#BigiotIfPower").val();
+	data.ElectricityId = $("#BigiotIfElectricity").val();
+	
+    $.ajax({
+        type: "POST",
+        url: "/cloudplatform",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(data),
+        success: function (data) {            
+			$("#BigiotEnable").removeClass("btn-default");
+			$("#BigiotEnable").addClass("btn-success");
+			$("#BigiotDisable").removeClass("btn-success");
+			$("#BigiotDisable").addClass("btn-default");				
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            ShowInfo(jqXHR.responseJSON.msg);
+        }
+    });
+}
 
-        data.VoltageId = $("#BigiotIfVoltage").val();
-        data.CurrentId = $("#BigiotIfCurrent").val();
-        data.PowerId = $("#BigiotIfPower").val();
-        data.ElectricityId = $("#BigiotIfElectricity").val();
-    }
+function BigiotDisableClick(){
+    var data = {};
+	data.BigiotEnable = false;	
+	data.DevType = parseInt($("#BigiotDeviceTypeSelect option:selected").val());
+	data.BigiotDevId = $("#BigiotDeviceId").val();
+	data.BigiotApiKey = $("#BigiotApiKey").val();
+	data.SwitchId = $("#BigiotIfSwitchStatus").val();
+	data.TempId = $("#BigiotIfTemp").val();
+	data.HumidityId = $("#BigiotIfHumidity").val();
+	data.VoltageId = $("#BigiotIfVoltage").val();
+	data.CurrentId = $("#BigiotIfCurrent").val();
+	data.PowerId = $("#BigiotIfPower").val();
+	data.ElectricityId = $("#BigiotIfElectricity").val();
+	
+    $.ajax({
+        type: "POST",
+        url: "/cloudplatform",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(data),
+        success: function (data) {            
+			$("#BigiotDisable").removeClass("btn-default");
+			$("#BigiotDisable").addClass("btn-success");
+			$("#BigiotEnable").removeClass("btn-success");
+			$("#BigiotEnable").addClass("btn-default");			
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            ShowInfo(jqXHR.responseJSON.msg);
+        }
+    });
+}
 
+
+function TencentBtnClick(){
+	var data = {};
+	data.MqttRegistType=parseInt($("#RegisteTypeSelect").val());
+	data.MqttProductKey = $("#ProductKey").val();
+	if (data.MqttProductKey.length == 0){
+		ShowInfo("产品ID不能为空");
+		return;
+	}
+	
+	if (data.MqttRegistType == 0){
+		data.MqttProductSecret = $("#ProductSecret").val();
+		if (data.MqttProductSecret.length == 0){
+			ShowInfo("产品密钥不能为空");
+			return;
+		}
+		data.MqttDevName="";
+		data.MqttDevSecret="";		
+	}else if (data.MqttRegistType == 1){
+		data.MqttDevName = $("#DeviceName").val();
+		data.MqttDevSecret = $("#DeviceSecret").val();
+		if (data.MqttDevName.length == 0){
+			ShowInfo("设备ID不能为空");
+			return;
+		}
+		if (data.MqttDevSecret.length == 0){
+			ShowInfo("设备密钥不能为空");
+			return;
+		}
+	}else{
+		ShowInfo("注册方式错误");
+		return;
+	}
+	
+    $.ajax({
+        type: "POST",
+        url: "/cloudplatform",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(data),
+        success: function (data) {
+            ShowInfo("修改成功，重启生效");
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            ShowInfo(jqXHR.responseJSON.msg);
+        }
+    });
+}
+
+function BigiotBtnClick(){
+	var data = {};
+	data.DevType = parseInt($("#BigiotDeviceTypeSelect option:selected").val());
+	data.BigiotDevId = $("#BigiotDeviceId").val();
+	data.BigiotApiKey = $("#BigiotApiKey").val();
+	if (data.BigiotDevId.length == 0){
+		ShowInfo("设备ID不能为空");
+		return;
+	}
+	if (data.BigiotApiKey.length == 0){
+		ShowInfo("API KEY不能为空");
+		return;
+	}
+	data.SwitchId = $("#BigiotIfSwitchStatus").val();
+	data.TempId = $("#BigiotIfTemp").val();
+	data.HumidityId = $("#BigiotIfHumidity").val();
+	data.VoltageId = $("#BigiotIfVoltage").val();
+	data.CurrentId = $("#BigiotIfCurrent").val();
+	data.PowerId = $("#BigiotIfPower").val();
+	data.ElectricityId = $("#BigiotIfElectricity").val();
+	
     $.ajax({
         type: "POST",
         url: "/cloudplatform",
@@ -1260,7 +1370,6 @@ function cloudPlatformCommitClick(){
         }
     });
 }
-
 
 function scanWifiClick(){
 	var mode = new Array("未知", "客户端","热点","客户端+热点");
@@ -1392,4 +1501,21 @@ function meterSubmit(){
             ShowInfo(jqXHR.responseText);
         }
     });
+}
+
+function ReloadFile(){
+	document.querySelector("#file").addEventListener("click", 
+	function(event){
+		$("#file").val("");
+	})
+}
+
+function SeePwd(obj){
+	if($("#wifiPasswd").attr('type') == 'password'){
+		$("#wifiPasswd").attr('type','text');
+		$(obj).attr('class','ace-icon fa fa-eye-slash');
+	}else {
+		$("#wifiPasswd").attr('type','password');
+		$(obj).attr('class','ace-icon fa fa-eye');
+	}
 }

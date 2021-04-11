@@ -84,7 +84,7 @@ UINT WEBSOCKET_Handshake( HTTP_CTX *pstCtx )
 
 	pstCtx->stResp.eHttpCode = HTTP_CODE_SwitchingProtocols;
 
-	pcKey = HTTP_GetReqHeader(pstCtx, pcWebSocketKey);
+	pcKey = HTTP_GetReqHeader(&pstCtx->stReq.stHeader[0], pcWebSocketKey);
 	if ( pcKey == NULL )
 	{
     	LOG_OUT( LOGOUT_ERROR, "header %s not found", pcWebSocketKey);

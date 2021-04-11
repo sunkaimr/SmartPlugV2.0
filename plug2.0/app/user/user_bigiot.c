@@ -143,12 +143,12 @@ retry:
         			// 健康检查连续3次失败重新登陆
         			if ( iFailCount >= 3 )
         			{
-        				pstCli->iAlived = 3;
+        				pstCli->eConnectStatus = BIGIOT_CONSTATUS_Failed;
         			}
         		}
         	}
 
-        	if ( pstCli->iAlived == 3 )
+        	if ( pstCli->eConnectStatus == BIGIOT_CONSTATUS_Failed )
         	{
                 BIGIOT_LOG(BIGIOT_ERROR, "Bigiot_HealthCheck failed, will reconnect");
                 goto exit;
@@ -245,7 +245,7 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
     int iLen = 0;
     int iRet = 0;
 
-    pstCli->iAlived = 1;
+    pstCli->eConnectStatus = BIGIOT_CONSTATUS_Connectting;
 
     //先连接至贝壳物联平台
     iRet = pstCtx->Connect( pstCtx );
@@ -293,7 +293,7 @@ int Bigiot_Login( BIGIOT_Ctx_S *pstCtx )
             strncpy( pstCtx->szDevName, pcContent, BIGIOT_DEVNAME_LEN );
         }
 
-        pstCli->iAlived = 2;
+        pstCli->eConnectStatus = BIGIOT_CONSTATUS_Connected;
 
         return 0;
     }
@@ -558,7 +558,7 @@ int Bigiot_GetBigioStatus( void )
         return 0;
     }
 
-    return pstCli->iAlived;
+    return pstCli->eConnectStatus;
 }
 
 char* Bigiot_GetBigioDeviceName( void )
@@ -720,14 +720,14 @@ static int Bigiot_HeartBeat( void * para )
         if ( iFailedCnt >= 2 )
         {
             BIGIOT_LOG(BIGIOT_ERROR, "HeartBeat send failed");
-            pstCtx->iAlived = 3;
+            pstCtx->eConnectStatus = BIGIOT_CONSTATUS_Failed;
             iFailedCnt = 0;
             return 2;
         }
     }
 
     BIGIOT_LOG(BIGIOT_DEBUG, "send heartbeat");
-    pstCtx->iAlived = 2;
+    pstCtx->eConnectStatus = BIGIOT_CONSTATUS_Connected;
     iFailedCnt = 0;
 
     return 0;
@@ -941,7 +941,7 @@ static void Init( BIGIOT_Ctx_S *pstCtx, char* pcHostName, int iPort, char* pcDev
     pstCtx->pcApiKey           = pcApiKey;
 
     pstCtx->xEventHandle       = 0;
-    pstCtx->iAlived            = 0;
+    pstCtx->eConnectStatus     = BIGIOT_CONSTATUS_Unknown;
     pstCtx->ucReadLock         = FALSE;
 
     pstCtx->iTimeOut           = BIGIOT_TIMEOUT;

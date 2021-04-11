@@ -238,9 +238,21 @@ UINT CONFIG_PlatFormDataCheck( PLUG_PLATFORM_S *pstData )
         return FAIL;
     }
 
-    if ( pstData->ucCloudPlatform >= PLATFORM_BUFF )
+    if ( pstData->bTencentEnable != TRUE &&  pstData->bTencentEnable != FALSE)
     {
-        LOG_OUT(LOGOUT_ERROR, "ucCloudPlatform:%d", pstData->ucCloudPlatform);
+        LOG_OUT(LOGOUT_ERROR, "bTencentEnable:%d", pstData->bTencentEnable);
+        return FAIL;
+    }
+
+    if ( pstData->bBigiotEnable != TRUE &&  pstData->bBigiotEnable != FALSE)
+    {
+        LOG_OUT(LOGOUT_ERROR, "bBigiotEnable:%d", pstData->bBigiotEnable);
+        return FAIL;
+    }
+
+    if ( pstData->eMqttRegistType >= REGISTETYPE_Buff ||  pstData->eMqttRegistType < 0)
+    {
+        LOG_OUT(LOGOUT_ERROR, "eMqttRegistType:%d", pstData->eDevType);
         return FAIL;
     }
 
@@ -253,6 +265,12 @@ UINT CONFIG_PlatFormDataCheck( PLUG_PLATFORM_S *pstData )
     if ( pstData->szMqttProductKey[0] == 0xFF )
     {
         LOG_OUT(LOGOUT_ERROR, "szMqttProductKey is 0xFF");
+        return FAIL;
+    }
+
+    if ( pstData->szMqttProductSecret[0] == 0xFF )
+    {
+        LOG_OUT(LOGOUT_ERROR, "szMqttProductSecret is 0xFF");
         return FAIL;
     }
 
@@ -321,6 +339,35 @@ UINT CONFIG_PlatFormDataCheck( PLUG_PLATFORM_S *pstData )
         return FAIL;
     }
 
+    if ( pstData->bTencentEnable && pstData->eMqttRegistType == REGISTETYPE_Dynamic )
+    {
+    	if(strlen(pstData->szMqttProductKey) == 0 || strlen(pstData->szMqttProductSecret) == 0)
+    	{
+            LOG_OUT(LOGOUT_ERROR, "szMqttProductKey length:%d, szMqttProductSecret length:%d",
+            		strlen(pstData->szMqttProductKey), strlen(pstData->szMqttProductSecret));
+            return FAIL;
+    	}
+    }
+
+    if ( pstData->bTencentEnable && pstData->eMqttRegistType == REGISTETYPE_Static )
+    {
+    	if(strlen(pstData->szMqttProductKey) == 0 || strlen(pstData->szMqttDevName) == 0 || strlen(pstData->szMqttDevSecret) == 0)
+    	{
+            LOG_OUT(LOGOUT_ERROR, "szMqttProductKey length:%d, szMqttDevName length:%d, szMqttDevSecret length:%d",
+            		strlen(pstData->szMqttProductKey), strlen(pstData->szMqttDevName), strlen(pstData->szMqttDevSecret));
+            return FAIL;
+    	}
+    }
+
+    if ( pstData->bBigiotEnable )
+    {
+    	if(strlen(pstData->szBigiotDevId) == 0 || strlen(pstData->szBigiotApiKey) == 0 )
+    	{
+            LOG_OUT(LOGOUT_ERROR, "szBigiotDevId length:%d, szBigiotApiKey ",
+            		strlen(pstData->szBigiotDevId), strlen(pstData->szBigiotApiKey));
+            return FAIL;
+    	}
+    }
     return OK;
 }
 /*

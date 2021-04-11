@@ -18,15 +18,15 @@ VOID KEY_GetKeyTimerHandle( VOID *pPara )
     {
         uiPressCount++;
 
-        /* 中长按:按下3s-6s 进入ap模式 */
+        /* 中长按:按下3s-6s 进入station模式 */
         if ( uiPressCount > 150 && uiPressCount < 300 )
         {
-            LED_SetWifiStatus(LED_WIFI_STATUS_SET_AP);
+        	LED_SetWifiStatus(LED_WIFI_STATUS_SET_STA);
         }
-        /* 长按:>6s  进入station模式  */
+        /* 长按:>6s  进入AP模式  */
         else if ( uiPressCount >= 300 )
         {
-            LED_SetWifiStatus(LED_WIFI_STATUS_SET_STA);
+        	LED_SetWifiStatus(LED_WIFI_STATUS_SET_AP);
         }
     }
     else
@@ -37,19 +37,19 @@ VOID KEY_GetKeyTimerHandle( VOID *pPara )
             PLUG_SetRelayReversal(TRUE);
             //LOG_OUT(LOGOUT_INFO, "replay reversal!!!");
         }
-        /* 中长按:按下3s-6s 进入ap模式 */
+        /* 中长按:按下3s-6s 进入station模式 */
         else if ( uiPressCount > 150 && uiPressCount < 300 )
-        {
-            PLUG_SetWifiMode(WIFI_MODE_SOFTAP);
-            LOG_OUT(LOGOUT_INFO, "switch ap mode, system restart!!!");
-            UPGRADE_SetReboot();
-        }
-        /* 长按:>6s  进入station模式  */
-        else if ( uiPressCount >= 300 )
         {
             PLUG_SetWifiMode(WIFI_MODE_STATION);
             PLUG_SetSmartConfig(FALSE);
             LOG_OUT(LOGOUT_INFO, "switch station mode, system restart!!!");
+            UPGRADE_SetReboot();
+        }
+        /* 长按:>6s  进入AP模式  */
+        else if ( uiPressCount >= 300 )
+        {
+            PLUG_SetWifiMode(WIFI_MODE_SOFTAP);
+            LOG_OUT(LOGOUT_INFO, "switch ap mode, system restart!!!");
             UPGRADE_SetReboot();
         }
         uiPressCount = 0;

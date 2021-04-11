@@ -10,16 +10,17 @@
 
 
 
-#define PLUG_NAME_MAX_LEN         32
-#define PLUG_WIFI_SSID_LEN         32
-#define PLUG_WIFI_PASSWD_LEN     64
+#define PLUG_NAME_MAX_LEN            32
+#define PLUG_WIFI_SSID_LEN           32
+#define PLUG_WIFI_PASSWD_LEN         64
 
-#define PLUG_MQTT_PRODUCTKEY_LEN     20
-#define PLUG_MQTT_DEVNAME_LEN         32
-#define PLUG_MQTT_DEVSECRET_LEN     64
+#define PLUG_MQTT_PRODUCTKEY_LEN     40
+#define PLUG_MQTT_PRODUCTSEC_LEN     40
+#define PLUG_MQTT_DEVNAME_LEN        32
+#define PLUG_MQTT_DEVSECRET_LEN      64
 
-#define PLUG_BIGIOT_DEVID_LEN         64
-#define PLUG_BIGIOT_APIKEY_LEN         20
+#define PLUG_BIGIOT_DEVID_LEN        64
+#define PLUG_BIGIOT_APIKEY_LEN       20
 #define PLUG_BIGIOT_IFID_LEN         20
 
 #define PLUG_TIMER_MAX            10
@@ -138,15 +139,6 @@ typedef struct tagPLUG_WebSet                            /*  web的相关设置    */
 
 typedef enum
 {
-    PLATFORM_NONE        = 0,        /* 不对接 */
-    PLATFORM_ALIYUN        = 1,        /* 对接阿里云 */
-    PLATFORM_BIGIOT        = 2,        /* 对接贝壳物联 */
-
-    PLATFORM_BUFF
-}PLATFORM_E;
-
-typedef enum
-{
     DEVTYPE_other = 0,            //0     默认设备
     DEVTYPE_TV,                    //1     电视
     DEVTYPE_lamp,                //2     灯
@@ -193,26 +185,36 @@ typedef enum
     DEVTYPE_BUFF
 }DEVTYPE_E;
 
-typedef struct tagPLUG_PLATFORM                                    /*  云平台    */
+typedef enum
 {
-    PLATFORM_E     ucCloudPlatform;                                /* 对接的物联网平台  1:对接阿里云 2:对接贝壳物联 */
+	REGISTETYPE_Dynamic = 0,        // 动态方式
+	REGISTETYPE_Static,
 
-    CHAR        szMqttProductKey[PLUG_MQTT_PRODUCTKEY_LEN+1];      /* 对接阿里云 mqtt的product key */
-    CHAR        szMqttDevName[PLUG_MQTT_DEVNAME_LEN+1];            /* 对接阿里云 mqtt的设备名称 */
-    CHAR        szMqttDevSecret[PLUG_MQTT_DEVSECRET_LEN+1];        /* 对接阿里云 mqtt的Device Secret */
+	REGISTETYPE_Buff
+}REGISTETYPE_E;
+typedef struct tagPLUG_PLATFORM                                        /*  云平台    */
+{
+    BOOL        	bTencentEnable;                                    /* 是否对接腾讯物联平台*/
 
-    DEVTYPE_E    eDevType;                                        /* 对接贝壳物联设备类型 */
-    CHAR        szBigiotDevId[PLUG_BIGIOT_DEVID_LEN+1];           /* 对接贝壳物联设备id */
-    CHAR        szBigiotApiKey[PLUG_BIGIOT_APIKEY_LEN+1];         /* 对接贝壳物联api key */
+    REGISTETYPE_E 	eMqttRegistType;                                   /* 动态注册、静态注册*/
+    CHAR        	szMqttProductKey[PLUG_MQTT_PRODUCTKEY_LEN+1];      /* product key */
+    CHAR        	szMqttProductSecret[PLUG_MQTT_PRODUCTSEC_LEN+1];   /* product secret */
+    CHAR        	szMqttDevName[PLUG_MQTT_DEVNAME_LEN+1];            /* 设备名称 */
+    CHAR        	szMqttDevSecret[PLUG_MQTT_DEVSECRET_LEN+1];        /* Device Secret */
 
-    CHAR        szSwitchId[PLUG_BIGIOT_IFID_LEN+1];               /* 对接贝壳物联开关状态接口ID */
-    CHAR        szTempId[PLUG_BIGIOT_IFID_LEN+1];                 /* 对接贝壳物联温度接口ID */
-    CHAR        szHumidityId[PLUG_BIGIOT_IFID_LEN+1];             /* 对接贝壳物联湿度接口ID */
+    BOOL        	bBigiotEnable;                                    /* 是否对接贝壳物联平台*/
+    DEVTYPE_E   	eDevType;                                         /* 对接贝壳物联设备类型 */
+    CHAR        	szBigiotDevId[PLUG_BIGIOT_DEVID_LEN+1];           /* 对接贝壳物联设备id */
+    CHAR        	szBigiotApiKey[PLUG_BIGIOT_APIKEY_LEN+1];         /* 对接贝壳物联api key */
 
-    CHAR        szVoltageId[PLUG_BIGIOT_IFID_LEN+1];              /* 对接贝壳物联电压接口ID */
-    CHAR        szCurrentId[PLUG_BIGIOT_IFID_LEN+1];              /* 对接贝壳物联电流接口ID */
-    CHAR        szPowerId[PLUG_BIGIOT_IFID_LEN+1];                /* 对接贝壳物联功率接口ID */
-    CHAR        szElectricityId[PLUG_BIGIOT_IFID_LEN+1];          /* 对接贝壳物联电量接口ID */
+    CHAR        	szSwitchId[PLUG_BIGIOT_IFID_LEN+1];               /* 对接贝壳物联开关状态接口ID */
+    CHAR        	szTempId[PLUG_BIGIOT_IFID_LEN+1];                 /* 对接贝壳物联温度接口ID */
+    CHAR        	szHumidityId[PLUG_BIGIOT_IFID_LEN+1];             /* 对接贝壳物联湿度接口ID */
+
+    CHAR        	szVoltageId[PLUG_BIGIOT_IFID_LEN+1];              /* 对接贝壳物联电压接口ID */
+    CHAR        	szCurrentId[PLUG_BIGIOT_IFID_LEN+1];              /* 对接贝壳物联电流接口ID */
+    CHAR        	szPowerId[PLUG_BIGIOT_IFID_LEN+1];                /* 对接贝壳物联功率接口ID */
+    CHAR        	szElectricityId[PLUG_BIGIOT_IFID_LEN+1];          /* 对接贝壳物联电量接口ID */
 
 }PLUG_PLATFORM_S;
 
@@ -255,10 +257,11 @@ VOID PLUG_SetRelayPowerUpStatus( UINT8 ucStatus );
 CHAR* PLUG_GetPlugName( VOID );
 VOID PLUG_SetPlugName( CHAR* pcPlugName );
 UINT PLUG_GetPlugNameLenth( VOID );
-
-UINT8 PLUG_GetCloudPlatform( VOID );
-VOID PLUG_SetCloudPlatform( UINT8 ucCloudPlatform );
+UINT8 PLUG_GetTencentEnable( VOID );
+UINT8 PLUG_GetBigiotEnable( VOID );
 CHAR* PLUG_GetMqttProductKey( VOID );
+CHAR* PLUG_GetMqttProductSecret( VOID );
+UINT PLUG_GetMqttProductSecretLenth( VOID );
 CHAR* PLUG_GetMqttDevName( VOID );
 CHAR* PLUG_GetMqttDevSecret( VOID );
 CHAR* PLUG_GetBigiotDevId( VOID );

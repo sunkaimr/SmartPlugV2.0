@@ -16,7 +16,7 @@
 #define HTTP_HRADER_NUM_MAX       20
 
 #define HTTP_FILE_NAME_MAX_LEN    50
-#define HTTP_FILE_NUM_MAX         20
+#define HTTP_FILE_NUM_MAX         10
 
 
 #define HTTP_Malloc(ctx, len)                                            \
@@ -67,10 +67,12 @@ typedef enum {
 }HTTP_RESP_PROCESS_E;
 
 typedef enum {
-	HTTP_CODE_SwitchingProtocols = 0,
+	HTTP_CODE_None,
+	HTTP_CODE_SwitchingProtocols,
     HTTP_CODE_Ok,
     HTTP_CODE_Created,
 	HTTP_CODE_NoContent,
+	HTTP_CODE_Partial_Content,
     HTTP_CODE_Found,
     HTTP_CODE_BadRequest,
     HTTP_CODE_NotFound,
@@ -221,6 +223,70 @@ typedef struct tagHttpFileList
     HTTP_ENCODING_E      eEncode;                           //压缩方式
 }HTTP_FILE_LIST_S;
 
+typedef enum {
+    CLI_ReqProcess_None = 0,       // 空闲状态,还未开始发送
+	CLI_ReqProcess_SentHeader,     // 请求头发送完成
+	CLI_ReqProcess_SentBody,       // 请求体发送完成
+	CLI_ReqProcess_Finish,         // 请求发送完成
+
+	CLI_ReqProcess_Buff
+}HTTP_CLI_REQ_PROCESS_E;
+
+
+typedef struct tagHttpCliReq
+{
+    CHAR*               	pcHeadBuf;                     // 请求头buf
+    UINT                	uiHeadBufLen;                  // 请求头的长度
+    UINT                	uiHeadPos;                     // 位置
+
+    CHAR*               	pcBodyBuf;                     // 请求体buf
+    UINT                	uiBodyBufLen;                  // 请求体的长度
+
+    HTTP_CLI_REQ_PROCESS_E 	eProcess;
+
+}HTTP_CLIREQ_S;
+
+
+typedef enum {
+	CLI_ResponProcess_None = 0,       //空闲状态
+	CLI_ResponProcess_Invalid,        //收到了相应但是无法解析出http header信息
+	CLI_ResponProcess_GotHeader,      //http header解析完成
+	CLI_ResponProcess_GetBody,        //正在接收body体，http携带的body体过长无法一次recv完成需要分多次接收
+	CLI_ResponProcess_Finished,       //完成接收
+
+	CLI_ResponProcess_Buff
+}HTTP_CLI_RESP_PROCESS_E;
+
+typedef struct tagHttpCliResp
+{
+    HTTP_CODE_E         	eHttpCode;
+    HTTP_CONTENT_TYPE_E 	eContentType;
+    HTTP_HEADER         	stHeader[HTTP_HRADER_NUM_MAX];     // http header
+    UINT                    uiContentLength;
+
+    HTTP_CLI_RESP_PROCESS_E eProcess;
+    CHAR*               	pcHeadBuf;                         // 响应头buf
+    CHAR*                	pcBodyBuf;                         // 响应体buf
+    CHAR*                	pcBody;                            // 响应体
+    UINT                 	uiHeadBufLen;                      // 响应头buf长度
+    UINT                 	uiBodyBufLen;                      // 响应体buf长度
+    UINT                 	uiRecvTotalLen;                    // 响应体长度，不包括head长度
+    UINT                 	uiRecvLen;                         // 已收到body的长度
+    UINT                 	uiRecvCurLen;                      // 本次收到body的长度
+
+}HTTP_CLIRESP_S;
+
+typedef struct tagHttpClient
+{
+    INT                 iSocket;
+    UINT                uiTimeOut;
+    UINT                uiCost;
+
+    HTTP_CLIREQ_S       stReq;
+    HTTP_CLIRESP_S      stReson;
+
+}HTTP_CLIENT_S;
+
 
 extern const CHAR szHttpMethodStr[][10];
 extern const CHAR szHttpUserAgentStringmap[][10];
@@ -234,8 +300,15 @@ VOID HTTP_RouterInit( VOID );
 //extern INT32 HTTP_ParsingHttpHead( CHAR * pcData, UINT32 uiLen,  HTTP_CTX *pstCtx );
 HTTP_FILE_LIST_S* HTTP_GetFileList( CHAR* pcName );
 UINT32 HTTP_GetFileListLength();
-UINT HTTP_SetReqHeader( HTTP_CTX *pstCtx, CHAR* pcKey, CHAR*pcValue );
-CHAR* HTTP_GetReqHeader( HTTP_CTX *pstCtx, const CHAR* pcKey );
+UINT HTTP_SetReqHeader( HTTP_HEADER *pstHeader, CHAR* pcKey, CHAR*pcValue );
+CHAR* HTTP_GetReqHeader( HTTP_HEADER *pstHeader, const CHAR* pcKey );
 
+typedef UINT (*HttpClientHandle)(VOID*);
+
+HTTP_CLIENT_S* HTTP_NewClient(CHAR* pcMethod, CHAR* pcEndpoint, CHAR* pcUrl, CHAR* pcBody, UINT uiLen);
+VOID HTTP_DestoryClient(HTTP_CLIENT_S* pstCli);
+VOID HTTP_ClientSetHeader(HTTP_CLIENT_S *pstCli, CHAR* pcKey, CHAR* pcValue);
+UINT HTTP_ClientDoRequest(HTTP_CLIENT_S *pstCli);
+UINT HTTP_ClientDoResponse(HTTP_CLIENT_S *pstCli, HttpClientHandle pfHandle, VOID* pPara);
 
 #endif /* __USER_HTTP_H__ */

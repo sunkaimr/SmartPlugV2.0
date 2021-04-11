@@ -283,11 +283,14 @@ VOID PLUG_SystemSetDataDeInit( VOID )
 
 VOID PLUG_PlatformDeInit( VOID )
 {
-    g_stPLUG_PlatForm.ucCloudPlatform = PLATFORM_NONE;
+    g_stPLUG_PlatForm.bTencentEnable = FALSE;
+    g_stPLUG_PlatForm.bBigiotEnable = FALSE;
 
     g_stPLUG_PlatForm.eDevType = DEVTYPE_other;
+    g_stPLUG_PlatForm.eMqttRegistType = REGISTETYPE_Static;
 
     memset(g_stPLUG_PlatForm.szMqttProductKey,     0, PLUG_MQTT_PRODUCTKEY_LEN);
+    memset(g_stPLUG_PlatForm.szMqttProductSecret,  0, PLUG_MQTT_PRODUCTSEC_LEN);
     memset(g_stPLUG_PlatForm.szMqttDevName,        0, PLUG_MQTT_DEVNAME_LEN);
     memset(g_stPLUG_PlatForm.szMqttDevSecret,      0, PLUG_MQTT_DEVSECRET_LEN);
 
@@ -374,25 +377,41 @@ UINT PLUG_GetWifiPasswdLenth( VOID )
     return  uiLen > PLUG_WIFI_PASSWD_LEN ? PLUG_WIFI_PASSWD_LEN : uiLen;
 }
 
-UINT8 PLUG_GetCloudPlatform( VOID )
+UINT8 PLUG_GetTencentEnable( VOID )
 {
-    return g_stPLUG_PlatForm.ucCloudPlatform;
+    return g_stPLUG_PlatForm.bTencentEnable;
 }
 
-VOID PLUG_SetCloudPlatform( UINT8 ucCloudPlatform )
+VOID PLUG_SetTencentEnable( BOOL bEnable )
 {
-    if ( ucCloudPlatform >= PLATFORM_BUFF )
-    {
-        LOG_OUT(LOGOUT_ERROR, "ucCloudPlatform error, ucCloudPlatform:%d", ucCloudPlatform);
-        return;
-    }
-    g_stPLUG_PlatForm.ucCloudPlatform = ucCloudPlatform;
+    g_stPLUG_PlatForm.bTencentEnable = bEnable;
     CONFIG_SaveConfig(PLUG_MOUDLE_PLATFORM);
+}
+
+UINT8 PLUG_GetBigiotEnable( VOID )
+{
+    return g_stPLUG_PlatForm.bBigiotEnable;
+}
+
+VOID PLUG_SetBigiotEnable( BOOL bEnable )
+{
+    g_stPLUG_PlatForm.bBigiotEnable = bEnable;
+    CONFIG_SaveConfig(PLUG_MOUDLE_PLATFORM);
+}
+
+REGISTETYPE_E PLUG_GetMqttRegistType( VOID )
+{
+    return g_stPLUG_PlatForm.eMqttRegistType;
 }
 
 CHAR* PLUG_GetMqttProductKey( VOID )
 {
     return g_stPLUG_PlatForm.szMqttProductKey;
+}
+
+CHAR* PLUG_GetMqttProductSecret( VOID )
+{
+    return g_stPLUG_PlatForm.szMqttProductSecret;
 }
 
 CHAR* PLUG_GetMqttDevName( VOID )
@@ -491,10 +510,28 @@ VOID PLUG_SetBigiotApiKey( CHAR* pcKey )
     CONFIG_SaveConfig(PLUG_MOUDLE_PLATFORM);
 }
 
+UINT PLUG_GetMqttProductKeyLenth( VOID )
+{
+    UINT uiLen = strlen( g_stPLUG_PlatForm.szMqttProductKey );
+    return  uiLen > PLUG_MQTT_PRODUCTKEY_LEN ? PLUG_MQTT_PRODUCTKEY_LEN : uiLen;
+}
+
+UINT PLUG_GetMqttProductSecretLenth( VOID )
+{
+    UINT uiLen = strlen( g_stPLUG_PlatForm.szMqttProductSecret );
+    return  uiLen > PLUG_MQTT_PRODUCTSEC_LEN ? PLUG_MQTT_PRODUCTSEC_LEN : uiLen;
+}
+
+UINT PLUG_GetMqttDevNameLenth( VOID )
+{
+    UINT uiLen = strlen( g_stPLUG_PlatForm.szMqttDevName );
+    return  uiLen > PLUG_MQTT_DEVNAME_LEN ? PLUG_MQTT_DEVNAME_LEN : uiLen;
+}
+
 UINT PLUG_GetMqttDevSecretLenth( VOID )
 {
     UINT uiLen = strlen( g_stPLUG_PlatForm.szMqttDevSecret );
-    return  uiLen > PLUG_WIFI_PASSWD_LEN ? PLUG_WIFI_PASSWD_LEN : uiLen;
+    return  uiLen > PLUG_MQTT_DEVSECRET_LEN ? PLUG_MQTT_DEVSECRET_LEN : uiLen;
 }
 
 VOID PLUG_SetMqttProductKey( CHAR* pcProductKey )
@@ -511,6 +548,23 @@ VOID PLUG_SetMqttProductKey( CHAR* pcProductKey )
     uiLen =  uiLen > PLUG_MQTT_PRODUCTKEY_LEN ? PLUG_MQTT_PRODUCTKEY_LEN : uiLen;
     memcpy( g_stPLUG_PlatForm.szMqttProductKey, pcProductKey, uiLen );
     g_stPLUG_PlatForm.szMqttProductKey[uiLen] = 0;
+    CONFIG_SaveConfig(PLUG_MOUDLE_PLATFORM);
+}
+
+VOID PLUG_SetMqttProductSecret( CHAR* pcMqttProductSecret )
+{
+    UINT uiLen = 0;
+
+    if ( pcMqttProductSecret == NULL )
+    {
+        LOG_OUT(LOGOUT_ERROR, "pcMqttProductSecret is NULL");
+        return;
+    }
+
+    uiLen =  strlen(pcMqttProductSecret);
+    uiLen =  uiLen > PLUG_MQTT_PRODUCTSEC_LEN ? PLUG_MQTT_PRODUCTSEC_LEN : uiLen;
+    memcpy( g_stPLUG_PlatForm.szMqttProductSecret, pcMqttProductSecret, uiLen );
+    g_stPLUG_PlatForm.szMqttProductSecret[uiLen] = 0;
     CONFIG_SaveConfig(PLUG_MOUDLE_PLATFORM);
 }
 
@@ -761,14 +815,15 @@ UINT PLUG_MarshalJsonTimer( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum )
     }
 
     pJsonStr = cJSON_PrintUnformatted(pJsonArry);
-	if ( pJsonStr == NULL )
-	{
-		LOG_OUT(LOGOUT_ERROR, "cJSON_PrintUnformatted failed");
-		 cJSON_Delete(pJsonArry);
-		return 0;
-	}
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
 
-    strncpy(pcBuf, pJsonStr, uiBufLen);
     cJSON_Delete(pJsonArry);
     FREE_MEM(pJsonStr);
     return strlen(pcBuf);
@@ -784,15 +839,14 @@ UINT PLUG_MarshalJsonDelay( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum)
 
     pstData = g_astPLUG_Delay;
     pJsonArry = cJSON_CreateArray();
+
     for ( uiLoopi = 0 ; uiLoopi < PLUG_DELAY_MAX; uiLoopi++, pstData++ )
     {
         if (uiTimerNum != pstData->uiNum && uiTimerNum != PLUG_DELAY_ALL)
         {
             continue;
         }
-
         pJsonsub=cJSON_CreateObject();
-
         cJSON_AddNumberToObject( pJsonsub,     "Num",             pstData->uiNum);
         cJSON_AddStringToObject( pJsonsub,     "Name",            pstData->szName);
         cJSON_AddBoolToObject( pJsonsub,       "Enable",          pstData->bEnable);
@@ -803,24 +857,27 @@ UINT PLUG_MarshalJsonDelay( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum)
         cJSON_AddNumberToObject( pJsonsub,     "SwFlag",          pstData->ucSwFlag);
         cJSON_AddBoolToObject( pJsonsub,       "Cascode",         pstData->bCascode);
         cJSON_AddNumberToObject( pJsonsub,     "CascodeNum",      pstData->uiCascodeNum);
-
         snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d", pstData->stOnInterval.iHour,  pstData->stOnInterval.iMinute );
-        cJSON_AddStringToObject( pJsonsub,    "OnInterval",         szTimerPoint);
-
+        cJSON_AddStringToObject( pJsonsub,     "OnInterval",      szTimerPoint);
         snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d", pstData->stOffInterval.iHour, pstData->stOffInterval.iMinute );
-        cJSON_AddStringToObject( pJsonsub,    "OffInterval",         szTimerPoint);
-
+        cJSON_AddStringToObject( pJsonsub,     "OffInterval",     szTimerPoint);
         snprintf(szTimerPoint, sizeof(szTimerPoint), "%02d:%02d", pstData->stTimePoint.iHour,   pstData->stTimePoint.iMinute );
-        cJSON_AddStringToObject( pJsonsub,    "TimePoint",         szTimerPoint);
-
+        cJSON_AddStringToObject( pJsonsub,     "TimePoint",       szTimerPoint);
         cJSON_AddItemToArray(pJsonArry, pJsonsub);
     }
 
     pJsonStr = cJSON_PrintUnformatted(pJsonArry);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
+
     cJSON_Delete(pJsonArry);
     FREE_MEM(pJsonStr);
-
     return strlen(pcBuf);
 }
 
@@ -858,7 +915,15 @@ UINT PLUG_MarshalJsonInfrared( CHAR* pcBuf, UINT uiBufLen, UINT uiNum )
     }
 
     pJsonStr = cJSON_PrintUnformatted(pJsonArry);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
+
     cJSON_Delete(pJsonArry);
     FREE_MEM(pJsonStr);
 
@@ -900,7 +965,15 @@ UINT PLUG_MarshalJsonSystemSet( CHAR* pcBuf, UINT uiBufLen )
     cJSON_AddStringToObject( pJson, "Mac", szBuf);
 
     pJsonStr = cJSON_PrintUnformatted(pJson);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
+
     cJSON_Delete(pJson);
     FREE_MEM(pJsonStr);
 
@@ -912,17 +985,19 @@ UINT PLUG_MarshalJsonCloudPlatformSet( CHAR* pcBuf, UINT uiBufLen )
 {
     cJSON  *pJson = NULL;
     CHAR *pJsonStr = NULL;
-    WIFI_INFO_S stWifiInfo = {0, 0, 0};
     CHAR szBuf[20];
 
     pJson = cJSON_CreateObject();
 
-    cJSON_AddNumberToObject( pJson, "CloudPlatform",     g_stPLUG_PlatForm.ucCloudPlatform);
+    cJSON_AddBoolToObject( pJson,   "TencentEnable",     g_stPLUG_PlatForm.bTencentEnable);
 
+    cJSON_AddNumberToObject( pJson, "MqttRegisteType",   g_stPLUG_PlatForm.eMqttRegistType);
     cJSON_AddStringToObject( pJson, "MqttProductKey",    g_stPLUG_PlatForm.szMqttProductKey);
+    cJSON_AddStringToObject( pJson, "MqttProductSecret", g_stPLUG_PlatForm.szMqttProductSecret);
     cJSON_AddStringToObject( pJson, "MqttDevName",       g_stPLUG_PlatForm.szMqttDevName);
     cJSON_AddStringToObject( pJson, "MqttDevSecret",     g_stPLUG_PlatForm.szMqttDevSecret);
 
+    cJSON_AddBoolToObject( pJson,   "BigiotEnable",      g_stPLUG_PlatForm.bBigiotEnable);
     cJSON_AddNumberToObject( pJson, "DevType",           g_stPLUG_PlatForm.eDevType);
     cJSON_AddStringToObject( pJson, "BigiotDevId",       g_stPLUG_PlatForm.szBigiotDevId);
     cJSON_AddStringToObject( pJson, "BigiotApiKey",      g_stPLUG_PlatForm.szBigiotApiKey);
@@ -945,60 +1020,61 @@ UINT PLUG_MarshalJsonCloudPlatformSet( CHAR* pcBuf, UINT uiBufLen )
         cJSON_AddStringToObject( pJson, "BigiotDevName",     "");
     }
 
-    if ( g_stPLUG_PlatForm.ucCloudPlatform == PLATFORM_BIGIOT )
-    {
-    	switch ( Bigiot_GetBigioStatus() )
-    	{
-			case 0:
-				snprintf(szBuf, sizeof(szBuf), "unknown");
-				break;
-			case 1:
-				snprintf(szBuf, sizeof(szBuf), "connectting");
-				break;
-			case 2:
-				snprintf(szBuf, sizeof(szBuf), "connected");
-				break;
-			case 3:
-				snprintf(szBuf, sizeof(szBuf), "failed");
-				break;
-			default:
-				snprintf(szBuf, sizeof(szBuf), "unknown");
-    	}
-    }
-#ifdef __ALIYUN__
-    else if ( g_stPLUG_PlatForm.ucCloudPlatform == PLATFORM_ALIYUN )
-    {
-        if ( MQTT_GetConnectStatus() )
-        {
-            snprintf(szBuf, sizeof(szBuf), "connected");
-        }
-        else
-        {
-            snprintf(szBuf, sizeof(szBuf), "disconnect");
-        }
-    }
-#endif
-    else
-    {
-        snprintf(szBuf, sizeof(szBuf), "unknown");
-    }
+	switch ( Bigiot_GetBigioStatus() )
+	{
+		case BIGIOT_CONSTATUS_Connectting:
+			snprintf(szBuf, sizeof(szBuf), "connectting");
+			break;
+		case BIGIOT_CONSTATUS_Connected:
+			snprintf(szBuf, sizeof(szBuf), "connected");
+			break;
+		case BIGIOT_CONSTATUS_Failed:
+			snprintf(szBuf, sizeof(szBuf), "failed");
+			break;
+		default:
+			snprintf(szBuf, sizeof(szBuf), "unknown");
+	}
+	cJSON_AddStringToObject( pJson,   "BigiotConnectSta", szBuf);
 
-    cJSON_AddStringToObject( pJson,   "ConnectSta", szBuf);
+
+	switch ( MQTT_GetConnectStatus() )
+	{
+		case MQTT_CONSTATUS_Connectting:
+			snprintf(szBuf, sizeof(szBuf), "connectting");
+			break;
+		case MQTT_CONSTATUS_Connected:
+			snprintf(szBuf, sizeof(szBuf), "connected");
+			break;
+		case MQTT_CONSTATUS_Failed:
+			snprintf(szBuf, sizeof(szBuf), "failed");
+			break;
+		default:
+			snprintf(szBuf, sizeof(szBuf), "unknown");
+	}
+	cJSON_AddStringToObject( pJson,   "TencontConnectSta", szBuf);
 
     pJsonStr = cJSON_PrintUnformatted(pJson);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
+
     cJSON_Delete(pJson);
     FREE_MEM(pJsonStr);
 
     return strlen(pcBuf);
 }
 
-
 UINT PLUG_MarshalJsonHtmlData( CHAR* pcBuf, UINT uiBufLen )
 {
     UINT uiLoopi = 0;
     HTTP_FILE_LIST_S* pstHtmlData = NULL;
     cJSON  *pJsonArry, *pJsonsub;
+    CHAR *pJsonStr = NULL;
 
     pJsonArry = cJSON_CreateArray();
     pstHtmlData = HTTP_GetFileList(NULL);
@@ -1020,7 +1096,16 @@ UINT PLUG_MarshalJsonHtmlData( CHAR* pcBuf, UINT uiBufLen )
         cJSON_AddItemToArray(pJsonArry, pJsonsub);
     }
 
-    strncpy(pcBuf, cJSON_PrintUnformatted(pJsonArry), uiBufLen);
+    pJsonStr = cJSON_PrintUnformatted(pJsonArry);
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
+
     cJSON_Delete(pJsonArry);
 
     return strlen(pcBuf);
@@ -1179,7 +1264,7 @@ static VOID SyncTimeTask( VOID* para )
             LOG_OUT(LOGOUT_INFO, "Get time from internet successed.");
             break;
         }
-        LOG_OUT(LOGOUT_DEBUG, "Get time from retry %d times", iRetry);
+        LOG_OUT(LOGOUT_DEBUG, "Get time from internet, retry %d times", iRetry);
         vTaskDelay( 3000/portTICK_RATE_MS );
     }
 
@@ -1971,7 +2056,15 @@ UINT PLUG_MarshalJsonWebSet( CHAR* pcBuf, UINT uiBufLen )
 #endif
 
     pJsonStr = cJSON_PrintUnformatted(pJson);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
+
     cJSON_Delete(pJson);
     FREE_MEM(pJsonStr);
 
@@ -2002,10 +2095,24 @@ UINT PLUG_ParseCloudPlatformData( CHAR* pData )
 
     memcpy( &stPlatform, PLUG_GetPlatFormData(), sizeof(stPlatform));
 
-    pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "CloudPlatform");
-    if (pJsonIteam && pJsonIteam->type == cJSON_Number)
+    pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "TencentEnable");
+    if (pJsonIteam && pJsonIteam->type == cJSON_True)
     {
-        stPlatform.ucCloudPlatform = pJsonIteam->valueint;
+        stPlatform.bTencentEnable = TRUE;
+    }
+    else if ( pJsonIteam && pJsonIteam->type == cJSON_False )
+    {
+    	stPlatform.bTencentEnable = FALSE;
+    }
+
+    pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "BigiotEnable");
+    if (pJsonIteam && pJsonIteam->type == cJSON_True)
+    {
+        stPlatform.bBigiotEnable = TRUE;
+    }
+    else if ( pJsonIteam && pJsonIteam->type == cJSON_False )
+    {
+    	stPlatform.bBigiotEnable = FALSE;
     }
 
     pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "DevType");
@@ -2014,11 +2121,24 @@ UINT PLUG_ParseCloudPlatformData( CHAR* pData )
         stPlatform.eDevType = pJsonIteam->valueint;
     }
 
+    pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "MqttRegistType");
+    if (pJsonIteam && pJsonIteam->type == cJSON_Number)
+    {
+        stPlatform.eMqttRegistType = pJsonIteam->valueint;
+    }
+
     pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "MqttProductKey");
     if (pJsonIteam && pJsonIteam->type == cJSON_String)
     {
         strncpy( stPlatform.szMqttProductKey, pJsonIteam->valuestring, PLUG_MQTT_PRODUCTKEY_LEN);
         stPlatform.szMqttProductKey[PLUG_MQTT_PRODUCTKEY_LEN] = 0;
+    }
+
+    pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "MqttProductSecret");
+    if (pJsonIteam && pJsonIteam->type == cJSON_String)
+    {
+        strncpy( stPlatform.szMqttProductSecret, pJsonIteam->valuestring, PLUG_MQTT_PRODUCTSEC_LEN);
+        stPlatform.szMqttProductSecret[PLUG_MQTT_PRODUCTSEC_LEN] = 0;
     }
 
     pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "MqttDevName");
@@ -2526,10 +2646,5 @@ VOID PLUG_StartJudgeTimeHanderTimer( VOID )
         }
     }
 }
-
-
-
-
-
 
 

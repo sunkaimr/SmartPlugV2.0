@@ -8,7 +8,7 @@
 #ifndef __USER_INFRARE_H__
 #define __USER_INFRARE_H__
 
-#define INFRARED_MAX            10
+#define INFRARED_MAX             10
 #define INFRARED_NAME_MAX_LEN    32
 
 #define INFRARED_ALL            (INFRARED_MAX + 1)

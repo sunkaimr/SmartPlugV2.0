@@ -49,10 +49,10 @@ VOID TEMP_TempCallBack( VOID )
     uiLastAdc = uiTempAdcValue;
 }
 
-float TEMP_GetTemperature( VOID )
+double TEMP_GetTemperature( VOID )
 {
     UINT8 i = 0;
-    float fTemp = 0;
+    double fTemp = 0;
 
     for( i = 0; i < sizeof(AdTab)/sizeof(AdTab[0]); i++ )
     {
@@ -75,6 +75,6 @@ float TEMP_GetTemperature( VOID )
         fTemp = TempTab[i-1] + ( uiTempAdcValue - AdTab[i-1] ) * 1.0 / (AdTab[i] - AdTab[i-1]);
     }
 
-    return fTemp;
+    return ((int)(fTemp*10))/10.0;
 
 }

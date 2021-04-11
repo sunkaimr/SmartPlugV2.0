@@ -29,7 +29,7 @@ SPI_SIZE_MAP    1        flash=256£¬user1µØÖ·0x1000,user2µØÖ·0x41000     ÖÆ×÷¶ÔÓ
 -----------------------------------------------------------------------------------------
 */
 
-const CHAR szFlashMap[][5] = {"none", "0.4M", "1M", "2M", "4M", "2M", "4M", "8M", "16M", "0.4M" };
+const CHAR szFlashMap[][5] = {"none", "0.4MB", "1MB", "2MB", "4MB", "2MB", "4MB", "8MB", "16MB", "0.4MB" };
 
 const UINT32 User1BinFlashSizeMap[] =
 {
@@ -119,7 +119,11 @@ VOID UPGRADE_SetUpgradeReboot()
 
     LOG_OUT(LOGOUT_INFO, "system will upgrade reboot with 0x%X", uiAddr);
     system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
+
+#if IS_CHANG_XIN
     METER_RestartHandle();
+#endif
+
     system_upgrade_reboot();
 }
 
@@ -128,7 +132,7 @@ VOID UPGRADE_StartUpgradeRebootTimer()
     static xTimerHandle xUpgradeTimers = NULL;
     UINT32 uiUpgradeTimerId = 0;
 
-    xUpgradeTimers = xTimerCreate("UPGRADE_StartUpgradeRebootTimer", 500/portTICK_RATE_MS, FALSE, &uiUpgradeTimerId, UPGRADE_SetUpgradeReboot);
+    xUpgradeTimers = xTimerCreate("UPGRADE_StartUpgradeRebootTimer", 1000/portTICK_RATE_MS, FALSE, &uiUpgradeTimerId, UPGRADE_SetUpgradeReboot);
     if ( !xUpgradeTimers )
     {
         LOG_OUT(LOGOUT_ERROR, "xTimerCreate UPGRADE_SetUpgradeReboot failed.");
@@ -144,7 +148,9 @@ VOID UPGRADE_StartUpgradeRebootTimer()
 
 VOID UPGRADE_SetReboot()
 {
-    METER_RestartHandle();
+#if IS_CHANG_XIN
+	METER_RestartHandle();
+#endif
     system_restart();
 }
 
@@ -175,7 +181,7 @@ VOID UPGRADE_Reset()
     INFRARED_InfraredDataDeInit();
     PLUG_SystemSetDataDeInit();
     //HTTP_FileListInit();
-    PLUG_PlatformDeInit();
+    //PLUG_PlatformDeInit();
     METER_DeinitData();
     CONFIG_SaveConfig(PLUG_MOUDLE_BUFF);
 

@@ -42,6 +42,7 @@ static UINT uiCurStatus = 0;
 WIFI_SCAN_STATUS uiWifiScanStatus = WIFI_SCAN_STATUS_IDLE;
 WIFI_SCAN_S *g_pstWifiScanHead = NULL;
 
+
 VOID WIFI_ScanWifiSsidDone(void *arg, STATUS status)
 {
     uint8 uiLength = 0;
@@ -500,9 +501,9 @@ VOID WIFI_SmartConfigDone(sc_status status, void *pdata)
         case SC_STATUS_GETTING_SSID_PSWD:
             type = pdata;
             if (*type == SC_TYPE_ESPTOUCH) {
-                //printf("SC_TYPE:SC_TYPE_ESPTOUCH\n");
+                printf("SC_TYPE:SC_TYPE_ESPTOUCH\n");
             } else {
-                //printf("SC_TYPE:SC_TYPE_AIRKISS\n");
+                printf("SC_TYPE:SC_TYPE_AIRKISS\n");
             }
             break;
         case SC_STATUS_LINK:
@@ -622,18 +623,18 @@ VOID WIFI_SetWifiModeTask( void *para )
     WIFI_MODE_E eWifiMode = 0;
     UINT8 ucCloudPlatform = 0;
     UINT uiRet = 0;
-    PLUG_DATE_S pstDate = {2018, 1, 1, 0, 12, 0, 0 };
+    PLUG_DATE_S pstDate = {2021, 1, 1, 0, 12, 0, 0 };
 
     LOG_OUT(LOGOUT_INFO, "WIFI_SetWifiModeTask started.");
 
     eWifiMode = PLUG_GetWifiMode();
     if ( eWifiMode == WIFI_MODE_SOFTAP )
     {
-        WIFI_SetWifiModeAP();
-        DNS_StartDNSServerTheard();
-
         PLUG_SetDate(&pstDate);
         LOG_OUT(LOGOUT_INFO, "Socket_SetDate: 2021-01-01 12:00:00");
+
+        WIFI_SetWifiModeAP();
+        DNS_StartDNSServerTheard();
 
         WEB_StartWebServerTheard();
         LED_SetWifiStatus(LED_WIFI_STATUS_SYNC_TIME);
@@ -656,24 +657,16 @@ VOID WIFI_SetWifiModeTask( void *para )
 
         PLUG_GetTimeFromInternet();
 
-        ucCloudPlatform = PLUG_GetCloudPlatform();
-        switch ( ucCloudPlatform )
+        if ( PLUG_GetTencentEnable() )
         {
-            case PLATFORM_ALIYUN :
-#ifdef __ALIYUN__
-                MQTT_StartMqttTheard();
-#else
-                LOG_OUT(LOGOUT_ERROR, "not support aliyun!!!");
-#endif
-                break;
+        	LOG_OUT(LOGOUT_INFO, "Connectting cloud platform tencet");
+            MQTT_StartMqttTheard();
+        }
 
-            case PLATFORM_BIGIOT :
-                BIGIOT_StartBigiotTheard();
-                break;
-
-            default:
-                LOG_OUT(LOGOUT_INFO, "Do not connect to any cloud platform");
-                break;
+        if ( PLUG_GetBigiotEnable() )
+        {
+        	LOG_OUT(LOGOUT_INFO, "Connectting cloud platform bigiot");
+            BIGIOT_StartBigiotTheard();
         }
 
         for ( ; ; )
@@ -700,7 +693,7 @@ VOID WIFI_SetWifiModeTask( void *para )
 
 VOID WIFI_StartWifiModeTheard( void )
 {
-    xTaskCreate(WIFI_SetWifiModeTask, "WIFI_SetWifiModeTask", 512, NULL, 2, NULL);
+    xTaskCreate(WIFI_SetWifiModeTask, "WIFI_SetWifiModeTask", 1024, NULL, 2, NULL);
 }
 
 
@@ -854,7 +847,15 @@ UINT WIFI_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen )
     FREE_MEM(g_pstWifiScanHead);
 
     pJsonStr = cJSON_PrintUnformatted(pJsonArry);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
+
     cJSON_Delete(pJsonArry);
     FREE_MEM(pJsonStr);
     return strlen(pcBuf);
@@ -875,33 +876,28 @@ UINT WIFI_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen)
     cJSON_AddStringToObject( pJson, "BuildDate",     szBuf);
 
     cJSON_AddStringToObject( pJson, "SDKVersion",     system_get_sdk_version());
+    cJSON_AddStringToObject( pJson, "SoftWareVersion", SOFTWARE_VERSION);
     cJSON_AddStringToObject( pJson, "FlashMap",       UPGRADE_GetFlashMap());
 
     snprintf(szBuf, sizeof(szBuf),  "user%d.bin",     system_upgrade_userbin_check()+1);
     cJSON_AddStringToObject( pJson, "UserBin",         szBuf);
 
     cJSON_AddNumberToObject( pJson, "RunTime",         PLUG_GetRunTime());
+    cJSON_AddStringToObject( pJson, "Hardware",        HARDWARE);
 
-#if IS_PHILIPS
-        cJSON_AddStringToObject( pJson, "Hardware",    "philips");
-#elif IS_CHANG_XIN
-	#if IS_WELL
-        cJSON_AddStringToObject( pJson, "Hardware",    "changxin meter and well");
-	#else
-        cJSON_AddStringToObject( pJson, "Hardware",    "changxin meter");
-	#endif
-#elif IS_CHANG_XIN_V1
-	#if IS_WELL
-        cJSON_AddStringToObject( pJson, "Hardware",    "changxin well");
-	#else
-        cJSON_AddStringToObject( pJson, "Hardware",    "changxin");
-	#endif
-#else
-        cJSON_AddStringToObject( pJson, "Hardware",    "jizhiyun");
-#endif
+    WIFI_GetMacAddr(szBuf, sizeof(szBuf));
+    cJSON_AddStringToObject( pJson, "Mac", szBuf);
 
     pJsonStr = cJSON_PrintUnformatted(pJson);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
+
     cJSON_Delete(pJson);
     FREE_MEM(pJsonStr);
 
@@ -919,9 +915,18 @@ UINT WIFI_TemperatureMarshalJson( CHAR* pcBuf, UINT uiBufLen)
     cJSON_AddNumberToObject( pJson, "Temperature", PLUG_GetRunTime());
 
     pJsonStr = cJSON_PrintUnformatted(pJson);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
+
     cJSON_Delete(pJson);
     FREE_MEM(pJsonStr);
 
     return strlen(pcBuf);
 }
+

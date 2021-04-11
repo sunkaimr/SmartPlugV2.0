@@ -541,11 +541,13 @@ UINT HTTP_GetHome( HTTP_CTX *pstCtx )
     pstFile = HTTP_GetFileList( "index.html" );
     if ( pstFile != NULL )
     {
-        uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%s/index.html", HTTP_GetReqHeader(pstCtx, "Host"));
+        uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%s/index.html",
+        		HTTP_GetReqHeader(&pstCtx->stReq.stHeader[0], "Host"));
     }
     else
     {
-        uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%s/upload", HTTP_GetReqHeader(pstCtx, "Host"));
+        uiRet = HTTP_SetCustomHeader(pstCtx, "Location", "http://%s/upload",
+        		HTTP_GetReqHeader(&pstCtx->stReq.stHeader[0], "Host"));
     }
 
     if ( uiRet != OK )
@@ -733,11 +735,11 @@ UINT HTTP_GetDelayData( HTTP_CTX *pstCtx )
         return FAIL;
     }
 
-    pstCtx->stResp.eHttpCode      = HTTP_CODE_Ok;
+    pstCtx->stResp.eHttpCode     = HTTP_CODE_Ok;
     pstCtx->stResp.eContentType  = HTTP_CONTENT_TYPE_Json;
     pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_No;
 
-    HTTP_Malloc(pstCtx, HTTP_BUF_3K);
+    HTTP_Malloc(pstCtx, HTTP_BUF_2K + HTTP_BUF_512);
 
     if ( OK != HTTP_GetRouterPara(pstCtx, "delay", szDelay))
     {

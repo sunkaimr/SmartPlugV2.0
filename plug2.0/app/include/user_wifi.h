@@ -39,8 +39,8 @@ typedef enum {
 typedef struct tagWifiScan
 {
     CHAR                 szSsid[WIFI_SSID_LEN];    //wifi名称
-    CHAR                 szMac[WIFI_MAC_LEN];    //mac地址
-    INT8                iRssi;                    //信号强度单位是dbm，负值越接近0信号越好
+    CHAR                 szMac[WIFI_MAC_LEN];      //mac地址
+    INT8                 iRssi;                    //信号强度单位是dbm，负值越接近0信号越好
     UINT8                ucChannel;                //信道
     CHAR                 szAuthMode[WIFI_AUTHMODE_LEN];    //加密类型
 

@@ -19,7 +19,7 @@
 
 
 #define BIGIOT_DEVNAME_LEN     64
-#define BIGIOT_EVENT_NUM       7
+#define BIGIOT_EVENT_NUM       6
 #define BIGIOT_CBNAME_NUM      64
 
 typedef char* (*CallbackFun)(void *para);
@@ -34,6 +34,15 @@ typedef struct tagBigiotEvent
 
 }BIGIOT_Event_S;
 
+typedef enum{
+	BIGIOT_CONSTATUS_Unknown = 0,
+	BIGIOT_CONSTATUS_Connectting,
+	BIGIOT_CONSTATUS_Connected,
+	BIGIOT_CONSTATUS_Failed,
+
+	BIGIOT_CONSTATUS_Buff,
+}BIGIOT_CONSTATUS_E;
+
 typedef struct tagBigiot
 {
     char* pcHostName;                        //贝壳物联平台服务器的域名：www.bigiot.net
@@ -47,7 +56,7 @@ typedef struct tagBigiot
     int iTimeOut;                            //发送和接收的超时时间，超过该时间认为发送或接收失败
 
     xTaskHandle xEventHandle;                //处理注册事件任务的任务句柄
-    int iAlived;                            //连接平台状态；0:未知状态；1:正在连接；2:连接成功；3：连接失败
+    BIGIOT_CONSTATUS_E eConnectStatus;       //连接平台状态；0:未知状态；1:正在连接；2:连接成功；3：连接失败
 
     BIGIOT_Event_S astEvent[BIGIOT_EVENT_NUM]; //心跳、开关状态、温度、湿度等事件会注册到这里
 
@@ -55,7 +64,7 @@ typedef struct tagBigiot
 
     int  (*Read)(struct tagBigiot*, unsigned char*, unsigned int, unsigned int); //数据接受函数
     int  (*Write)(struct tagBigiot*, const unsigned char*, unsigned int, unsigned int); //数据发送函数
-    int (*Connect)(struct tagBigiot*);        //连接函数
+    int  (*Connect)(struct tagBigiot*);        //连接函数
     void (*Disconnect)(struct tagBigiot*);    //断开连接函数
 
 }BIGIOT_Ctx_S;

@@ -103,8 +103,8 @@ VOID LED_SetWifiStatus( LED_WIFI_STATUS_E eStatus )
 
             /* wifi已连接，常亮 */
             case LED_WIFI_STATUS_ON :
-            /* 通过按键将wifi模式设置为station模式，常亮  */
-            case LED_WIFI_STATUS_SET_STA:
+            /* 通过按键将wifi模式设置为AP模式，常亮  */
+            case LED_WIFI_STATUS_SET_AP:
                 LED_WifiStatusOn();
                 break;
 
@@ -123,8 +123,8 @@ VOID LED_SetWifiStatus( LED_WIFI_STATUS_E eStatus )
                 LED_LedLinkTimerInit(500);
                 break;
 
-            /* 通过按键将wifi模式设置为AP模式，闪烁间隔0.2s */
-            case LED_WIFI_STATUS_SET_AP :
+            /* 通过按键将wifi模式设置为station模式，闪烁间隔0.2s */
+            case LED_WIFI_STATUS_SET_STA :
                 LED_LedLinkTimerInit(100);
                 break;
 

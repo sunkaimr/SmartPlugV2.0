@@ -136,35 +136,35 @@ UINT METER_SetMeterData( METER_MerterInfo *pstMeter )
     return OK;
 }
 
-float METER_GetMeterVoltage( VOID )
+double METER_GetMeterVoltage( VOID )
 {
-    return stRealMeterInfo.fVoltage;
+    return (int)stRealMeterInfo.fVoltage;
 }
 
-float METER_GetMeterCurrent( VOID )
+double METER_GetMeterCurrent( VOID )
 {
-    return stRealMeterInfo.fCurrent;
+    return ((int)(stRealMeterInfo.fCurrent*1000))/1000.0;
 }
 
 
-float METER_GetMeterPower( VOID )
+double METER_GetMeterPower( VOID )
 {
-    return stRealMeterInfo.fPower;
+    return ((int)(stRealMeterInfo.fPower*10))/10.0;
 }
 
-float METER_GetMeterApparentPower( VOID )
+double METER_GetMeterApparentPower( VOID )
 {
-    return stRealMeterInfo.fApparentPower;
+	return ((int)(stRealMeterInfo.fApparentPower*10))/10.0;
 }
 
-float METER_GetMeterPowerFactor( VOID )
+double METER_GetMeterPowerFactor( VOID )
 {
-    return stRealMeterInfo.fPowerFactor;
+	return ((int)(stRealMeterInfo.fPowerFactor*100))/100.0;
 }
 
-float METER_GetMeterElectricity( VOID )
+double METER_GetMeterElectricity( VOID )
 {
-    return stRecordMeterInfo.fElectricity + stRealMeterInfo.fElectricity;
+    return (int)stRecordMeterInfo.fElectricity + (int)stRealMeterInfo.fElectricity;
 }
 
 //上电进行的操作.1,从flash读取历史数据  2,提前擦除保存计量信息的FLASH，以便于掉电时直接写入
@@ -622,7 +622,15 @@ UINT METER_MarshalJsonMeter( CHAR* pcBuf, UINT uiBufLen )
     cJSON_AddBoolToObject( pJson, "UnderPowerEnable",         stRecordMeterInfo.bUnderPowerEnable);
 
     pJsonStr = cJSON_PrintUnformatted(pJson);
-    strncpy(pcBuf, pJsonStr, uiBufLen);
+    if ( pJsonStr != NULL )
+    {
+    	strncpy(pcBuf, pJsonStr, uiBufLen);
+    }
+    else
+    {
+    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    }
+
     cJSON_Delete(pJson);
     FREE_MEM(pJsonStr);
 

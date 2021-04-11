@@ -85,17 +85,17 @@ uint32 user_rf_cal_sector_set(void)
 *******************************************************************************/
 void user_init(void)
 {
-    //vTaskDelay(3000/portTICK_RATE_MS );
+	//vTaskDelay(3000/portTICK_RATE_MS );
 
     user_uart1_init();
     LOG_LogInit();
     LOG_SetLogLevel( LOGOUT_INFO );
 
     LOG_OUT(LOGOUT_INFO, "git commit:%s, build date:%s %s", GIT_COMMIT_SHA1, __DATE__, __TIME__);
-    LOG_OUT(LOGOUT_INFO, "SDK version:%s, FlashMap:%d, user%d.bin",
-            system_get_sdk_version(),
+    LOG_OUT(LOGOUT_INFO, "FlashMap:%d, user%d.bin, version:%s",
             system_get_flash_size_map(),
-            system_upgrade_userbin_check()+1);
+            system_upgrade_userbin_check()+1,
+			SOFTWARE_VERSION);
 
     LED_GpioInit();
     CONFIG_ReadConfig(PLUG_MOUDLE_BUFF);
