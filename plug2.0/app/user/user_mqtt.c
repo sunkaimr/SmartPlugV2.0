@@ -29,6 +29,7 @@ static INT MQTT_ReportUpdateProgress(MQTT_CTX* pstMqttCtx, CHAR* pcState, UINT8 
 void MQTT_StartDownloadTheard(void* data);
 UINT MQTT_RegistDevice();
 VOID MQTT_SetConnectStatus(MQTT_CTX* pstCtx, UINT8 ucStatus);
+static VOID MQTT_ClearTopic(MQTT_CTX* pstMqttCtx);
 
 void MQTT_StartMqttTheard(void)
 {
@@ -253,7 +254,7 @@ static INT MQTT_ReportToken(MQTT_CTX* pstMqttCtx)
     }
     else
     {
-    	LOG_OUT(LOGOUT_INFO, "report token success, topic: %s", szTopic);
+    	LOG_OUT(LOGOUT_DEBUG, "report token success, topic: %s", szTopic);
     }
 
     return uiRet;
@@ -330,6 +331,23 @@ static CHAR* MQTT_FindEmptyTopic(MQTT_CTX* pstMqttCtx)
     }
 
     return NULL;
+}
+
+static VOID MQTT_ClearTopic(MQTT_CTX* pstMqttCtx)
+{
+	UINT8 i = 0;
+
+	if ( pstMqttCtx == NULL )
+	{
+		LOG_OUT(LOGOUT_ERROR, "pstMqttCtx is NULL");
+		return;
+	}
+
+
+    for ( i = 0; i < MQTT_TOPIC_NUM; i++)
+    {
+    	pstMqttCtx->aszSubscribeTopic[i][0] = 0;
+    }
 }
 
 static INT MQTT_SubscribeUpdate(MQTT_CTX* pstMqttCtx)
@@ -536,9 +554,9 @@ reConnect:
             break;
         }
 
-        if ( keepalive(&pstMqttCtx->stClient) != SUCCESS)
+        if ( !MQTTIsConnected(&pstMqttCtx->stClient) )
         {
-            LOG_OUT(LOGOUT_INFO, "keepalive failed");
+        	LOG_OUT(LOGOUT_INFO, "MQTT disconnect");
             MQTT_SetConnectStatus(pstMqttCtx, MQTT_CONSTATUS_Failed);
             break;
         }
@@ -560,6 +578,8 @@ reConnect:
 end:
     MQTTDisconnect( &pstMqttCtx->stClient );
     NetworkDisconnect( &pstMqttCtx->stNetwork );
+    MQTT_ClearTopic(pstMqttCtx);
+    LOG_OUT(LOGOUT_INFO, "MQTTDisconnect will be reconnect");
     goto reConnect;
 
 exit:
@@ -656,7 +676,7 @@ UINT PLUG_MarshalJsonDevStatus( CHAR* pcBuf, UINT uiBufLen )
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	snprintf(pcBuf, uiBufLen, "{}");
     }
 
     cJSON_Delete(pJson);

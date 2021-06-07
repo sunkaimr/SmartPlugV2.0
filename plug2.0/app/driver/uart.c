@@ -372,7 +372,7 @@ void user_uart1_init(void)
     UART_ParamConfig(UART0, &uart_config);
     UART_SetPrintPort( UART0 );
 #endif
-
+    vTaskDelay(1/portTICK_RATE_MS );
     printf("\r\n\r\n");
 }
 

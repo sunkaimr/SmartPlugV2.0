@@ -40,7 +40,7 @@
 #endif
 
 #ifndef SOFTWARE_VERSION
-    #define SOFTWARE_VERSION "5.0.0"
+    #define SOFTWARE_VERSION "5.0.1"
 #endif
 
 

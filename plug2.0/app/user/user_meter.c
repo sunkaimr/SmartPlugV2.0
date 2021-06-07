@@ -628,7 +628,7 @@ UINT METER_MarshalJsonMeter( CHAR* pcBuf, UINT uiBufLen )
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	snprintf(pcBuf, uiBufLen, "{}");
     }
 
     cJSON_Delete(pJson);

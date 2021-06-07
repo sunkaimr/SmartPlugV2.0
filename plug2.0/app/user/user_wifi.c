@@ -853,7 +853,7 @@ UINT WIFI_WifiScanMarshalJson( CHAR* pcBuf, UINT uiBufLen )
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	snprintf(pcBuf, uiBufLen, "{}");
     }
 
     cJSON_Delete(pJsonArry);
@@ -895,7 +895,7 @@ UINT WIFI_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen)
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	snprintf(pcBuf, uiBufLen, "{}");
     }
 
     cJSON_Delete(pJson);
@@ -921,7 +921,7 @@ UINT WIFI_TemperatureMarshalJson( CHAR* pcBuf, UINT uiBufLen)
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	snprintf(pcBuf, uiBufLen, "{}");
     }
 
     cJSON_Delete(pJson);
