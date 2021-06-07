@@ -821,7 +821,8 @@ UINT PLUG_MarshalJsonTimer( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum )
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	LOG_OUT(LOGOUT_ERROR, "memory not enought, available heap: %d", system_get_free_heap_size());
+    	snprintf(pcBuf, uiBufLen, "[]");
     }
 
     cJSON_Delete(pJsonArry);
@@ -873,7 +874,8 @@ UINT PLUG_MarshalJsonDelay( CHAR* pcBuf, UINT uiBufLen, UINT uiTimerNum)
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	LOG_OUT(LOGOUT_ERROR, "memory not enought, available heap: %d", system_get_free_heap_size());
+    	snprintf(pcBuf, uiBufLen, "[]");
     }
 
     cJSON_Delete(pJsonArry);
@@ -921,7 +923,8 @@ UINT PLUG_MarshalJsonInfrared( CHAR* pcBuf, UINT uiBufLen, UINT uiNum )
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	LOG_OUT(LOGOUT_ERROR, "memory not enought, available heap: %d", system_get_free_heap_size());
+    	snprintf(pcBuf, uiBufLen, "[]");
     }
 
     cJSON_Delete(pJsonArry);
@@ -971,7 +974,7 @@ UINT PLUG_MarshalJsonSystemSet( CHAR* pcBuf, UINT uiBufLen )
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	snprintf(pcBuf, uiBufLen, "{}");
     }
 
     cJSON_Delete(pJson);
@@ -1060,7 +1063,7 @@ UINT PLUG_MarshalJsonCloudPlatformSet( CHAR* pcBuf, UINT uiBufLen )
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	snprintf(pcBuf, uiBufLen, "{}");
     }
 
     cJSON_Delete(pJson);
@@ -1103,7 +1106,8 @@ UINT PLUG_MarshalJsonHtmlData( CHAR* pcBuf, UINT uiBufLen )
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	LOG_OUT(LOGOUT_ERROR, "memory not enought, available heap: %d", system_get_free_heap_size());
+    	snprintf(pcBuf, uiBufLen, "[]");
     }
 
     cJSON_Delete(pJsonArry);
@@ -2062,7 +2066,7 @@ UINT PLUG_MarshalJsonWebSet( CHAR* pcBuf, UINT uiBufLen )
     }
     else
     {
-    	snprintf(pcBuf, uiBufLen, "{\"result\":\"failed\", \"msg\":\"internal server error\"}");
+    	snprintf(pcBuf, uiBufLen, "{}");
     }
 
     cJSON_Delete(pJson);
@@ -2622,7 +2626,6 @@ VOID PLUG_TimerHandle( VOID *pPara )
         }
         TEMP_TempCallBack();
         WIFI_SetWifiLinkStatus();
-        //LOG_OUT(LOGOUT_INFO, "Free heap Size:%d", system_get_free_heap_size());
     }
 
     INFRARED_JudgeInfrared();
