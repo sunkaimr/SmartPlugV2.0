@@ -44,9 +44,7 @@
 #endif
 
 
-#if IS_PHILIPS
-    	#define HARDWARE    "philips"
-#elif IS_CHANG_XIN
+#if IS_CHANG_XIN
 	#if IS_WELL
 		#define HARDWARE    "changxin meter and well"
 	#else

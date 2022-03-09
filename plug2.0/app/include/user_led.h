@@ -15,17 +15,10 @@
 
 总共有四钟类型的插座，插座不同IO接口不同，编译不同的插座程序时请将对应的宏打开
 若都不打开默认编译机智云固件调试用
-    IS_PHILIPS        : 飞利浦的插座改装
     IS_JI_ZHI_YUN     : 机智云wifi模块(调试用)
     IS_CHANG_XIN      : 常新定时插座改装(带电量统计功能)
     IS_CHANG_XIN_V1   : 常新定时插座改装 V1版本
     IS_WELL           : 是否启用水井自动上水控制
-
-IS_PHILIPS:
-	wifi状态指示       	:IO_13   [0:on 1:off]
-	继电器控制         	:IO_14   [1:on 0:off]
-	继电器状态指示   	:无
-	按键输入        		:IO_4    [按下为低电平]
 
 IS_CHANG_XIN:
 	wifi状态指示    	:IO_13     [1:on 0:off]
@@ -46,42 +39,11 @@ IS_JI_ZHI_YUN:
 	继电器按键输入    	:IO_4      [按下为低电平]
 */
 
-#define IS_PHILIPS      	0
 #define IS_CHANG_XIN    	0
 #define IS_CHANG_XIN_V1    	0
 #define IS_WELL				0
 
-#if IS_PHILIPS
-    /* wifi状态指示 */
-    #define LED_GPIO_WIFI_STATUS_MUX         PERIPHS_IO_MUX_MTCK_U
-    #define LED_GPIO_WIFI_STATUS_NUM         13
-    #define LED_GPIO_WIFI_STATUS_FUNC        FUNC_GPIO13
-
-    #define GPIO_WIFI_STATUS_ON                (0x00)
-    #define GPIO_WIFI_STATUS_OFF            (0x01)
-
-    /* 继电器控制 */
-    #define LED_GPIO_RELAY_MUX             PERIPHS_IO_MUX_MTMS_U
-    #define LED_GPIO_RELAY_NUM             14
-    #define LED_GPIO_RELAY_FUNC            FUNC_GPIO14
-
-    #define GPIO_RELAY_ON                    (0x01)
-    #define GPIO_RELAY_OFF                    (0x00)
-
-    /* 继电器状态指示 */
-    #define LED_GPIO_RELAY_STATUS_MUX         PERIPHS_IO_MUX_MTDI_U
-    #define LED_GPIO_RELAY_STATUS_NUM         12
-    #define LED_GPIO_RELAY_STATUS_FUNC        FUNC_GPIO12
-
-    #define GPIO_RELAY_STATUS_ON            (0x01)
-    #define GPIO_RELAY_STATUS_OFF            (0x00)
-
-    /* 继电器按键输入 */
-    #define LED_GPIO_KEY_MUX                 PERIPHS_IO_MUX_GPIO4_U
-    #define LED_GPIO_KEY_NUM                 4
-    #define LED_GPIO_KEY_FUNC                FUNC_GPIO4
-
-#elif IS_CHANG_XIN
+#if IS_CHANG_XIN
 
     /* wifi状态指示 */
     #define LED_GPIO_WIFI_STATUS_MUX         PERIPHS_IO_MUX_MTCK_U
