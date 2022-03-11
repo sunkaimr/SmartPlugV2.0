@@ -281,11 +281,11 @@ STATIC VOID WEB_WebHandleTask( VOID *Para )
         else if ( 0 == iRet )
         {
             pstCtx->uiCostTime ++;
-            //LOG_OUT(LOGOUT_DEBUG, "select timeout, uiCostTime:%d", pstCtx->uiCostTime);
+            LOG_OUT(LOGOUT_DEBUG, "select timeout, uiCostTime:%d", pstCtx->uiCostTime);
 
             if ( pstCtx->uiCostTime >= pstCtx->uiTimeOut )
             {
-                //LOG_OUT(LOGOUT_DEBUG, "recv timeout closed", pstCtx->iClientFd);
+                LOG_OUT(LOGOUT_DEBUG, "recv timeout closed", pstCtx->iClientFd);
                 goto end;
             }
             continue;

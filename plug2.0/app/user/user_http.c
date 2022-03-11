@@ -25,6 +25,7 @@ HTTP_ROUTER_MAP_S stHttpRouterMap[HTTP_ROUTER_MAP_MAX];
 const CHAR szHttpCodeMap[][5] =
 {
 	"999",
+	"100",
 	"101",
     "200",
     "201",
@@ -41,6 +42,7 @@ const CHAR szHttpCodeMap[][5] =
 const CHAR szHttpStatusMap[][20] =
 {
 	"None",
+	"Continue",
 	"Switching Protocols",
     "OK",
     "Created",
@@ -108,6 +110,9 @@ const CHAR szHttpCacheControlStr[][20] =
 const CHAR aGzipSuffix[HTTP_ENCODING_Buff+1][5] = {".gz",""};
 
 UINT HTTP_RequestInit( HTTP_CTX *pstCtx );
+UINT HTTP_SendOnce( HTTP_CTX *pstCtx );
+UINT HTTP_SendContinue( HTTP_CTX *pstCtx );
+UINT HTTP_SetResponseBody( HTTP_CTX *pstCtx, CHAR* pcBody );
 
 
 INT32 HTTP_ParsingHttpHead( HTTP_CTX *pstCtx, CHAR * pcData, UINT32 uiLen )
@@ -590,6 +595,7 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
 	UINT uiRet = 0;
     UINT uiLoop = 0;
     CHAR *pcValue = NULL;
+    CHAR *pcHeader = NULL;
     UINT i = 0;
 
     if ( NULL == pstCtx )
@@ -607,18 +613,32 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
         goto end;
     }
 
-    if ( (pstCtx->stReq.eMethod == HTTP_METHOD_POST ||
-          pstCtx->stReq.eMethod == HTTP_METHOD_PUT ) &&
-          pstCtx->stReq.eProcess == RES_Process_GotHeader )
-    {
-        uiRet = OK;
-        goto end;
-    }
-
     if ( pstCtx->stReq.szURL[0] == 0 )
     {
         LOG_OUT(LOGOUT_INFO, "szURL is NULL");
         uiRet = FAIL;
+        goto end;
+    }
+
+    if ( (pstCtx->stReq.eMethod == HTTP_METHOD_POST ||
+          pstCtx->stReq.eMethod == HTTP_METHOD_PUT ) &&
+          pstCtx->stReq.eProcess == RES_Process_GotHeader)
+    {
+    	pcHeader = HTTP_GetReqHeader(&pstCtx->stReq.stHeader[0], "Expect");
+    	if ( pcHeader != NULL && strcmp(pcHeader, "100-continue") == 0 )
+    	{
+            uiRet = HTTP_SendContinue(pstCtx);
+            if ( uiRet != OK )
+            {
+                LOG_OUT( LOGOUT_ERROR, "send continue failed");
+                goto end;
+            }
+            LOG_OUT( LOGOUT_INFO, "response clinet: HTTP/1.1 100 Continue");
+
+            return uiRet;
+    	}
+
+        uiRet = OK;
         goto end;
     }
 
@@ -630,7 +650,6 @@ UINT HTTP_RouterHandle( HTTP_CTX *pstCtx )
     }
 
     // websocket 协议的特殊处理
-	CHAR* pcHeader = NULL;
     pcHeader = HTTP_GetReqHeader(&pstCtx->stReq.stHeader[0], "Upgrade");
     if ( pcHeader != NULL && strcmp(pcHeader, "websocket") == 0 )
     {
@@ -869,6 +888,46 @@ UINT HTTP_SendOnce( HTTP_CTX *pstCtx )
     return OK;
 }
 
+UINT HTTP_SendContinue( HTTP_CTX *pstCtx )
+{
+    UINT uiRet = 0;
+    UINT uiLen = 0;
+    CHAR* pcLength = NULL;
+
+    if ( pstCtx == NULL )
+    {
+        LOG_OUT(LOGOUT_ERROR, "pstCtx is NULL.");
+        return FAIL;
+    }
+
+    HTTP_Malloc(pstCtx, HTTP_BUF_512);
+
+    uiRet = HTTP_SetResponseBody(pstCtx, "HTTP/1.1 100 Continue");
+    if ( uiRet != OK )
+    {
+        LOG_OUT( LOGOUT_ERROR, "set response body failed");
+        return FAIL;
+    }
+
+    if( pstCtx->stResp.uiBodyLen != pstCtx->stResp.uiPos - pstCtx->stResp.uiHeaderLen )
+    {
+        pstCtx->stResp.uiBodyLen = pstCtx->stResp.uiPos - pstCtx->stResp.uiHeaderLen;
+    }
+
+    pstCtx->stResp.uiSendCurLen   = pstCtx->stResp.uiPos;
+    pstCtx->stResp.uiSendTotalLen = pstCtx->stResp.uiSendCurLen + 1;
+
+    //LOG_OUT(LOGOUT_DEBUG, "[%s]", pstCtx->stResp.pcResponBody);
+
+    uiRet = WEB_WebSend(pstCtx);
+    if ( uiRet != OK )
+    {
+        LOG_OUT(LOGOUT_ERROR, "send failed");
+        return FAIL;
+    }
+
+    return OK;
+}
 
 UINT HTTP_SetResponseBody( HTTP_CTX *pstCtx, CHAR* pcBody )
 {
@@ -878,6 +937,12 @@ UINT HTTP_SetResponseBody( HTTP_CTX *pstCtx, CHAR* pcBody )
     if ( pstCtx == NULL || pcBody == NULL )
     {
         LOG_OUT(LOGOUT_ERROR, "pstCtx:%p, pcBody:%p", pstCtx, pcBody);
+        return FAIL;
+    }
+
+    if ( pstCtx->stResp.pcResponBody == NULL )
+    {
+        LOG_OUT(LOGOUT_ERROR, "pstCtx->stResp.pcResponBody:%p", pstCtx->stResp.pcResponBody);
         return FAIL;
     }
 

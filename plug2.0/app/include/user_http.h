@@ -68,6 +68,7 @@ typedef enum {
 
 typedef enum {
 	HTTP_CODE_None,
+	HTTP_CODE_Continue,
 	HTTP_CODE_SwitchingProtocols,
     HTTP_CODE_Ok,
     HTTP_CODE_Created,

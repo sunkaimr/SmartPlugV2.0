@@ -58,7 +58,7 @@ typedef struct tagPLUG_TIME_POINT
 
 typedef enum
 {
-    REPET_ONCE        = 0x00,       /* 执行一次 */
+    REPET_ONCE       = 0x00,        /* 执行一次 */
     REPET_MON        = 0x01,        /* 每周一 */
     REPET_TUE        = 0x02,        /* 每周二 */
     REPET_WED        = 0x04,        /* 每周三 */

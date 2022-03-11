@@ -209,6 +209,7 @@ BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
 
 CCFLAGS += 			\
+    -O3          \
 	-g			\
 	-Wpointer-arith		\
 	-Wundef			\

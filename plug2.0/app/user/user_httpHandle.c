@@ -49,12 +49,12 @@ HTTP_FILE_S* HTTP_FileOpen( CHAR *pcFileName )
         return NULL;
     }
 
-    pstFile->pcName        = pstHtmlData->szName;
+    pstFile->pcName     = pstHtmlData->szName;
     pstFile->eStatus    = STATUS_Open;
-    pstFile->uiAddr        = pstHtmlData->uiAddr;
-    pstFile->uiLength    = pstHtmlData->uiLength;
-    pstFile->uiPos        = 0;
-    pstFile->eType        = pstHtmlData->eType;
+    pstFile->uiAddr     = pstHtmlData->uiAddr;
+    pstFile->uiLength   = pstHtmlData->uiLength;
+    pstFile->uiPos      = 0;
+    pstFile->eType      = pstHtmlData->eType;
     pstFile->eEncode    = pstHtmlData->eEncode;
     return pstFile;
 }
@@ -202,7 +202,7 @@ UINT HTTP_SendFile( HTTP_CTX *pstCtx, HTTP_FILE_S* pstFile )
         //首次发送时发送http头部
         if ( pstCtx->stResp.uiSentLen == 0 )
         {
-            pstCtx->stResp.eHttpCode      = HTTP_CODE_Ok;
+            pstCtx->stResp.eHttpCode     = HTTP_CODE_Ok;
             pstCtx->stResp.eContentType  = pstFile->eType;
             pstCtx->stResp.eCacheControl = HTTP_CACHE_CTL_TYPE_MaxAge_1y;
 

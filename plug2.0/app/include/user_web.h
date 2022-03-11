@@ -13,7 +13,7 @@
 
 
 #define WEB_MAX_FD                2    //最大可接受连接数并发（根据空闲栈大小来调整,不建议将该值调大，除非你有更好的优化方案来节省内存）
-#define WEB_CONTINUE_TMOUT        1    //连接超时时间，超过该时间未进行数据交互将主动断开连接
+#define WEB_CONTINUE_TMOUT        5    //连接超时时间，超过该时间未进行数据交互将主动断开连接
 
 VOID WEB_StartWebServerTheard( VOID );
 VOID WEB_StopWebServerTheard( VOID );

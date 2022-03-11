@@ -265,7 +265,7 @@ VOID PLUG_SystemSetDataDeInit( VOID )
 	CHAR szMac[20] = {};
 
     g_stPLUG_SystemSet.bRelayStatus       = 0;
-    g_stPLUG_SystemSet.ucWifiMode         = WIFI_MODE_SOFTAP;
+    g_stPLUG_SystemSet.ucWifiMode         = WIFI_MODE_STATION;
     g_stPLUG_SystemSet.bSmartConfigFlag   = FALSE;
 #if IS_WELL
     g_stPLUG_SystemSet.eRelayPowerUp      = PWUP_OFF;
@@ -1094,7 +1094,7 @@ UINT PLUG_MarshalJsonHtmlData( CHAR* pcBuf, UINT uiBufLen )
         cJSON_AddNumberToObject( pJsonsub,    "Addr",     pstHtmlData->uiAddr);
         cJSON_AddNumberToObject( pJsonsub,    "Length",   pstHtmlData->uiLength);
         cJSON_AddStringToObject( pJsonsub,    "Type",     szHttpContentTypeStr[pstHtmlData->eType]);
-        cJSON_AddStringToObject( pJsonsub,    "eEncode",  szHttpEncodingStr[pstHtmlData->eEncode]);
+        cJSON_AddStringToObject( pJsonsub,    "Encode",   szHttpEncodingStr[pstHtmlData->eEncode]);
 
         cJSON_AddItemToArray(pJsonArry, pJsonsub);
     }
