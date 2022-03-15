@@ -15,6 +15,7 @@ static VOID PLUG_TimerCascade( PLUG_TIMER_S *pstTimer );
 static VOID PLUG_JudgeDelay( VOID );
 VOID PLUG_GetNextDelayTime( PLUG_DELAY_S *pstDelay );
 VOID PLUG_StartDelayTime( PLUG_DELAY_S *pstDelay );
+UINT PLUG_ParseHolidayToday( VOID* pData );
 
 PLUG_TIMER_S     g_astPLUG_Timer[PLUG_TIMER_MAX];
 PLUG_DELAY_S     g_astPLUG_Delay[PLUG_DELAY_MAX];
@@ -2310,6 +2311,7 @@ static VOID PLUG_JudgeTimer( VOID )
     UINT8 ucWeek = 0;
     PLUG_DATE_S stDate = {0, 0, 0, 0, 0, 0, 0};
     PLUG_TIMER_S *pstTimer = NULL;
+    UINT8 ucHoliday = 0;
 
     static BOOL bIsJudged = FALSE;
     static PLUG_DATE_S stDateLast = {0, 0, 0, 0, 0, 0, 0};
@@ -2339,7 +2341,23 @@ static VOID PLUG_JudgeTimer( VOID )
              FALSE == bIsJudged)
         {
             /* 判断重复 */
-            if ( pstTimer->eWeek & (1 << (ucWeek-1)) )
+
+        	// 智能跳过节假日
+        	if ( pstTimer->eWeek == REPET_AUTO )
+        	{
+        		ucHoliday = PLUG_Isholiday();
+        		if ( ucHoliday == DAY_Weekends ||
+        			 ucHoliday == DAY_Festivals ||
+					 ucHoliday == DAY_BUFF )
+        		{
+        			// 周末或假日跳过
+        			continue;
+        		}
+
+                PLUG_SetRelayOn( TRUE );
+                bIsJudged = TRUE;
+        	}
+        	else if ( pstTimer->eWeek & (1 << (ucWeek-1)) )
             {
                 PLUG_SetRelayOn( TRUE );
                 bIsJudged = TRUE;
@@ -2362,7 +2380,22 @@ static VOID PLUG_JudgeTimer( VOID )
              pstTimer->stOffTime.iMinute == stDate.iMinute &&
              FALSE == bIsJudged)
         {
-            if ( pstTimer->eWeek & (1 << (ucWeek-1)) )
+        	if ( pstTimer->eWeek == REPET_AUTO )
+        	{
+				// 智能跳过节假日
+        		ucHoliday = PLUG_Isholiday();
+        		if ( ucHoliday == DAY_Weekends ||
+        			 ucHoliday == DAY_Festivals ||
+					 ucHoliday == DAY_BUFF )
+        		{
+        			// 周末或假日跳过
+        			continue;
+        		}
+
+        		PLUG_SetRelayOff( TRUE );
+				bIsJudged = TRUE;
+        	}
+        	else if ( pstTimer->eWeek & (1 << (ucWeek-1)) )
             {
                 PLUG_SetRelayOff( TRUE );
                 bIsJudged = TRUE;
@@ -2649,5 +2682,133 @@ VOID PLUG_StartJudgeTimeHanderTimer( VOID )
         }
     }
 }
+
+typedef struct tagParseHolidayPara{
+	HTTP_CLIENT_S* 		pstCli;
+	UINT8 				uiHoliday;
+}MQTT_ParseHolidayPara_S;
+
+
+UINT8 PLUG_Isholiday()
+{
+	HTTP_CLIENT_S* pstCli = NULL;
+	CHAR szBuf[120] = {0};
+	UINT uiRet = 0;
+	UINT8 uiRetry = 0;
+	PLUG_DATE_S stDate;
+	MQTT_ParseHolidayPara_S stHolidayPara;
+
+	if ( WIFI_GetWifiConnStatus() != STATION_GOT_IP )
+	{
+		LOG_OUT(LOGOUT_ERROR, "not connect wifi");
+        return DAY_BUFF;
+	}
+
+retry:
+	if ( uiRetry >= 3 )
+	{
+		LOG_OUT(LOGOUT_ERROR, "HTTP_ClientDoRequest timeout, retry exceeds maximum");
+        goto end;
+	}
+
+    PLUG_GetDate( &stDate );
+	sprintf(szBuf, "/api/holiday/info/%d-%02d-%02d", stDate.iYear, stDate.iMonth, stDate.iDay);
+    pstCli = HTTP_NewClient("GET", "timor.tech", szBuf, "", 0);
+	if ( pstCli == NULL )
+	{
+        LOG_OUT(LOGOUT_ERROR, "HTTP_NewClient failed");
+        goto end;
+	}
+
+	uiRet = HTTP_ClientDoRequest(pstCli);
+	if ( uiRet != 0 )
+	{
+        LOG_OUT(LOGOUT_ERROR, "HTTP_ClientDoRequest failed");
+        goto end;
+	}
+
+	stHolidayPara.pstCli = pstCli;
+	stHolidayPara.uiHoliday = DAY_BUFF;
+	uiRet = HTTP_ClientDoResponse(pstCli, PLUG_ParseHolidayToday, (VOID*)&stHolidayPara);
+	if ( uiRet == -1 )
+	{
+        LOG_OUT(LOGOUT_ERROR, "HTTP_ClientDoRequest failed");
+        goto end;
+	}
+	// 接收超时
+	else if ( uiRet == -2 )
+	{
+		LOG_OUT(LOGOUT_ERROR, "HTTP_ClientDoRequest timeout, retry...");
+		HTTP_DestoryClient(pstCli);
+		goto retry;
+	}
+
+end:
+	HTTP_DestoryClient(pstCli);
+    return stHolidayPara.uiHoliday;
+}
+
+
+UINT PLUG_ParseHolidayToday( VOID* pData )
+{
+    cJSON *pJsonRoot = NULL;
+    cJSON *pJsonIteam = NULL;
+    MQTT_ParseHolidayPara_S *stHolidayPara = pData;
+    HTTP_CLIENT_S *pstCli = NULL;
+    UINT uiRet = OK;
+
+    if ( stHolidayPara == NULL )
+    {
+    	LOG_OUT(LOGOUT_ERROR, "stHolidayPara is NULL");
+    	return FAIL;
+    }
+
+    pstCli = stHolidayPara->pstCli;
+    if ( pstCli == NULL )
+    {
+    	LOG_OUT(LOGOUT_ERROR, "pstCli:%p", pstCli);
+    	return FAIL;
+    }
+
+    if (pstCli->stReson.eHttpCode != HTTP_CODE_Ok )
+    {
+    	LOG_OUT(LOGOUT_ERROR, "get response code: %s", szHttpCodeMap[pstCli->stReson.eHttpCode]);
+    	return FAIL;
+    }
+
+    pJsonRoot = cJSON_Parse( pstCli->stReson.pcBody );
+    if ( pJsonRoot == NULL )
+    {
+        LOG_OUT(LOGOUT_ERROR, "cJSON_Parse failed, pcBody:%s", pstCli->stReson.pcBody);
+        uiRet = FAIL;
+        goto exit;
+    }
+
+    pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "code");
+    if (pJsonIteam && pJsonIteam->type == cJSON_Number && pJsonIteam->valueint != 0 )
+    {
+    	LOG_OUT(LOGOUT_ERROR, "expect 0 but got %d", pJsonIteam->valueint);
+        uiRet = FAIL;
+        goto exit;
+    }
+
+    pJsonIteam = cJSON_GetObjectItem(pJsonRoot, "type");
+    if (pJsonIteam && pJsonIteam->type == cJSON_Object )
+    {
+        pJsonIteam = cJSON_GetObjectItem(pJsonIteam, "type");
+        if (pJsonIteam && pJsonIteam->type == cJSON_Number )
+        {
+        	stHolidayPara->uiHoliday = pJsonIteam->valueint;
+        	uiRet = OK;
+        }
+    }
+
+    LOG_OUT(LOGOUT_INFO, "holiday type %d", stHolidayPara->uiHoliday);
+
+exit:
+    cJSON_Delete(pJsonRoot);
+    return uiRet;
+}
+
 
 

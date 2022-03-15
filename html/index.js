@@ -496,6 +496,9 @@ function weekConversionString( week ) {
 	if ( week == 96 ){
 		return "周末";
 	}
+	if ( week == 128 ){
+		return "跳过节假日";
+	}
 
 	var str="";
 	for ( var i = 0; i < 7; i++ ){
@@ -522,6 +525,7 @@ function stringConversionWeek() {
 	if( $("#week5").is(':checked') ){week=week|(1<<4)}
 	if( $("#week6").is(':checked') ){week=week|(1<<5)}
 	if( $("#week7").is(':checked') ){week=week|(1<<6)}
+	if( $("#week8").is(':checked') ){week=week|(1<<7)}
 	return week;
 }
 
@@ -1014,7 +1018,7 @@ function tabTimerSubmit(){
 			$("#timerCascodeNum").val(data[0].CascodeNum);
 			$("#timerCascodeEnable").attr('checked',data[0].Cascode);
 			var week= parseInt(data[0].Week);
-			for ( var i = 0; i < 7; i++ ){
+			for ( var i = 0; i < 8; i++ ){
 				switch(i){
 					case 0: $("#week1").prop('checked',week&(1<<i));break;
 					case 1: $("#week2").prop('checked',week&(1<<i));break;
@@ -1023,6 +1027,7 @@ function tabTimerSubmit(){
 					case 4: $("#week5").prop('checked',week&(1<<i));break;
 					case 5: $("#week6").prop('checked',week&(1<<i));break;
 					case 6: $("#week7").prop('checked',week&(1<<i));break;
+					case 7: $("#week8").prop('checked',week&(1<<i));break;
 				}
 			}
 		}else{

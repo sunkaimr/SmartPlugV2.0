@@ -67,10 +67,20 @@ typedef enum
     REPET_SAT        = 0x20,        /* 每周六 */
     REPET_SUN        = 0x40,        /* 每周日 */
     REPET_ALL        = 0x7F,        /* 每天 */
+	REPET_AUTO       = 0x80,        /* 智能跳过节假日  */
 
     REPET_BUFF
 }PLUG_REPETITION_E;
 
+typedef enum
+{
+    DAY_Weekday = 0,        /* 工作日 */
+    DAY_Weekends,           /* 周末 */
+    DAY_Festivals,          /* 节日 */
+    DAY_Compensatory,       /* 调休 */
+
+	DAY_BUFF
+}PLUG_DAY_E;
 
 typedef struct tagPLUG_TIMER                            /*  定时模块    */
 {
@@ -318,6 +328,7 @@ UINT PLUG_ParseDate( CHAR* pDateStr);
 UINT PLUG_ParseTimerData( CHAR* pData );
 UINT PLUG_ParseRelayStatus( CHAR* pDataStr);
 UINT PLUG_ParseWebSetData( CHAR* pData );
+UINT8 PLUG_Isholiday();
 
 VOID PLUG_StartJudgeTimeHanderTimer( VOID );
 

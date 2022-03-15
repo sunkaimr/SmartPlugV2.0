@@ -904,29 +904,8 @@ UINT WIFI_DeviceInfoMarshalJson( CHAR* pcBuf, UINT uiBufLen)
     return strlen(pcBuf);
 }
 
-UINT WIFI_TemperatureMarshalJson( CHAR* pcBuf, UINT uiBufLen)
+UINT WIFI_GetWifiConnStatus()
 {
-    cJSON  *pJson = NULL;
-    CHAR *pJsonStr = NULL;
-    CHAR szBuf[20];
-
-    pJson = cJSON_CreateObject();
-
-    cJSON_AddNumberToObject( pJson, "Temperature", PLUG_GetRunTime());
-
-    pJsonStr = cJSON_PrintUnformatted(pJson);
-    if ( pJsonStr != NULL )
-    {
-    	strncpy(pcBuf, pJsonStr, uiBufLen);
-    }
-    else
-    {
-    	snprintf(pcBuf, uiBufLen, "{}");
-    }
-
-    cJSON_Delete(pJson);
-    FREE_MEM(pJsonStr);
-
-    return strlen(pcBuf);
+	return uiCurStatus;
 }
 
